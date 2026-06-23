@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, LogOut, Shield } from "lucide-react";
+import { Search, LogOut, Shield, User as UserIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -15,6 +16,25 @@ const NAV: { to: string; label: string; exact?: boolean }[] = [
 export function Header() {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ["is-admin", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("has_role", {
+        _user_id: user!.id,
+        _role: "admin",
+      });
+      if (error) return false;
+      return !!data;
+    },
+  });
+
+  const displayName =
+    (user?.user_metadata as { full_name?: string; name?: string } | undefined)?.full_name ||
+    (user?.user_metadata as { name?: string } | undefined)?.name ||
+    user?.email?.split("@")[0] ||
+    "Account";
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -49,12 +69,22 @@ export function Header() {
           </button>
           {user ? (
             <>
-              <Link
-                to="/admin"
-                className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
-              >
-                <Shield className="h-4 w-4" /> Admin
-              </Link>
+              {isAdmin ? (
+                <Link
+                  to="/admin"
+                  className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Shield className="h-4 w-4" /> Admin
+                </Link>
+              ) : (
+                <span
+                  title={user.email ?? undefined}
+                  className="hidden sm:inline-flex h-10 max-w-[200px] items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground"
+                >
+                  <UserIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{displayName}</span>
+                </span>
+              )}
               <button
                 onClick={signOut}
                 className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
