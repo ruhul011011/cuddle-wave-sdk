@@ -1,5 +1,5 @@
-import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Header } from "@/components/site/Header";
@@ -15,8 +15,10 @@ const fixtureQuery = (id: string) =>
   queryOptions({
     queryKey: ["fixture", id],
     queryFn: () => getFixtureDetail({ data: { id } }),
-    staleTime: 15_000,
-    refetchInterval: 30_000,
+    // Cache longer to ease api-football rate-limit pressure.
+    staleTime: 60_000,
+    refetchInterval: 120_000,
+    retry: false,
   });
 
 const streamsQuery = (id: string) =>
@@ -34,11 +36,6 @@ const accessQuery = (id: string) =>
   });
 
 export const Route = createFileRoute("/match/$id")({
-  loader: async ({ params, context }) => {
-    const data = await context.queryClient.ensureQueryData(fixtureQuery(params.id));
-    if (!data) throw notFound();
-    return null;
-  },
   head: () => ({
     meta: [
       { title: "Match — Football Streaming" },
@@ -62,18 +59,36 @@ export const Route = createFileRoute("/match/$id")({
 
 function MatchPage() {
   const { id } = Route.useParams();
-  const { data } = useSuspenseQuery(fixtureQuery(id));
+  // Fixture metadata is best-effort: when api-football rate-limits or fails,
+  // we still render the player using stream rows from our DB so users can watch.
+  const { data: fixtureData } = useQuery(fixtureQuery(id));
   const { data: access, refetch: refetchAccess } = useQuery(accessQuery(id));
   const { data: streams = [] } = useQuery({
     ...streamsQuery(id),
-    // Server-side gating filters URLs; we always fetch so ads/mix users see
-    // the unlocked links. Premium-locked fixtures return [] and show the buy CTA.
-    enabled: !!access && !(access.access === "premium" && !access.hasAccess),
+    // Streams must load even when fixture metadata fails (rate limit, etc.).
+    enabled: !access || !(access.access === "premium" && !access.hasAccess),
   });
   const checkoutFn = useServerFn(createMatchCheckout);
   const [buying, setBuying] = useState(false);
-  if (!data) return null;
-  const match = data;
+  const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
+    id,
+    league: "",
+    leagueLogo: "",
+    homeTeam: "Home",
+    awayTeam: "Away",
+    homeLogo: "",
+    awayLogo: "",
+    kickoff: new Date().toISOString(),
+    status: "live",
+    homeScore: undefined,
+    awayScore: undefined,
+    minute: undefined,
+    venue: undefined,
+    referee: undefined,
+    events: [],
+    lineups: [],
+    statistics: [],
+  };
   const isLive = match.status === "live";
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = access?.access === "premium" && !access.hasAccess;
