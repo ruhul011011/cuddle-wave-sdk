@@ -5,6 +5,7 @@ import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
 import { listStreamedFixtureIds } from "@/lib/streams.functions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
   ChevronRight,
