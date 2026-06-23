@@ -78,7 +78,7 @@ function MatchPage() {
   const match = data;
   const isLive = match.status === "live";
   const kickoff = new Date(match.kickoff);
-  const isPaidLocked = access?.access === "paid" && !access.hasAccess;
+  const isPaidLocked = access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
 
   async function handleBuy() {
