@@ -20,10 +20,60 @@ type Props = {
   placeholder?: string;
 };
 
+type QualityInfo = { resolution?: string; bitrate?: string };
+
+async function probeStreamQuality(source: StreamSource): Promise<QualityInfo> {
+  if (source.stream_type !== "hls") return {};
+  try {
+    const res = await fetch(source.url, { method: "GET" });
+    if (!res.ok) return {};
+    const text = await res.text();
+    const lines = text.split(/\r?\n/);
+    let bestHeight = 0;
+    let bestBandwidth = 0;
+    for (const line of lines) {
+      if (!line.startsWith("#EXT-X-STREAM-INF")) continue;
+      const resMatch = line.match(/RESOLUTION=(\d+)x(\d+)/i);
+      const bwMatch = line.match(/BANDWIDTH=(\d+)/i);
+      const h = resMatch ? parseInt(resMatch[2], 10) : 0;
+      const bw = bwMatch ? parseInt(bwMatch[1], 10) : 0;
+      if (h > bestHeight) bestHeight = h;
+      if (bw > bestBandwidth) bestBandwidth = bw;
+    }
+    const info: QualityInfo = {};
+    if (bestHeight) info.resolution = `${bestHeight}p`;
+    if (bestBandwidth) info.bitrate = `${(bestBandwidth / 1_000_000).toFixed(1)} Mbps`;
+    return info;
+  } catch {
+    return {};
+  }
+}
+
+function tierFromHeight(h: number): string {
+  if (h >= 2160) return "4K";
+  if (h >= 1080) return "FHD";
+  if (h >= 720) return "HD";
+  if (h >= 480) return "SD";
+  return "LD";
+}
+
 export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
   const [started, setStarted] = useState(false);
+  const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
   const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        sources.map(async (s) => [s.id, await probeStreamQuality(s)] as const),
+      );
+      if (!cancelled) setQualities(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+  }, [sources]);
+
 
   if (!selected) {
     return (
@@ -90,6 +140,12 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           <div className="flex flex-wrap gap-2">
             {sources.map((s, i) => {
               const active = s.id === selected.id;
+              const q = qualities[s.id] ?? {};
+              const heightNum = q.resolution ? parseInt(q.resolution, 10) : 0;
+              const tier = heightNum ? tierFromHeight(heightNum) : "HD";
+              const detail = q.resolution
+                ? (q.bitrate ? `${q.resolution} · ${q.bitrate}` : q.resolution)
+                : (s.label?.toUpperCase() || `SERVER ${i + 1}`);
               return (
                 <button
                   key={s.id}
@@ -101,9 +157,9 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
                       : "bg-secondary/70 text-foreground hover:bg-secondary")
                   }
                 >
-                  <span className="tracking-wide">HD</span>
+                  <span className="tracking-wide">{tier}</span>
                   <span className={active ? "text-white/95" : "text-amber-400"}>
-                    {s.label?.toUpperCase() || `SERVER ${i + 1}`}
+                    {detail}
                   </span>
                 </button>
               );
