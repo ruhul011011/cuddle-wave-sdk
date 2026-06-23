@@ -58,6 +58,11 @@ function AdminLiveMatchesPage() {
 
   const bulkM = useMutation({
     mutationFn: async (vars: { fixture_id: number; streams: LinkRow[] }) => {
+      // Compute scheduled go-live time from selected fixture kickoff.
+      let available_from: string | null = null;
+      if (availability === "pre10" && selectedFixture?.kickoff) {
+        available_from = new Date(new Date(selectedFixture.kickoff).getTime() - 10 * 60 * 1000).toISOString();
+      }
       // Save access tier first so paid gating is enforced for new streams.
       await setAccessFn({
         data: {
@@ -65,6 +70,7 @@ function AdminLiveMatchesPage() {
           access,
           price_cents: access === "paid" ? Math.round(parseFloat(priceUsd || "0") * 100) : 0,
           currency: "usd",
+          available_from,
         },
       });
       return bulkCreateFn({ data: vars });
@@ -72,7 +78,7 @@ function AdminLiveMatchesPage() {
     onSuccess: () => {
       toast.success("Match saved");
       setLinks([{ ...EMPTY_LINK }]); setFixtureId("");
-      setAccess("free"); setPriceUsd("4.99");
+      setAccess("free"); setPriceUsd("4.99"); setAvailability("now");
       streamsQ.refetch(); router.invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
