@@ -156,15 +156,44 @@ export const listPopularLeagues = createServerFn({ method: "GET" }).handler(asyn
 export type LeagueOption = { id: number; name: string; country?: string; logo?: string };
 
 export const listAvailableLeagues = createServerFn({ method: "GET" }).handler(async () => {
-  const raw = await af<any[]>(`/leagues`);
-  const items: LeagueOption[] = raw.map((r: any) => ({
-    id: r.league?.id,
-    name: r.league?.name ?? "",
-    country: r.country?.name ?? undefined,
-    logo: r.league?.logo ?? undefined,
-  })).filter((l) => l.id && l.name);
-  items.sort((a, b) => a.name.localeCompare(b.name));
-  return items;
+  const key = process.env.API_FOOTBALL_KEY;
+  const fallback: LeagueOption[] = POPULAR_LEAGUES.map((l) => ({
+    id: l.id,
+    name: l.name,
+    country: l.country,
+  }));
+  if (!key) {
+    console.error("[listAvailableLeagues] API_FOOTBALL_KEY missing, using fallback");
+    return fallback;
+  }
+  try {
+    const res = await fetch(`${BASE}/leagues`, { headers: { "x-apisports-key": key } });
+    if (!res.ok) {
+      console.error("[listAvailableLeagues] http error", res.status);
+      return fallback;
+    }
+    const json = (await res.json()) as { response?: any[]; errors?: unknown };
+    const arr = Array.isArray(json.response) ? json.response : [];
+    if (!arr.length) {
+      console.error("[listAvailableLeagues] empty response; errors=", JSON.stringify(json.errors));
+      return fallback;
+    }
+    const items: LeagueOption[] = arr
+      .map((r: any): LeagueOption => ({
+        id: r.league?.id,
+        name: r.league?.name ?? "",
+        country: r.country?.name ?? undefined,
+        logo: r.league?.logo ?? undefined,
+      }))
+      .filter((l) => l.id && l.name);
+    const seen = new Set<number>();
+    const unique = items.filter((l) => (seen.has(l.id) ? false : (seen.add(l.id), true)));
+    unique.sort((a, b) => a.name.localeCompare(b.name));
+    return unique.length ? unique : fallback;
+  } catch (e) {
+    console.error("[listAvailableLeagues] fetch failed", e);
+    return fallback;
+  }
 });
 
 export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
