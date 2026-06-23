@@ -153,6 +153,20 @@ export const listPopularLeagues = createServerFn({ method: "GET" }).handler(asyn
   return POPULAR_LEAGUES;
 });
 
+export type LeagueOption = { id: number; name: string; country?: string; logo?: string };
+
+export const listAvailableLeagues = createServerFn({ method: "GET" }).handler(async () => {
+  const raw = await af<any[]>(`/leagues`);
+  const items: LeagueOption[] = raw.map((r: any) => ({
+    id: r.league?.id,
+    name: r.league?.name ?? "",
+    country: r.country?.name ?? undefined,
+    logo: r.league?.logo ?? undefined,
+  })).filter((l) => l.id && l.name);
+  items.sort((a, b) => a.name.localeCompare(b.name));
+  return items;
+});
+
 export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
   .inputValidator((d: { leagueId: number; date: string }) => d)
   .handler(async ({ data }) => {
