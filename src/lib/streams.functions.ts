@@ -56,7 +56,7 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
 
     const { data: rows, error } = await supabaseAdmin
       .from("match_streams")
-      .select("id, fixture_id, label, stream_type, quality, url, is_active")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
       .eq("fixture_id", data.fixtureId)
       .eq("is_active", true)
       .order("created_at", { ascending: true });
