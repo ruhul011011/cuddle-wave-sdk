@@ -10,14 +10,21 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ScheduleRouteImport } from './routes/schedule'
+import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as LeaguesRouteImport } from './routes/leagues'
+import { Route as ContactRouteImport } from './routes/contact'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
   path: '/schedule',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PricingRoute = PricingRouteImport.update({
+  id: '/pricing',
+  path: '/pricing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveRoute = LiveRouteImport.update({
@@ -28,6 +35,11 @@ const LiveRoute = LiveRouteImport.update({
 const LeaguesRoute = LeaguesRouteImport.update({
   id: '/leagues',
   path: '/leagues',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContactRoute = ContactRouteImport.update({
+  id: '/contact',
+  path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,38 +55,68 @@ const MatchIdRoute = MatchIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
+  '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
+  '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
+  '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/leagues' | '/live' | '/schedule' | '/match/$id'
+  fullPaths:
+    | '/'
+    | '/contact'
+    | '/leagues'
+    | '/live'
+    | '/pricing'
+    | '/schedule'
+    | '/match/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/leagues' | '/live' | '/schedule' | '/match/$id'
-  id: '__root__' | '/' | '/leagues' | '/live' | '/schedule' | '/match/$id'
+  to:
+    | '/'
+    | '/contact'
+    | '/leagues'
+    | '/live'
+    | '/pricing'
+    | '/schedule'
+    | '/match/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/contact'
+    | '/leagues'
+    | '/live'
+    | '/pricing'
+    | '/schedule'
+    | '/match/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
   LiveRoute: typeof LiveRoute
+  PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   MatchIdRoute: typeof MatchIdRoute
 }
@@ -86,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/schedule'
       fullPath: '/schedule'
       preLoaderRoute: typeof ScheduleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pricing': {
+      id: '/pricing'
+      path: '/pricing'
+      fullPath: '/pricing'
+      preLoaderRoute: typeof PricingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live': {
@@ -100,6 +149,13 @@ declare module '@tanstack/react-router' {
       path: '/leagues'
       fullPath: '/leagues'
       preLoaderRoute: typeof LeaguesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contact': {
+      id: '/contact'
+      path: '/contact'
+      fullPath: '/contact'
+      preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -121,8 +177,10 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
   LiveRoute: LiveRoute,
+  PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   MatchIdRoute: MatchIdRoute,
 }
