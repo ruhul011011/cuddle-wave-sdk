@@ -184,6 +184,24 @@ export const addTopLeague = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+export const updateTopLeague = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => z.object({
+    id: z.string().uuid(),
+    league_id: z.number().int().positive().optional(),
+    name: z.string().min(1).optional(),
+    country: z.string().optional().nullable(),
+    logo: z.string().url().optional().nullable().or(z.literal("")),
+    sort_order: z.number().int().optional(),
+  }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { id, ...patch } = data;
+    if (patch.logo === "") patch.logo = null;
+    const { error } = await context.supabase.from("top_leagues").update(patch).eq("id", id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
 export const deleteTopLeague = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => z.object({ id: z.string().uuid() }).parse(d))
