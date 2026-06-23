@@ -20,6 +20,7 @@ import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin.transactions'
@@ -88,6 +89,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
+  id: '/api/public/stripe-webhook',
+  path: '/api/public/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminWatchLiveRoute =
   AuthenticatedAdminWatchLiveRouteImport.update({
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -250,6 +258,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
+  '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -278,6 +287,7 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/users'
     | '/admin/watch-live'
+    | '/api/public/stripe-webhook'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/users'
     | '/admin/watch-live'
+    | '/api/public/stripe-webhook'
     | '/admin'
   id:
     | '__root__'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/transactions'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/watch-live'
+    | '/api/public/stripe-webhook'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -342,6 +354,7 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   MatchIdRoute: typeof MatchIdRoute
+  ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -422,6 +435,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/stripe-webhook': {
+      id: '/api/public/stripe-webhook'
+      path: '/api/public/stripe-webhook'
+      fullPath: '/api/public/stripe-webhook'
+      preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/watch-live': {
       id: '/_authenticated/admin/watch-live'
@@ -585,6 +605,7 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   MatchIdRoute: MatchIdRoute,
+  ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
