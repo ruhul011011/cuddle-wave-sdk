@@ -89,7 +89,7 @@ export const listAllStreams = createServerFn({ method: "GET" })
     if (!isAdmin) throw new Error("Forbidden");
     const { data, error } = await context.supabase
       .from("match_streams")
-      .select("id, fixture_id, label, stream_type, quality, url, is_active")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []) as StreamRow[];
