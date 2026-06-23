@@ -43,6 +43,7 @@ function AdminLiveMatchesPage() {
   const [links, setLinks] = useState<LinkRow[]>([{ ...EMPTY_LINK }]);
   const [access, setAccess] = useState<"free" | "paid">("free");
   const [priceUsd, setPriceUsd] = useState<string>("4.99");
+  const [availability, setAvailability] = useState<"now" | "pre10">("now");
 
   const fixturesQ = useQuery({
     queryKey: ["fixtures-admin", leagueId, date],
@@ -57,6 +58,11 @@ function AdminLiveMatchesPage() {
 
   const bulkM = useMutation({
     mutationFn: async (vars: { fixture_id: number; streams: LinkRow[] }) => {
+      // Compute scheduled go-live time from selected fixture kickoff.
+      let available_from: string | null = null;
+      if (availability === "pre10" && selectedFixture?.kickoff) {
+        available_from = new Date(new Date(selectedFixture.kickoff).getTime() - 10 * 60 * 1000).toISOString();
+      }
       // Save access tier first so paid gating is enforced for new streams.
       await setAccessFn({
         data: {
@@ -64,6 +70,7 @@ function AdminLiveMatchesPage() {
           access,
           price_cents: access === "paid" ? Math.round(parseFloat(priceUsd || "0") * 100) : 0,
           currency: "usd",
+          available_from,
         },
       });
       return bulkCreateFn({ data: vars });
@@ -71,7 +78,7 @@ function AdminLiveMatchesPage() {
     onSuccess: () => {
       toast.success("Match saved");
       setLinks([{ ...EMPTY_LINK }]); setFixtureId("");
-      setAccess("free"); setPriceUsd("4.99");
+      setAccess("free"); setPriceUsd("4.99"); setAvailability("now");
       streamsQ.refetch(); router.invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -158,6 +165,46 @@ function AdminLiveMatchesPage() {
             />
           </Field>
         </div>
+
+        <Field label="Availability">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setAvailability("now")}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                availability === "now"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-foreground hover:bg-secondary/70"
+              }`}
+            >
+              Live now
+            </button>
+            <button
+              type="button"
+              onClick={() => setAvailability("pre10")}
+              disabled={!selectedFixture?.kickoff}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                availability === "pre10"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-foreground hover:bg-secondary/70"
+              }`}
+            >
+              Go live 10 min before kickoff
+            </button>
+          </div>
+          {availability === "pre10" && selectedFixture?.kickoff && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Stream unlocks at{" "}
+              {new Date(new Date(selectedFixture.kickoff).getTime() - 10 * 60 * 1000).toLocaleString(
+                [],
+                { dateStyle: "medium", timeStyle: "short" },
+              )}
+              .
+            </p>
+          )}
+        </Field>
+
+
 
 
         <div>

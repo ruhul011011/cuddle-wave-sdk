@@ -79,6 +79,7 @@ function MatchPage() {
   const isLive = match.status === "live";
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = access?.access === "paid" && !access.hasAccess;
+  const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
 
   async function handleBuy() {
     setBuying(true);
@@ -141,7 +142,21 @@ function MatchPage() {
         </div>
 
         <div className="mt-8">
-          {isPaidLocked ? (
+          {isScheduledLocked ? (
+            <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+                <Calendar className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-2xl">Stream opens soon</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This match unlocks at{" "}
+                <span className="font-display text-foreground">
+                  {new Date(access!.available_from!).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })}
+                </span>
+                .
+              </p>
+            </div>
+          ) : isPaidLocked ? (
             <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
                 <Lock className="h-7 w-7" />
@@ -170,6 +185,7 @@ function MatchPage() {
             />
           )}
         </div>
+
 
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

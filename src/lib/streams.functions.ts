@@ -25,10 +25,15 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     // Check access tier
     const { data: acc } = await supabaseAdmin
       .from("match_access")
-      .select("access")
+      .select("access, available_from")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
     const isPaid = acc?.access === "paid";
+
+    // Scheduled go-live: hide streams until available_from has passed.
+    if (acc?.available_from && new Date(acc.available_from as string).getTime() > Date.now()) {
+      return [] as StreamRow[];
+    }
 
     if (isPaid) {
       const { getRequestHeader } = await import("@tanstack/react-start/server");
