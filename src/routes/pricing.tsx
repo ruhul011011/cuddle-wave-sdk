@@ -121,7 +121,6 @@ function PricingPage() {
                   {loadingId === p.id && <Loader2 className="h-4 w-4 animate-spin" />}
                   {loadingId === p.id ? "Redirecting…" : `Choose ${p.name}`}
                 </button>
-                </button>
                 <ul className="mt-6 space-y-3 text-sm">
                   {features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
