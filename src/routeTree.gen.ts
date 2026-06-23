@@ -28,6 +28,7 @@ import { Route as AuthenticatedAdminTopTeamsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminTopLeaguesRouteImport } from './routes/_authenticated/admin.top-leagues'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin.support'
 import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
+import { Route as AuthenticatedAdminStripeWebhooksRouteImport } from './routes/_authenticated/admin.stripe-webhooks'
 import { Route as AuthenticatedAdminRatingsRouteImport } from './routes/_authenticated/admin.ratings'
 import { Route as AuthenticatedAdminNotificationRouteImport } from './routes/_authenticated/admin.notification'
 import { Route as AuthenticatedAdminLiveMatchesRouteImport } from './routes/_authenticated/admin.live-matches'
@@ -136,6 +137,12 @@ const AuthenticatedAdminSubscriptionsRoute =
     path: '/subscriptions',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminStripeWebhooksRoute =
+  AuthenticatedAdminStripeWebhooksRouteImport.update({
+    id: '/stripe-webhooks',
+    path: '/stripe-webhooks',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminRatingsRoute =
   AuthenticatedAdminRatingsRouteImport.update({
     id: '/ratings',
@@ -196,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/admin/notification': typeof AuthenticatedAdminNotificationRoute
   '/admin/ratings': typeof AuthenticatedAdminRatingsRoute
+  '/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
@@ -222,6 +230,7 @@ export interface FileRoutesByTo {
   '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/admin/notification': typeof AuthenticatedAdminNotificationRoute
   '/admin/ratings': typeof AuthenticatedAdminRatingsRoute
+  '/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
   '/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
@@ -251,6 +260,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/_authenticated/admin/notification': typeof AuthenticatedAdminNotificationRoute
   '/_authenticated/admin/ratings': typeof AuthenticatedAdminRatingsRoute
+  '/_authenticated/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
   '/_authenticated/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/admin/live-matches'
     | '/admin/notification'
     | '/admin/ratings'
+    | '/admin/stripe-webhooks'
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/top-leagues'
@@ -306,6 +317,7 @@ export interface FileRouteTypes {
     | '/admin/live-matches'
     | '/admin/notification'
     | '/admin/ratings'
+    | '/admin/stripe-webhooks'
     | '/admin/subscriptions'
     | '/admin/support'
     | '/admin/top-leagues'
@@ -334,6 +346,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/live-matches'
     | '/_authenticated/admin/notification'
     | '/_authenticated/admin/ratings'
+    | '/_authenticated/admin/stripe-webhooks'
     | '/_authenticated/admin/subscriptions'
     | '/_authenticated/admin/support'
     | '/_authenticated/admin/top-leagues'
@@ -492,6 +505,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminSubscriptionsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/stripe-webhooks': {
+      id: '/_authenticated/admin/stripe-webhooks'
+      path: '/stripe-webhooks'
+      fullPath: '/admin/stripe-webhooks'
+      preLoaderRoute: typeof AuthenticatedAdminStripeWebhooksRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/ratings': {
       id: '/_authenticated/admin/ratings'
       path: '/ratings'
@@ -552,6 +572,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminLiveMatchesRoute: typeof AuthenticatedAdminLiveMatchesRoute
   AuthenticatedAdminNotificationRoute: typeof AuthenticatedAdminNotificationRoute
   AuthenticatedAdminRatingsRoute: typeof AuthenticatedAdminRatingsRoute
+  AuthenticatedAdminStripeWebhooksRoute: typeof AuthenticatedAdminStripeWebhooksRoute
   AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
   AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
   AuthenticatedAdminTopLeaguesRoute: typeof AuthenticatedAdminTopLeaguesRoute
@@ -570,6 +591,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminLiveMatchesRoute: AuthenticatedAdminLiveMatchesRoute,
   AuthenticatedAdminNotificationRoute: AuthenticatedAdminNotificationRoute,
   AuthenticatedAdminRatingsRoute: AuthenticatedAdminRatingsRoute,
+  AuthenticatedAdminStripeWebhooksRoute: AuthenticatedAdminStripeWebhooksRoute,
   AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
   AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
   AuthenticatedAdminTopLeaguesRoute: AuthenticatedAdminTopLeaguesRoute,
@@ -610,13 +632,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

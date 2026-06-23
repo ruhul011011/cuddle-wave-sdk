@@ -230,6 +230,51 @@ export type Database = {
         }
         Relationships: []
       }
+      stripe_webhook_logs: {
+        Row: {
+          amount_cents: number | null
+          created_at: string
+          currency: string | null
+          event_id: string | null
+          event_type: string | null
+          fixture_id: number | null
+          id: string
+          message: string | null
+          payload: Json | null
+          status: string
+          stripe_session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          fixture_id?: number | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          status: string
+          stripe_session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_cents?: number | null
+          created_at?: string
+          currency?: string | null
+          event_id?: string | null
+          event_type?: string | null
+          fixture_id?: number | null
+          id?: string
+          message?: string | null
+          payload?: Json | null
+          status?: string
+          stripe_session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string
