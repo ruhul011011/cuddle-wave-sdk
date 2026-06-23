@@ -179,14 +179,36 @@ function MatchPage() {
               </button>
             </div>
           ) : (
-            <StreamPlayer
-              sources={streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url }))}
-              isLive={isLive}
-              placeholder={
-                isLive ? "NO STREAM AVAILABLE" :
-                match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"
-              }
-            />
+            <div className="space-y-3">
+              {showAdsNotice && (
+                <div className="rounded-lg border border-border/60 bg-card/60 px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
+                  Ad-supported stream — playback may include ads.
+                </div>
+              )}
+              {isMixLocked && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    Showing free streams. Premium streams for this match are locked.
+                  </span>
+                  <button
+                    onClick={handleBuy}
+                    disabled={buying}
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+                    Unlock premium — {formatMoney(access!.price_cents, access!.currency)}
+                  </button>
+                </div>
+              )}
+              <StreamPlayer
+                sources={streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url }))}
+                isLive={isLive}
+                placeholder={
+                  isLive ? "NO STREAM AVAILABLE" :
+                  match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"
+                }
+              />
+            </div>
           )}
         </div>
 
