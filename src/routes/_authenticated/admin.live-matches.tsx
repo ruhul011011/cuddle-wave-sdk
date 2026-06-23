@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listAllStreams, bulkCreateStreams, deleteStream } from "@/lib/streams.functions";
+import { setMatchAccess } from "@/lib/payments.functions";
 import { listPopularLeagues, getFixturesByLeagueDate } from "@/lib/api-football.functions";
 import { toast } from "sonner";
 import { Trash2, Plus, Loader2 } from "lucide-react";
@@ -31,6 +32,8 @@ function AdminLiveMatchesPage() {
   const leaguesFn = useServerFn(listPopularLeagues);
   const fixturesFn = useServerFn(getFixturesByLeagueDate);
 
+  const setAccessFn = useServerFn(setMatchAccess);
+
   const leaguesQ = useQuery({ queryKey: ["leagues", "popular"], queryFn: () => leaguesFn() });
   const streamsQ = useQuery({ queryKey: ["streams", "all"], queryFn: () => listFn() });
 
@@ -38,6 +41,8 @@ function AdminLiveMatchesPage() {
   const [date, setDate] = useState(todayISO());
   const [fixtureId, setFixtureId] = useState("");
   const [links, setLinks] = useState<LinkRow[]>([{ ...EMPTY_LINK }]);
+  const [access, setAccess] = useState<"free" | "paid">("free");
+  const [priceUsd, setPriceUsd] = useState<string>("4.99");
 
   const fixturesQ = useQuery({
     queryKey: ["fixtures-admin", leagueId, date],
@@ -51,10 +56,22 @@ function AdminLiveMatchesPage() {
   );
 
   const bulkM = useMutation({
-    mutationFn: (vars: { fixture_id: number; streams: LinkRow[] }) => bulkCreateFn({ data: vars }),
+    mutationFn: async (vars: { fixture_id: number; streams: LinkRow[] }) => {
+      // Save access tier first so paid gating is enforced for new streams.
+      await setAccessFn({
+        data: {
+          fixture_id: vars.fixture_id,
+          access,
+          price_cents: access === "paid" ? Math.round(parseFloat(priceUsd || "0") * 100) : 0,
+          currency: "usd",
+        },
+      });
+      return bulkCreateFn({ data: vars });
+    },
     onSuccess: () => {
-      toast.success("Streams added");
+      toast.success("Match saved");
       setLinks([{ ...EMPTY_LINK }]); setFixtureId("");
+      setAccess("free"); setPriceUsd("4.99");
       streamsQ.refetch(); router.invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
@@ -74,6 +91,10 @@ function AdminLiveMatchesPage() {
     if (!Number.isFinite(fid) || fid <= 0) { toast.error("Pick a match"); return; }
     const valid = links.filter((l) => l.url.trim());
     if (!valid.length) { toast.error("Add at least one link"); return; }
+    if (access === "paid") {
+      const cents = Math.round(parseFloat(priceUsd || "0") * 100);
+      if (!cents || cents < 50) { toast.error("Paid price must be at least $0.50"); return; }
+    }
     bulkM.mutate({ fixture_id: fid, streams: valid });
   }
 
@@ -117,6 +138,27 @@ function AdminLiveMatchesPage() {
             </div>
           )}
         </Field>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Access">
+            <select className="input-base bg-background w-full" value={access}
+              onChange={(e) => setAccess(e.target.value as "free" | "paid")}>
+              <option value="free">Free (sign-in only)</option>
+              <option value="paid">Paid (Stripe Checkout)</option>
+            </select>
+          </Field>
+          <Field label="Price (USD)">
+            <input
+              type="number" min="0.50" step="0.01"
+              className="input-base bg-background w-full disabled:opacity-50"
+              value={priceUsd}
+              onChange={(e) => setPriceUsd(e.target.value)}
+              disabled={access !== "paid"}
+              placeholder="4.99"
+            />
+          </Field>
+        </div>
+
 
         <div>
           <div className="flex items-center justify-between mb-2">

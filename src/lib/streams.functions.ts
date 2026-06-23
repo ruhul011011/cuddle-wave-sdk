@@ -15,12 +15,39 @@ export type StreamRow = {
 };
 
 // Public: get active streams for a fixture.
-// Uses the admin client server-side because match_streams SELECT is
-// restricted to authenticated users at the RLS layer.
+// Enforces paid access: if the match is paid and the caller hasn't purchased,
+// stream URLs are NOT returned.
 export const getStreamsForFixture = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Check access tier
+    const { data: acc } = await supabaseAdmin
+      .from("match_access")
+      .select("access")
+      .eq("fixture_id", data.fixtureId)
+      .maybeSingle();
+    const isPaid = acc?.access === "paid";
+
+    if (isPaid) {
+      const { getRequestHeader } = await import("@tanstack/react-start/server");
+      const auth = getRequestHeader("authorization") ?? "";
+      const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
+      if (!token) return [] as StreamRow[];
+      const { data: userRes } = await supabaseAdmin.auth.getUser(token);
+      const uid = userRes?.user?.id;
+      if (!uid) return [] as StreamRow[];
+      const { data: purchase } = await supabaseAdmin
+        .from("match_purchases")
+        .select("id")
+        .eq("user_id", uid)
+        .eq("fixture_id", data.fixtureId)
+        .eq("status", "paid")
+        .maybeSingle();
+      if (!purchase) return [] as StreamRow[];
+    }
+
     const { data: rows, error } = await supabaseAdmin
       .from("match_streams")
       .select("id, fixture_id, label, stream_type, quality, url, is_active")

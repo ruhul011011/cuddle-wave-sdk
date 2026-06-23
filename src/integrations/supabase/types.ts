@@ -74,6 +74,66 @@ export type Database = {
         }
         Relationships: []
       }
+      match_access: {
+        Row: {
+          access: string
+          created_at: string
+          currency: string
+          fixture_id: number
+          price_cents: number
+          updated_at: string
+        }
+        Insert: {
+          access?: string
+          created_at?: string
+          currency?: string
+          fixture_id: number
+          price_cents?: number
+          updated_at?: string
+        }
+        Update: {
+          access?: string
+          created_at?: string
+          currency?: string
+          fixture_id?: number
+          price_cents?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      match_purchases: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          currency: string
+          fixture_id: number
+          id: string
+          status: string
+          stripe_session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          currency: string
+          fixture_id: number
+          id?: string
+          status?: string
+          stripe_session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          currency?: string
+          fixture_id?: number
+          id?: string
+          status?: string
+          stripe_session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       match_streams: {
         Row: {
           created_at: string
