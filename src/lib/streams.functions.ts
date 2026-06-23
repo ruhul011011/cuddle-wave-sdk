@@ -203,6 +203,99 @@ export const getStreamsByFixture = createServerFn({ method: "GET" })
     return (rows ?? []) as StreamRow[];
   });
 
+// Admin: aggregated list of matches that have streams (with access info)
+export type AdminMatchGroup = {
+  fixture_id: number;
+  link_count: number;
+  active_count: number;
+  premium_count: number;
+  ads_count: number;
+  free_count: number;
+  access: "free" | "premium" | "ads" | "mix";
+  price_cents: number;
+  currency: string;
+  available_from: string | null;
+};
+
+export const listAdminMatchGroups = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<AdminMatchGroup[]> => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { data: streams, error } = await context.supabase
+      .from("match_streams")
+      .select("fixture_id, is_active, link_mode")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const groupMap = new Map<number, AdminMatchGroup>();
+    for (const s of streams ?? []) {
+      const g = groupMap.get(s.fixture_id) ?? {
+        fixture_id: s.fixture_id,
+        link_count: 0,
+        active_count: 0,
+        premium_count: 0,
+        ads_count: 0,
+        free_count: 0,
+        access: "free" as const,
+        price_cents: 0,
+        currency: "usd",
+        available_from: null,
+      };
+      g.link_count += 1;
+      if (s.is_active) g.active_count += 1;
+      const mode = (s.link_mode ?? "free") as string;
+      if (mode === "premium") g.premium_count += 1;
+      else if (mode === "ads") g.ads_count += 1;
+      else g.free_count += 1;
+      groupMap.set(s.fixture_id, g);
+    }
+
+    const ids = Array.from(groupMap.keys());
+    if (ids.length) {
+      const { data: accessRows } = await context.supabase
+        .from("match_access")
+        .select("fixture_id, access, price_cents, currency, available_from")
+        .in("fixture_id", ids);
+      for (const a of accessRows ?? []) {
+        const g = groupMap.get(a.fixture_id);
+        if (!g) continue;
+        const raw = (a.access ?? "free") as string;
+        g.access =
+          raw === "paid" ? "premium"
+          : raw === "premium" || raw === "ads" || raw === "mix" ? raw
+          : "free";
+        g.price_cents = a.price_cents ?? 0;
+        g.currency = a.currency ?? "usd";
+        g.available_from = (a.available_from as string | null) ?? null;
+      }
+    }
+    return Array.from(groupMap.values());
+  });
+
+// Admin: delete all streams for a fixture (and clear its access row)
+export const deleteFixtureStreams = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ fixtureId: z.number().int().positive() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { error } = await context.supabase
+      .from("match_streams")
+      .delete()
+      .eq("fixture_id", data.fixtureId);
+    if (error) throw new Error(error.message);
+    await context.supabase.from("match_access").delete().eq("fixture_id", data.fixtureId);
+    return { ok: true };
+  });
+
 // Admin: delete
 export const deleteStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
