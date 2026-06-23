@@ -1,14 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
-import {
-  matches,
-  popularLeagues,
-  topLeagues,
-  popularTeams,
-  groupByDate,
-  formatKickoffTime,
-} from "@/lib/matches";
+import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
+import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
 import {
   Trophy,
   ChevronRight,
@@ -21,6 +16,13 @@ import {
   Radio,
 } from "lucide-react";
 
+const homeFeedQuery = queryOptions({
+  queryKey: ["home-feed"],
+  queryFn: () => getHomeFeed(),
+  staleTime: 15_000,
+  refetchInterval: 30_000,
+});
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -30,12 +32,23 @@ export const Route = createFileRoute("/")({
       { property: "og:description", content: "Live football streams, fixtures and highlights from every major league." },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(homeFeedQuery),
+  errorComponent: ({ error }) => (
+    <div className="min-h-screen grid place-items-center p-8 text-center">
+      <div>
+        <h1 className="font-display text-3xl text-primary">Couldn't load fixtures</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error.message}</p>
+      </div>
+    </div>
+  ),
+  notFoundComponent: () => <div className="p-12 text-center">No fixtures available.</div>,
   component: Index,
 });
 
 function Index() {
-  const live = matches.filter((m) => m.status === "live");
-  const upcoming = matches.filter((m) => m.status === "upcoming");
+  const { data } = useSuspenseQuery(homeFeedQuery);
+  const live = data.live;
+  const upcoming = data.upcoming;
   const featured = upcoming[0] ?? live[0];
 
   return (
@@ -43,7 +56,6 @@ function Index() {
       <Header />
 
       <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-6 space-y-8">
-        {/* POPULAR LEAGUES STRIP */}
         <section>
           <div className="mb-4 flex items-end justify-between">
             <h2 className="flex items-center gap-2 font-display text-2xl sm:text-3xl">
@@ -64,7 +76,7 @@ function Index() {
                 <div className="relative">
                   <div className="font-display text-base leading-tight">{l.name}</div>
                   <div className="mt-6 text-xs text-muted-foreground flex items-center justify-between">
-                    <span>{l.matches} matches</span>
+                    <span>{l.country}</span>
                     <ChevronRight className="h-3 w-3" />
                   </div>
                 </div>
@@ -73,11 +85,8 @@ function Index() {
           </div>
         </section>
 
-        {/* SIDEBAR + MAIN */}
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
-          {/* SIDEBAR */}
           <aside className="space-y-4">
-            {/* Telegram card */}
             <div className="rounded-2xl border border-border/60 bg-card p-5">
               <div className="flex items-center gap-3">
                 <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
@@ -93,7 +102,6 @@ function Index() {
               </button>
             </div>
 
-            {/* Top Leagues */}
             <SidebarSection icon={<Trophy className="h-4 w-4 text-primary" />} title="Top Leagues">
               <ul className="divide-y divide-border/60">
                 {topLeagues.map((l) => (
@@ -101,14 +109,13 @@ function Index() {
                     <Link to="/leagues" className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
                       <img src={l.logo} alt="" className="h-7 w-7 rounded-full bg-secondary p-0.5" />
                       <span className="flex-1 truncate">{l.name}</span>
-                      <span className="text-xs text-muted-foreground">{l.matches}</span>
+                      <span className="text-xs text-muted-foreground">{l.country}</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             </SidebarSection>
 
-            {/* Popular Teams */}
             <SidebarSection icon={<Star className="h-4 w-4 text-primary" />} title="Popular Teams">
               <ul className="divide-y divide-border/60">
                 {popularTeams.map((t) => (
@@ -123,9 +130,7 @@ function Index() {
             </SidebarSection>
           </aside>
 
-          {/* MAIN COLUMN */}
           <div className="space-y-8 min-w-0">
-            {/* HERO BANNER */}
             {featured && (
               <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-emerald-900/60 via-card to-card p-6 sm:p-10">
                 <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(oklch(1_0_0/0.5)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0/0.5)_1px,transparent_1px)] [background-size:48px_48px]" />
@@ -133,17 +138,17 @@ function Index() {
                 <div className="relative grid gap-6 sm:grid-cols-[1.2fr_auto] sm:items-center">
                   <div>
                     <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                      <Radio className="h-3 w-3" /> New Season
+                      <Radio className="h-3 w-3" /> Live & Upcoming
                     </span>
                     <h1 className="mt-4 font-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
-                      NEW SEASON <span className="text-primary">JUST STARTED!</span>
+                      EVERY MATCH, <span className="text-primary">EVERY LEAGUE.</span>
                     </h1>
                     <p className="mt-3 max-w-md text-sm text-muted-foreground">
-                      Kickstart the 2025–2026 season — every league, every match, in stunning HD on one screen.
+                      Real-time fixtures, live scores and HD streams powered by API-Football.
                     </p>
                     <div className="mt-5 flex flex-wrap gap-3">
                       <Link to="/live" className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-                        <Play className="h-4 w-4 fill-current" /> Watch Live
+                        <Play className="h-4 w-4 fill-current" /> Watch Live ({live.length})
                       </Link>
                       <Link to="/schedule" className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card/60 px-5 py-2.5 text-sm font-semibold hover:bg-secondary transition-colors">
                         <Calendar className="h-4 w-4" /> Fixtures
@@ -151,33 +156,31 @@ function Index() {
                     </div>
                   </div>
                   <div className="hidden sm:block font-display text-7xl lg:text-8xl text-primary/90 leading-none">
-                    70%
-                    <div className="text-base tracking-widest text-muted-foreground">OFF PRO</div>
+                    {live.length}
+                    <div className="text-base tracking-widest text-muted-foreground">LIVE NOW</div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* LIVE NOW */}
             {live.length > 0 && (
               <FixturesBlock
                 icon={<span className="live-dot text-live font-display tracking-wider">LIVE NOW</span>}
                 title="Streaming right now"
                 allHref="/live"
               >
-                {live.map((m) => (
+                {live.slice(0, 10).map((m) => (
                   <FixtureRow key={m.id} match={m} />
                 ))}
               </FixturesBlock>
             )}
 
-            {/* UPCOMING grouped by date */}
             <FixturesBlock
               icon={<Calendar className="h-5 w-5 text-primary" />}
               title="Upcoming Matches"
               allHref="/schedule"
             >
-              {groupByDate(upcoming).map(([date, list]) => (
+              {groupByDate(upcoming.slice(0, 20)).map(([date, list]) => (
                 <div key={date}>
                   <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
                     <Calendar className="h-4 w-4 text-primary" /> {date}
@@ -239,7 +242,7 @@ function FixturesBlock({
   );
 }
 
-function FixtureRow({ match: m }: { match: typeof matches[number] }) {
+function FixtureRow({ match: m }: { match: Fixture }) {
   const isLive = m.status === "live";
   return (
     <Link
@@ -249,6 +252,7 @@ function FixtureRow({ match: m }: { match: typeof matches[number] }) {
     >
       <div className="mb-3 flex items-center justify-between text-xs">
         <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-muted-foreground">
+          {m.leagueLogo && <img src={m.leagueLogo} alt="" className="h-3 w-3" />}
           {m.league}
         </span>
         {isLive ? (
@@ -265,8 +269,8 @@ function FixtureRow({ match: m }: { match: typeof matches[number] }) {
           <span className="font-display text-base sm:text-lg truncate">{m.homeTeam}</span>
         </div>
         <div className="font-display text-lg tracking-wider text-muted-foreground">
-          {isLive ? (
-            <span className="text-foreground">{m.homeScore} <span className="text-muted-foreground/60">:</span> {m.awayScore}</span>
+          {isLive || m.status === "finished" ? (
+            <span className="text-foreground">{m.homeScore ?? 0} <span className="text-muted-foreground/60">:</span> {m.awayScore ?? 0}</span>
           ) : (
             "VS"
           )}
