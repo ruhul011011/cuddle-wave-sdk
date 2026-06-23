@@ -628,10 +628,10 @@ function AdminLiveMatchesPage() {
                   </tr>
                 );
               })}
-              {(!groupsQ.data || !groupsQ.data.length) && (
+              {filteredGroups.length === 0 && (
                 <tr>
                   <td colSpan={12} className="p-8 text-center text-sm text-muted-foreground">
-                    No live matches yet.
+                    {groupsQ.data && groupsQ.data.length > 0 ? "No matches match your filters." : "No live matches yet."}
                   </td>
                 </tr>
               )}
