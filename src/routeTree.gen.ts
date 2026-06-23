@@ -25,6 +25,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as ApiStreamSegRouteImport } from './routes/api/stream.seg'
 import { Route as ApiStreamIdRouteImport } from './routes/api/stream.$id'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
+import { Route as AuthenticatedAdminWorldCupRouteImport } from './routes/_authenticated/admin.world-cup'
 import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin.transactions'
@@ -122,6 +123,12 @@ const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   path: '/api/public/stripe-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminWorldCupRoute =
+  AuthenticatedAdminWorldCupRouteImport.update({
+    id: '/world-cup',
+    path: '/world-cup',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminWatchLiveRoute =
   AuthenticatedAdminWatchLiveRouteImport.update({
     id: '/watch-live',
@@ -253,6 +260,7 @@ export interface FileRoutesByFullPath {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
+  '/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
@@ -286,6 +294,7 @@ export interface FileRoutesByTo {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
+  '/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
@@ -322,6 +331,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
+  '/_authenticated/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
@@ -358,6 +368,7 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/users'
     | '/admin/watch-live'
+    | '/admin/world-cup'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
     | '/api/stream/seg'
@@ -391,6 +402,7 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/users'
     | '/admin/watch-live'
+    | '/admin/world-cup'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
     | '/api/stream/seg'
@@ -426,6 +438,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/transactions'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/watch-live'
+    | '/_authenticated/admin/world-cup'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
     | '/api/stream/seg'
@@ -561,6 +574,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/stripe-webhook'
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin/world-cup': {
+      id: '/_authenticated/admin/world-cup'
+      path: '/world-cup'
+      fullPath: '/admin/world-cup'
+      preLoaderRoute: typeof AuthenticatedAdminWorldCupRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/watch-live': {
       id: '/_authenticated/admin/watch-live'
@@ -702,6 +722,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminTransactionsRoute: typeof AuthenticatedAdminTransactionsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminWatchLiveRoute: typeof AuthenticatedAdminWatchLiveRoute
+  AuthenticatedAdminWorldCupRoute: typeof AuthenticatedAdminWorldCupRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
@@ -723,6 +744,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminTransactionsRoute: AuthenticatedAdminTransactionsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedAdminWatchLiveRoute: AuthenticatedAdminWatchLiveRoute,
+  AuthenticatedAdminWorldCupRoute: AuthenticatedAdminWorldCupRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
