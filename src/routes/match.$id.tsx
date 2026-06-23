@@ -180,14 +180,13 @@ function MatchPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Unlock the live stream for this match — one-time payment, instant access.
               </p>
-              <button
-                onClick={handleBuy}
-                disabled={buying}
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              <Link
+                to="/pricing"
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                Buy access — {formatMoney(access!.price_cents, access!.currency)}
-              </button>
+                <Lock className="h-4 w-4" />
+                View plans to unlock
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">
