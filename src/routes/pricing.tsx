@@ -48,6 +48,26 @@ const features = [
 
 function PricingPage() {
   const [selected, setSelected] = useState("12m");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const checkoutFn = useServerFn(createPlanCheckout);
+
+  async function handleChoose(planId: string) {
+    setSelected(planId);
+    setLoadingId(planId);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.assign(`/auth?redirect=${encodeURIComponent("/pricing")}`);
+        return;
+      }
+      const res = await checkoutFn({ data: { planId: planId as "1m" | "3m" | "6m" | "12m" } });
+      if (res.url) window.location.assign(res.url);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Checkout failed");
+    } finally {
+      setLoadingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen">
