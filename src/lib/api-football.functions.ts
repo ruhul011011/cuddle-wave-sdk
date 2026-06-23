@@ -102,6 +102,57 @@ export const getScheduleFeed = createServerFn({ method: "GET" }).handler(async (
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 });
 
+export const POPULAR_LEAGUES: Array<{ id: number; name: string; country?: string }> = [
+  { id: 1, name: "World Cup" },
+  { id: 4, name: "Euro Championship" },
+  { id: 9, name: "Copa America" },
+  { id: 2, name: "UEFA Champions League" },
+  { id: 3, name: "UEFA Europa League" },
+  { id: 848, name: "UEFA Conference League" },
+  { id: 5, name: "UEFA Nations League" },
+  { id: 39, name: "Premier League", country: "England" },
+  { id: 40, name: "Championship", country: "England" },
+  { id: 45, name: "FA Cup", country: "England" },
+  { id: 140, name: "La Liga", country: "Spain" },
+  { id: 135, name: "Serie A", country: "Italy" },
+  { id: 78, name: "Bundesliga", country: "Germany" },
+  { id: 61, name: "Ligue 1", country: "France" },
+  { id: 88, name: "Eredivisie", country: "Netherlands" },
+  { id: 94, name: "Primeira Liga", country: "Portugal" },
+  { id: 203, name: "Süper Lig", country: "Turkey" },
+  { id: 253, name: "MLS", country: "USA" },
+  { id: 307, name: "Saudi Pro League", country: "Saudi Arabia" },
+  { id: 71, name: "Brasileirão Série A", country: "Brazil" },
+  { id: 128, name: "Liga Profesional", country: "Argentina" },
+  { id: 188, name: "A-League", country: "Australia" },
+  { id: 98, name: "J1 League", country: "Japan" },
+];
+
+export const listPopularLeagues = createServerFn({ method: "GET" }).handler(async () => {
+  return POPULAR_LEAGUES;
+});
+
+export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
+  .inputValidator((d: { leagueId: number; date: string }) => d)
+  .handler(async ({ data }) => {
+    // Try a few seasons since World Cup / cup competitions may run across years
+    const year = Number(data.date.slice(0, 4));
+    const seasons = [year, year - 1, year + 1];
+    let raw: any[] = [];
+    for (const season of seasons) {
+      const list = await af<any[]>(
+        `/fixtures?league=${data.leagueId}&season=${season}&date=${data.date}`,
+      ).catch(() => []);
+      if (list.length) { raw = list; break; }
+    }
+    // Fallback: any fixture that day filtered by league id
+    if (!raw.length) {
+      const all = await af<any[]>(`/fixtures?date=${data.date}`).catch(() => []);
+      raw = all.filter((r) => r.league?.id === data.leagueId);
+    }
+    return raw.map(normalize).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  });
+
 export type FixtureEvent = {
   minute: number;
   extra?: number;
