@@ -51,6 +51,13 @@ function TopLeaguesPage() {
   const addFn = useServerFn(addTopLeague);
   const updateFn = useServerFn(updateTopLeague);
   const delFn = useServerFn(deleteTopLeague);
+  const availableFn = useServerFn(listAvailableLeagues);
+
+  const availableQ = useQuery({
+    queryKey: ["api-football", "leagues", "all"],
+    queryFn: () => availableFn(),
+    staleTime: 1000 * 60 * 60,
+  });
 
   const q = useQuery({ queryKey: ["admin", "top-leagues"], queryFn: () => listFn() });
   const rows = (q.data ?? []) as LeagueRow[];
