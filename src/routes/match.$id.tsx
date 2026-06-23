@@ -70,7 +70,9 @@ function MatchPage() {
   const { data: access, refetch: refetchAccess } = useQuery(accessQuery(id));
   const { data: streams = [] } = useQuery({
     ...streamsQuery(id),
-    enabled: !!access && (access.access === "free" || access.hasAccess),
+    // Server-side gating filters URLs; we always fetch so ads/mix users see
+    // the unlocked links. Premium-locked fixtures return [] and show the buy CTA.
+    enabled: !!access && !(access.access === "premium" && !access.hasAccess),
   });
   const checkoutFn = useServerFn(createMatchCheckout);
   const [buying, setBuying] = useState(false);
@@ -80,6 +82,8 @@ function MatchPage() {
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
+  const isMixLocked = access?.access === "mix" && !access.hasAccess;
+  const showAdsNotice = access?.access === "ads";
 
   async function handleBuy() {
     setBuying(true);
