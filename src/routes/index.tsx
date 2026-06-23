@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
@@ -17,28 +17,21 @@ import {
   Radio,
 } from "lucide-react";
 
-async function loadHomeFeed() {
-  const [feed, streamedIds] = await Promise.all([
-    getHomeFeed(),
-    listStreamedFixtureIds().catch(() => [] as number[]),
-  ]);
-  const streamed = new Set(streamedIds);
-  // "Live" on the home page = matches that have admin-added streams.
-  const liveFromApi = feed.live.filter((m) => streamed.has(Number(m.id)));
-  const knownIds = new Set(liveFromApi.map((m) => Number(m.id)));
-  const missing = streamedIds.filter((id) => !knownIds.has(id));
-  const extra = missing.length
-    ? await getFixturesByIds({ data: { ids: missing } }).catch(() => [] as Fixture[])
-    : [];
-  const live = [...liveFromApi, ...extra].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
-  return { live, upcoming: feed.upcoming };
-}
-
+// Critical path: only the home feed blocks SSR. Streamed-ids + missing-fixtures
+// hydrate client-side after first paint.
 const homeFeedQuery = queryOptions({
-  queryKey: ["home-feed-with-streams"],
-  queryFn: loadHomeFeed,
-  staleTime: 15_000,
-  refetchInterval: 30_000,
+  queryKey: ["home-feed"],
+  queryFn: () => getHomeFeed(),
+  staleTime: 60_000,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+});
+
+const streamedIdsQuery = queryOptions({
+  queryKey: ["streamed-fixture-ids"],
+  queryFn: () => listStreamedFixtureIds().catch(() => [] as number[]),
+  staleTime: 60_000,
+  refetchOnWindowFocus: false,
 });
 
 export const Route = createFileRoute("/")({
@@ -64,10 +57,25 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { data } = useSuspenseQuery(homeFeedQuery);
-  const live = data.live;
-  const upcoming = data.upcoming;
+  const { data: feed } = useSuspenseQuery(homeFeedQuery);
+  // Client-only: which fixtures have admin streams
+  const { data: streamedIds = [] } = useQuery(streamedIdsQuery);
+  // Client-only: fetch any streamed fixtures missing from the popular-league feed
+  const knownIds = new Set(feed.live.map((m) => Number(m.id)));
+  const missing = streamedIds.filter((id) => !knownIds.has(id));
+  const { data: extraLive = [] } = useQuery({
+    queryKey: ["home-extra-live", missing.sort().join(",")],
+    queryFn: () => getFixturesByIds({ data: { ids: missing } }),
+    enabled: missing.length > 0,
+    staleTime: 60_000,
+  });
+
+  const streamed = new Set(streamedIds);
+  const liveFromFeed = feed.live.filter((m) => streamed.has(Number(m.id)));
+  const live = [...liveFromFeed, ...extraLive].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  const upcoming = feed.upcoming;
   const featured = upcoming[0] ?? live[0];
+
 
   return (
     <div className="min-h-screen">
@@ -90,7 +98,7 @@ function Index() {
                 to="/leagues"
                 className={`group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br ${l.accent} p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50`}
               >
-                <img src={l.logo} alt="" className="absolute -right-4 -top-4 h-24 w-24 opacity-20 transition-transform group-hover:scale-110" />
+                <img src={l.logo} alt="" loading="lazy" decoding="async" className="absolute -right-4 -top-4 h-24 w-24 opacity-20 transition-transform group-hover:scale-110" />
                 <div className="relative">
                   <div className="font-display text-base leading-tight">{l.name}</div>
                   <div className="mt-6 text-xs text-muted-foreground flex items-center justify-between">
@@ -125,7 +133,7 @@ function Index() {
                 {topLeagues.map((l) => (
                   <li key={l.id}>
                     <Link to="/leagues" className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
-                      <img src={l.logo} alt="" className="h-7 w-7 rounded-full bg-secondary p-0.5" />
+                      <img src={l.logo} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full bg-secondary p-0.5" />
                       <span className="flex-1 truncate">{l.name}</span>
                       <span className="text-xs text-muted-foreground">{l.country}</span>
                     </Link>
@@ -139,7 +147,7 @@ function Index() {
                 {popularTeams.map((t) => (
                   <li key={t.id}>
                     <a className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary cursor-pointer transition-colors">
-                      <img src={t.logo} alt="" className="h-7 w-7 rounded-full" />
+                      <img src={t.logo} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full" />
                       <span className="flex-1 truncate">{t.name}</span>
                     </a>
                   </li>
@@ -270,7 +278,7 @@ function FixtureRow({ match: m }: { match: Fixture }) {
     >
       <div className="mb-3 flex items-center justify-between text-xs">
         <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-muted-foreground">
-          {m.leagueLogo && <img src={m.leagueLogo} alt="" className="h-3 w-3" />}
+          {m.leagueLogo && <img src={m.leagueLogo} alt="" loading="lazy" decoding="async" className="h-3 w-3" />}
           {m.league}
         </span>
         {isLive ? (
@@ -283,7 +291,7 @@ function FixtureRow({ match: m }: { match: Fixture }) {
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <img src={m.homeLogo} alt="" className="h-8 w-8 rounded-full object-cover bg-secondary" />
+          <img src={m.homeLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
           <span className="font-display text-base sm:text-lg truncate">{m.homeTeam}</span>
         </div>
         <div className="font-display text-lg tracking-wider text-muted-foreground">
@@ -295,7 +303,7 @@ function FixtureRow({ match: m }: { match: Fixture }) {
         </div>
         <div className="flex items-center justify-end gap-3 min-w-0">
           <span className="font-display text-base sm:text-lg truncate text-right">{m.awayTeam}</span>
-          <img src={m.awayLogo} alt="" className="h-8 w-8 rounded-full object-cover bg-secondary" />
+          <img src={m.awayLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
         </div>
       </div>
     </Link>
