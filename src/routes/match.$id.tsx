@@ -45,11 +45,7 @@ export const Route = createFileRoute("/match/$id")({
       { name: "description", content: "Live football match details, lineups and events." },
     ],
   }),
-  errorComponent: ({ error }) => (
-    <div className="min-h-screen grid place-items-center p-8 text-center">
-      <p className="text-muted-foreground">{error.message}</p>
-    </div>
-  ),
+  errorComponent: ({ error, reset }) => <MatchError message={error.message} reset={reset} />,
   notFoundComponent: () => (
     <div className="min-h-screen">
       <Header />
