@@ -1,9 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
-import { Play, Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User } from "lucide-react";
+import { getStreamsForFixture } from "@/lib/streams.functions";
+import { StreamPlayer } from "@/components/StreamPlayer";
+import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User } from "lucide-react";
 
 const fixtureQuery = (id: string) =>
   queryOptions({
@@ -11,6 +13,13 @@ const fixtureQuery = (id: string) =>
     queryFn: () => getFixtureDetail({ data: { id } }),
     staleTime: 15_000,
     refetchInterval: 30_000,
+  });
+
+const streamsQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["streams", id],
+    queryFn: () => getStreamsForFixture({ data: { fixtureId: Number(id) } }),
+    staleTime: 30_000,
   });
 
 export const Route = createFileRoute("/match/$id")({
@@ -47,6 +56,7 @@ export const Route = createFileRoute("/match/$id")({
 function MatchPage() {
   const { id } = Route.useParams();
   const { data } = useSuspenseQuery(fixtureQuery(id));
+  const { data: streams = [] } = useQuery(streamsQuery(id));
   if (!data) return null;
   const match = data;
   const isLive = match.status === "live";
@@ -89,25 +99,15 @@ function MatchPage() {
           </div>
         </div>
 
-        <div className="mt-8 overflow-hidden rounded-2xl border border-border/60 bg-black">
-          <div className="relative aspect-video w-full pitch-gradient">
-            <div className="absolute inset-0 grid place-items-center">
-              <div className="text-center">
-                <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-primary text-primary-foreground shadow-[0_0_60px_oklch(0.58_0.22_275/0.6)] cursor-pointer hover:scale-105 transition-transform">
-                  <Play className="h-8 w-8 fill-current" />
-                </div>
-                <div className="mt-4 font-display text-2xl tracking-wider">
-                  {isLive ? "TAP TO WATCH LIVE" : match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"}
-                </div>
-                <div className="mt-1 text-sm text-muted-foreground">HD · Multi-language commentary</div>
-              </div>
-            </div>
-            {isLive && (
-              <div className="absolute top-4 left-4 flex items-center gap-2 rounded-md bg-live px-3 py-1 text-xs font-bold uppercase tracking-wider">
-                <Radio className="h-3 w-3" /> Live
-              </div>
-            )}
-          </div>
+        <div className="mt-8">
+          <StreamPlayer
+            sources={streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url }))}
+            isLive={isLive}
+            placeholder={
+              isLive ? "NO STREAM AVAILABLE" :
+              match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"
+            }
+          />
         </div>
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

@@ -14,8 +14,11 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as LeaguesRouteImport } from './routes/leagues'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
+import { Route as AuthenticatedAdminStreamsRouteImport } from './routes/_authenticated/admin.streams'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
@@ -42,6 +45,15 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -52,67 +64,89 @@ const MatchIdRoute = MatchIdRouteImport.update({
   path: '/match/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminStreamsRoute =
+  AuthenticatedAdminStreamsRouteImport.update({
+    id: '/admin/streams',
+    path: '/admin/streams',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
+  '/admin/streams': typeof AuthenticatedAdminStreamsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
+  '/admin/streams': typeof AuthenticatedAdminStreamsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
+  '/_authenticated/admin/streams': typeof AuthenticatedAdminStreamsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
     | '/contact'
     | '/leagues'
     | '/live'
     | '/pricing'
     | '/schedule'
     | '/match/$id'
+    | '/admin/streams'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
     | '/contact'
     | '/leagues'
     | '/live'
     | '/pricing'
     | '/schedule'
     | '/match/$id'
+    | '/admin/streams'
   id:
     | '__root__'
     | '/'
+    | '/_authenticated'
+    | '/auth'
     | '/contact'
     | '/leagues'
     | '/live'
     | '/pricing'
     | '/schedule'
     | '/match/$id'
+    | '/_authenticated/admin/streams'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
   LiveRoute: typeof LiveRoute
@@ -158,6 +192,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -172,11 +220,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MatchIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/admin/streams': {
+      id: '/_authenticated/admin/streams'
+      path: '/admin/streams'
+      fullPath: '/admin/streams'
+      preLoaderRoute: typeof AuthenticatedAdminStreamsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminStreamsRoute: typeof AuthenticatedAdminStreamsRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminStreamsRoute: AuthenticatedAdminStreamsRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
   LiveRoute: LiveRoute,
