@@ -5,6 +5,7 @@ import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
 import { listStreamedFixtureIds } from "@/lib/streams.functions";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
   ChevronRight,
@@ -113,20 +114,8 @@ function Index() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-card p-5">
-              <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
-                  <Send className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="font-display text-lg leading-tight">Join our Telegram</div>
-                  <div className="text-xs text-muted-foreground">Connect with other sports fans</div>
-                </div>
-              </div>
-              <button className="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-                Join Telegram
-              </button>
-            </div>
+            <TelegramJoinCard />
+
 
             <SidebarSection icon={<Trophy className="h-4 w-4 text-primary" />} title="Top Leagues">
               <ul className="divide-y divide-border/60">
@@ -309,3 +298,46 @@ function FixtureRow({ match: m }: { match: Fixture }) {
     </Link>
   );
 }
+
+function TelegramJoinCard() {
+  const { data } = useQuery({
+    queryKey: ["site_settings", "telegram_join_url"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_settings")
+        .select("value")
+        .in("key", ["telegram_join_url", "telegram_username"]);
+      if (error) throw error;
+      const map = new Map((data ?? []).map((r: any) => [r.key, r.value as string]));
+      const url = (map.get("telegram_join_url") || "").trim();
+      const username = (map.get("telegram_username") || "").trim();
+      return url || (username ? `https://t.me/${username.replace(/^@/, "")}` : "");
+    },
+    staleTime: 60_000,
+  });
+  const href = data || "";
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card p-5">
+      <div className="flex items-center gap-3">
+        <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+          <Send className="h-5 w-5" />
+        </div>
+        <div>
+          <div className="font-display text-lg leading-tight">Join our Telegram</div>
+          <div className="text-xs text-muted-foreground">Connect with other sports fans</div>
+        </div>
+      </div>
+      <a
+        href={href || "#"}
+        target="_blank"
+        rel="noreferrer"
+        aria-disabled={!href}
+        onClick={(e) => { if (!href) e.preventDefault(); }}
+        className="mt-4 block w-full rounded-lg bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+      >
+        Join Telegram
+      </a>
+    </div>
+  );
+}
+
