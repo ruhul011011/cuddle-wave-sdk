@@ -85,26 +85,6 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
         )}
       </div>
 
-      {sources.length > 1 && (
-        <div className="flex flex-wrap gap-2 border-t border-border/60 bg-card/60 p-3">
-          <span className="text-xs uppercase tracking-wider text-muted-foreground self-center mr-1">Sources:</span>
-          {sources.map((s) => (
-            <button
-              key={s.id}
-              onClick={() => { setSelectedId(s.id); setStarted(true); }}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition-colors ${
-                s.id === selected.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-foreground hover:bg-secondary/80"
-              }`}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      <StreamDebug source={selected} />
     </div>
   );
 }
