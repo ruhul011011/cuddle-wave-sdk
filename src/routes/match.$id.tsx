@@ -1,15 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
 import { getStreamsForFixture } from "@/lib/streams.functions";
-import { getMatchAccess, createMatchCheckout } from "@/lib/payments.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
-import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock, Loader2 } from "lucide-react";
+import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock } from "lucide-react";
 
 const fixtureQuery = (id: string) =>
   queryOptions({
@@ -62,14 +60,12 @@ function MatchPage() {
   // Fixture metadata is best-effort: when api-football rate-limits or fails,
   // we still render the player using stream rows from our DB so users can watch.
   const { data: fixtureData } = useQuery(fixtureQuery(id));
-  const { data: access, refetch: refetchAccess } = useQuery(accessQuery(id));
+  const { data: access } = useQuery(accessQuery(id));
   const { data: streams = [] } = useQuery({
     ...streamsQuery(id),
     // Streams must load even when fixture metadata fails (rate limit, etc.).
     enabled: !access || !(access.access === "premium" && !access.hasAccess),
   });
-  const checkoutFn = useServerFn(createMatchCheckout);
-  const [buying, setBuying] = useState(false);
   const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
     id,
     league: "",
@@ -96,28 +92,6 @@ function MatchPage() {
   const isMixLocked = access?.access === "mix" && !access.hasAccess;
   const showAdsNotice = access?.access === "ads";
 
-  async function handleBuy() {
-    setBuying(true);
-    try {
-      // Ensure signed in; if not, redirect to /auth with redirect back here.
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        const back = window.location.pathname + window.location.search;
-        window.location.assign(`/auth?redirect=${encodeURIComponent(back)}`);
-        return;
-      }
-      const res = await checkoutFn({ data: { fixtureId: Number(id) } });
-      if (res.alreadyPurchased) {
-        await refetchAccess();
-        return;
-      }
-      if (res.url) window.location.assign(res.url);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Checkout failed");
-    } finally {
-      setBuying(false);
-    }
-  }
 
   return (
     <div className="min-h-screen">
@@ -180,14 +154,13 @@ function MatchPage() {
               <p className="mt-2 text-sm text-muted-foreground">
                 Unlock the live stream for this match — one-time payment, instant access.
               </p>
-              <button
-                onClick={handleBuy}
-                disabled={buying}
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              <Link
+                to="/pricing"
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
               >
-                {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
-                Buy access — {formatMoney(access!.price_cents, access!.currency)}
-              </button>
+                <Lock className="h-4 w-4" />
+                View plans to unlock
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">
@@ -201,14 +174,13 @@ function MatchPage() {
                   <span className="text-muted-foreground">
                     Showing free streams. Premium streams for this match are locked.
                   </span>
-                  <button
-                    onClick={handleBuy}
-                    disabled={buying}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                  <Link
+                    to="/pricing"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                   >
-                    {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
-                    Unlock premium — {formatMoney(access!.price_cents, access!.currency)}
-                  </button>
+                    <Lock className="h-3.5 w-3.5" />
+                    View plans
+                  </Link>
                 </div>
               )}
               <StreamPlayer
