@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -8,8 +8,20 @@ import {
   updateTopLeague,
   deleteTopLeague,
 } from "@/lib/admin.functions";
+import { listAvailableLeagues, type LeagueOption } from "@/lib/api-football.functions";
 import { toast } from "sonner";
-import { GripVertical, Pencil, Plus, Trash2, X, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  GripVertical,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  X,
+} from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/top-leagues")({
   component: TopLeaguesPage,
