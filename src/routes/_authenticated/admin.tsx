@@ -98,7 +98,7 @@ function AdminLayout() {
           <div className="md:hidden">
             <select
               className="input-base bg-card text-sm"
-              onChange={(e) => navigate({ to: e.target.value })}
+              onChange={(e) => navigate({ to: e.target.value as any })}
             >
               {NAV.map((n) => <option key={n.to} value={n.to}>{n.label}</option>)}
             </select>
