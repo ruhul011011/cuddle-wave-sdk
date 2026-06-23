@@ -67,11 +67,41 @@ export const Route = createFileRoute("/match/$id")({
 function MatchPage() {
   const { id } = Route.useParams();
   const { data } = useSuspenseQuery(fixtureQuery(id));
-  const { data: streams = [] } = useQuery(streamsQuery(id));
+  const { data: access, refetch: refetchAccess } = useQuery(accessQuery(id));
+  const { data: streams = [] } = useQuery({
+    ...streamsQuery(id),
+    enabled: !!access && (access.access === "free" || access.hasAccess),
+  });
+  const checkoutFn = useServerFn(createMatchCheckout);
+  const [buying, setBuying] = useState(false);
   if (!data) return null;
   const match = data;
   const isLive = match.status === "live";
   const kickoff = new Date(match.kickoff);
+  const isPaidLocked = access?.access === "paid" && !access.hasAccess;
+
+  async function handleBuy() {
+    setBuying(true);
+    try {
+      // Ensure signed in; if not, redirect to /auth with redirect back here.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        const back = window.location.pathname + window.location.search;
+        window.location.assign(`/auth?redirect=${encodeURIComponent(back)}`);
+        return;
+      }
+      const res = await checkoutFn({ data: { fixtureId: Number(id) } });
+      if (res.alreadyPurchased) {
+        await refetchAccess();
+        return;
+      }
+      if (res.url) window.location.assign(res.url);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Checkout failed");
+    } finally {
+      setBuying(false);
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -111,15 +141,36 @@ function MatchPage() {
         </div>
 
         <div className="mt-8">
-          <StreamPlayer
-            sources={streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url }))}
-            isLive={isLive}
-            placeholder={
-              isLive ? "NO STREAM AVAILABLE" :
-              match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"
-            }
-          />
+          {isPaidLocked ? (
+            <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+                <Lock className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-2xl">Premium match</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Unlock the live stream for this match — one-time payment, instant access.
+              </p>
+              <button
+                onClick={handleBuy}
+                disabled={buying}
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+              >
+                {buying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Lock className="h-4 w-4" />}
+                Buy access — {formatMoney(access!.price_cents, access!.currency)}
+              </button>
+            </div>
+          ) : (
+            <StreamPlayer
+              sources={streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url }))}
+              isLive={isLive}
+              placeholder={
+                isLive ? "NO STREAM AVAILABLE" :
+                match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"
+              }
+            />
+          )}
         </div>
+
 
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InfoCard icon={<MapPin className="h-5 w-5" />} label="Venue" value={match.venue ?? "TBD"} />
