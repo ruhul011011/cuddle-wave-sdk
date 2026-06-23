@@ -14,16 +14,14 @@ export type StreamRow = {
   is_active: boolean;
 };
 
-// Public: get active streams for a fixture
+// Public: get active streams for a fixture.
+// Uses the admin client server-side because match_streams SELECT is
+// restricted to authenticated users at the RLS layer.
 export const getStreamsForFixture = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data }) => {
-    const supabase = createClient<Database>(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_PUBLISHABLE_KEY!,
-      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
-    );
-    const { data: rows, error } = await supabase
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
       .from("match_streams")
       .select("id, fixture_id, label, stream_type, quality, url, is_active")
       .eq("fixture_id", data.fixtureId)
