@@ -85,6 +85,35 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
         )}
       </div>
 
+      {sources.length > 1 && (
+        <div className="border-t border-border/60 bg-card/40 p-4">
+          <div className="flex flex-wrap gap-2">
+            {sources.map((s, i) => {
+              const active = s.id === selected.id;
+              return (
+                <button
+                  key={s.id}
+                  onClick={() => { setSelectedId(s.id); setStarted(true); }}
+                  className={
+                    "flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-bold transition-all " +
+                    (active
+                      ? "bg-gradient-to-r from-pink-400 via-fuchsia-400 to-orange-400 text-white shadow-lg shadow-fuchsia-500/30"
+                      : "bg-secondary/70 text-foreground hover:bg-secondary")
+                  }
+                >
+                  <span className="tracking-wide">HD</span>
+                  <span className={active ? "text-white/95" : "text-amber-400"}>
+                    {s.label?.toUpperCase() || `SERVER ${i + 1}`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Choose a server and playback will start automatically (tap the thumbnail if it doesn't).
+          </p>
+        </div>
+      )}
     </div>
   );
 }
