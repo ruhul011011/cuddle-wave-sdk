@@ -96,7 +96,7 @@ function Index() {
             {popularLeagues.map((l) => (
               <Link
                 key={l.id}
-                to="/leagues"
+                to={l.id === "wc" ? "/world-cup" : "/leagues"}
                 className={`group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br ${l.accent} p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50`}
               >
                 <img src={l.logo} alt="" loading="lazy" decoding="async" className="absolute -right-4 -top-4 h-24 w-24 opacity-20 transition-transform group-hover:scale-110" />
