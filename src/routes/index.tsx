@@ -38,12 +38,46 @@ const streamedIdsQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Watch Football World Cup 2026 Live in HD" },
-      { name: "description", content: "Watch the FIFA World Cup 2026 live in HD. Free football streaming for every World Cup match, fixtures, groups and highlights." },
-      { property: "og:title", content: "Watch Football World Cup 2026 Live in HD" },
-      { property: "og:description", content: "Live HD streams for every FIFA World Cup 2026 match — fixtures, groups and highlights." },
+      { title: "World Cup Live TV — Watch FIFA World Cup 2026 Live in HD Free | World Cup TV" },
+      { name: "description", content: "World Cup Live TV — watch every FIFA World Cup 2026 match live in HD for free. Live scores, fixtures, schedule, groups and points table on World Cup TV." },
+      { name: "keywords", content: "World Cup Live TV, World Cup TV, World Cup TV 2026, FIFA World Cup 2026 Live, Watch World Cup 2026 Online, World Cup Live Streaming Free, World Cup HD TV, Football World Cup Live" },
+      { property: "og:title", content: "World Cup Live TV — Watch FIFA World Cup 2026 Live HD Free" },
+      { property: "og:description", content: "Free World Cup Live TV streaming for every FIFA World Cup 2026 match. Fixtures, groups and points table." },
+      { property: "og:url", content: "https://www.worldcuptv.to/" },
+      { property: "og:type", content: "website" },
+    ],
+    links: [{ rel: "canonical", href: "https://www.worldcuptv.to/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SportsEvent",
+          name: "FIFA World Cup 2026",
+          alternateName: "World Cup 2026 Live TV",
+          description: "Watch FIFA World Cup 2026 live on World Cup TV. Free HD live streaming of all World Cup matches.",
+          startDate: "2026-06-11",
+          endDate: "2026-07-19",
+          eventStatus: "https://schema.org/EventScheduled",
+          eventAttendanceMode: "https://schema.org/MixedEventAttendanceMode",
+          location: [
+            { "@type": "Country", name: "United States" },
+            { "@type": "Country", name: "Canada" },
+            { "@type": "Country", name: "Mexico" },
+          ],
+          organizer: { "@type": "Organization", name: "FIFA", url: "https://www.fifa.com" },
+          offers: {
+            "@type": "Offer",
+            url: "https://www.worldcuptv.to/",
+            price: "0",
+            priceCurrency: "USD",
+            availability: "https://schema.org/InStock",
+          },
+        }),
+      },
     ],
   }),
+
   loader: ({ context }) => context.queryClient.ensureQueryData(homeFeedQuery),
   errorComponent: ({ error }) => (
     <div className="min-h-screen grid place-items-center p-8 text-center">
