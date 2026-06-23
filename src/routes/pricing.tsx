@@ -110,14 +110,17 @@ function PricingPage() {
                 </div>
                 <div className="mt-1 text-sm text-emerald-400">Save ${save}</div>
                 <button
-                  onClick={() => setSelected(p.id)}
-                  className={`mt-5 inline-flex justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-colors ${
+                  onClick={() => handleChoose(p.id)}
+                  disabled={loadingId !== null}
+                  className={`mt-5 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
                     isSelected
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-secondary text-foreground hover:bg-secondary/80"
                   }`}
                 >
-                  {isSelected ? "Selected" : "Choose Plan"}
+                  {loadingId === p.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {loadingId === p.id ? "Redirecting…" : `Choose ${p.name}`}
+                </button>
                 </button>
                 <ul className="mt-6 space-y-3 text-sm">
                   {features.map((f) => (
