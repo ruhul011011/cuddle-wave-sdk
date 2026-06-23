@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Tv, Flame, Trophy, Users, Bell, MessageSquare, Star,
   UsersRound, CreditCard, BarChart3, LifeBuoy, PlayCircle, Crown, Lightbulb,
-  LogOut, Shield, Loader2, Webhook,
+  LogOut, Shield, Loader2, Webhook, Send,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
