@@ -145,6 +145,7 @@ export type Database = {
           id: string
           is_active: boolean
           label: string
+          link_mode: string
           quality: string
           stream_type: string
           updated_at: string
@@ -157,6 +158,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          link_mode?: string
           quality?: string
           stream_type: string
           updated_at?: string
@@ -169,6 +171,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          link_mode?: string
           quality?: string
           stream_type?: string
           updated_at?: string

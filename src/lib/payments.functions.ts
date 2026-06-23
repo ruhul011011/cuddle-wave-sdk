@@ -3,15 +3,23 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
 
+export type AccessType = "free" | "premium" | "ads" | "mix";
+
 export type MatchAccess = {
   fixture_id: number;
-  access: "free" | "paid";
+  access: AccessType;
   price_cents: number;
   currency: string;
   hasAccess: boolean;
   available_from: string | null;
   isAvailable: boolean;
 };
+
+function normalizeAccess(v: string | null | undefined): AccessType {
+  if (v === "paid") return "premium";
+  if (v === "premium" || v === "ads" || v === "mix") return v;
+  return "free";
+}
 
 // Public: read access info + whether current user has purchased.
 export const getMatchAccess = createServerFn({ method: "GET" })
@@ -24,15 +32,16 @@ export const getMatchAccess = createServerFn({ method: "GET" })
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
 
-    const access = (row?.access ?? "free") as "free" | "paid";
+    const access = normalizeAccess(row?.access as string | null | undefined);
     const price_cents = row?.price_cents ?? 0;
     const currency = row?.currency ?? "usd";
     const available_from = (row?.available_from as string | null | undefined) ?? null;
     const isAvailable = !available_from || new Date(available_from).getTime() <= Date.now();
 
     // Determine signed-in user from bearer token (optional).
-    let hasAccess = access === "free";
-    if (!hasAccess) {
+    const gated = access === "premium";
+    let hasAccess = !gated;
+    if (gated) {
       const auth = getRequestHeader("authorization") ?? "";
       const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
       if (token) {
@@ -60,7 +69,7 @@ export const setMatchAccess = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
       fixture_id: z.number().int().positive(),
-      access: z.enum(["free", "paid"]),
+      access: z.enum(["free", "premium", "ads", "mix"]),
       price_cents: z.number().int().min(0).default(0),
       currency: z.string().min(3).max(3).default("usd"),
       available_from: z.string().datetime().nullable().optional(),
@@ -78,7 +87,7 @@ export const setMatchAccess = createServerFn({ method: "POST" })
         {
           fixture_id: data.fixture_id,
           access: data.access,
-          price_cents: data.access === "paid" ? data.price_cents : 0,
+          price_cents: data.access === "premium" ? data.price_cents : 0,
           currency: data.currency.toLowerCase(),
           available_from: data.available_from ?? null,
         },
@@ -102,7 +111,7 @@ export const createMatchCheckout = createServerFn({ method: "POST" })
       .select("access, price_cents, currency")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
-    if (!acc || acc.access !== "paid") throw new Error("This match is not a paid match");
+    if (!acc || !(acc.access === "premium" || acc.access === "paid")) throw new Error("This match is not a paid match");
     if (!acc.price_cents || acc.price_cents < 50) throw new Error("Invalid price");
 
     // Already purchased?
