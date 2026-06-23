@@ -3,11 +3,28 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { MatchCard } from "@/components/site/MatchCard";
-import { getLiveFixtures } from "@/lib/api-football.functions";
+import { getLiveFixtures, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
+import { listStreamedFixtureIds } from "@/lib/streams.functions";
+
+async function loadLive(): Promise<Fixture[]> {
+  const [live, streamedIds] = await Promise.all([
+    getLiveFixtures().catch(() => [] as Fixture[]),
+    listStreamedFixtureIds().catch(() => [] as number[]),
+  ]);
+  const liveIds = new Set(live.map((m) => Number(m.id)));
+  const missing = streamedIds.filter((id) => !liveIds.has(id));
+  const streamed = missing.length
+    ? await getFixturesByIds({ data: { ids: missing } }).catch(() => [] as Fixture[])
+    : [];
+  // Merge & dedupe; streamed matches (even if not "live" on api-football) should show here.
+  const map = new Map<string, Fixture>();
+  for (const m of [...live, ...streamed]) map.set(m.id, m);
+  return Array.from(map.values()).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+}
 
 const liveQuery = queryOptions({
-  queryKey: ["live-fixtures"],
-  queryFn: () => getLiveFixtures(),
+  queryKey: ["live-fixtures-with-streams"],
+  queryFn: loadLive,
   staleTime: 10_000,
   refetchInterval: 15_000,
 });
@@ -40,7 +57,7 @@ function LivePage() {
         <div className="mb-8">
           <div className="live-dot text-xs font-semibold uppercase tracking-[0.2em] text-live">Live Now</div>
           <h1 className="mt-2 font-display text-4xl sm:text-5xl">Matches streaming live</h1>
-          <p className="mt-2 text-muted-foreground">{live.length} matches currently live across the world.</p>
+          <p className="mt-2 text-muted-foreground">{live.length} matches currently available to stream.</p>
         </div>
         {live.length === 0 ? (
           <div className="rounded-xl border border-border/60 bg-card p-12 text-center text-muted-foreground">
