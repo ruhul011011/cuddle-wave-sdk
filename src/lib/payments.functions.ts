@@ -3,15 +3,23 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
 
+export type AccessType = "free" | "premium" | "ads" | "mix";
+
 export type MatchAccess = {
   fixture_id: number;
-  access: "free" | "paid";
+  access: AccessType;
   price_cents: number;
   currency: string;
   hasAccess: boolean;
   available_from: string | null;
   isAvailable: boolean;
 };
+
+function normalizeAccess(v: string | null | undefined): AccessType {
+  if (v === "paid") return "premium";
+  if (v === "premium" || v === "ads" || v === "mix") return v;
+  return "free";
+}
 
 // Public: read access info + whether current user has purchased.
 export const getMatchAccess = createServerFn({ method: "GET" })
