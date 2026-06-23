@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as WorldCupRouteImport } from './routes/world-cup'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as LeaguesRouteImport } from './routes/leagues'
@@ -47,6 +48,11 @@ import { Route as AuthenticatedAdminAdminsRouteImport } from './routes/_authenti
 const WorldCupRoute = WorldCupRouteImport.update({
   id: '/world-cup',
   path: '/world-cup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ScheduleRoute = ScheduleRouteImport.update({
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/leagues': typeof LeaguesRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/live': typeof AuthenticatedLiveRoute
@@ -273,6 +280,7 @@ export interface FileRoutesByTo {
   '/leagues': typeof LeaguesRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/live': typeof AuthenticatedLiveRoute
   '/admin/login': typeof AdminLoginRoute
@@ -309,6 +317,7 @@ export interface FileRoutesById {
   '/leagues': typeof LeaguesRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/live': typeof AuthenticatedLiveRoute
@@ -346,6 +355,7 @@ export interface FileRouteTypes {
     | '/leagues'
     | '/pricing'
     | '/schedule'
+    | '/sitemap.xml'
     | '/world-cup'
     | '/admin'
     | '/live'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/leagues'
     | '/pricing'
     | '/schedule'
+    | '/sitemap.xml'
     | '/world-cup'
     | '/live'
     | '/admin/login'
@@ -416,6 +427,7 @@ export interface FileRouteTypes {
     | '/leagues'
     | '/pricing'
     | '/schedule'
+    | '/sitemap.xml'
     | '/world-cup'
     | '/_authenticated/admin'
     | '/_authenticated/live'
@@ -453,6 +465,7 @@ export interface RootRouteChildren {
   LeaguesRoute: typeof LeaguesRoute
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WorldCupRoute: typeof WorldCupRoute
   AdminLoginRoute: typeof AdminLoginRoute
   MatchIdRoute: typeof MatchIdRoute
@@ -468,6 +481,13 @@ declare module '@tanstack/react-router' {
       path: '/world-cup'
       fullPath: '/world-cup'
       preLoaderRoute: typeof WorldCupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/schedule': {
@@ -772,6 +792,7 @@ const rootRouteChildren: RootRouteChildren = {
   LeaguesRoute: LeaguesRoute,
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   WorldCupRoute: WorldCupRoute,
   AdminLoginRoute: AdminLoginRoute,
   MatchIdRoute: MatchIdRoute,
