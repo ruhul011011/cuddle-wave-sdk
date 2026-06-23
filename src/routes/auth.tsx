@@ -21,7 +21,6 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const navigate = useNavigate();
   const search = Route.useSearch();
   const redirectTo = search.redirect && search.redirect.startsWith("/") ? search.redirect : "/";
   const [mode, setMode] = useState<"signin" | "signup">("signin");
