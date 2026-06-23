@@ -11,13 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as PricingRouteImport } from './routes/pricing'
-import { Route as LiveRouteImport } from './routes/live'
 import { Route as LeaguesRouteImport } from './routes/leagues'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
+import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
@@ -43,11 +43,6 @@ const ScheduleRoute = ScheduleRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LiveRoute = LiveRouteImport.update({
-  id: '/live',
-  path: '/live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaguesRoute = LeaguesRouteImport.update({
@@ -78,6 +73,11 @@ const MatchIdRoute = MatchIdRouteImport.update({
   id: '/match/$id',
   path: '/match/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
+  id: '/live',
+  path: '/live',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
@@ -178,10 +178,10 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
-  '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/live': typeof AuthenticatedLiveRoute
   '/match/$id': typeof MatchIdRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -204,9 +204,9 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
-  '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
+  '/live': typeof AuthenticatedLiveRoute
   '/match/$id': typeof MatchIdRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -231,10 +231,10 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
-  '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
+  '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/match/$id': typeof MatchIdRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -259,10 +259,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leagues'
-    | '/live'
     | '/pricing'
     | '/schedule'
     | '/admin'
+    | '/live'
     | '/match/$id'
     | '/admin/analytics'
     | '/admin/client-query'
@@ -285,9 +285,9 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leagues'
-    | '/live'
     | '/pricing'
     | '/schedule'
+    | '/live'
     | '/match/$id'
     | '/admin/analytics'
     | '/admin/client-query'
@@ -311,10 +311,10 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leagues'
-    | '/live'
     | '/pricing'
     | '/schedule'
     | '/_authenticated/admin'
+    | '/_authenticated/live'
     | '/match/$id'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/client-query'
@@ -339,7 +339,6 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
-  LiveRoute: typeof LiveRoute
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   MatchIdRoute: typeof MatchIdRoute
@@ -359,13 +358,6 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/live': {
-      id: '/live'
-      path: '/live'
-      fullPath: '/live'
-      preLoaderRoute: typeof LiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leagues': {
@@ -409,6 +401,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/match/$id'
       preLoaderRoute: typeof MatchIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/live': {
+      id: '/_authenticated/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof AuthenticatedLiveRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
@@ -566,10 +565,12 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
+  AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
+  AuthenticatedLiveRoute: AuthenticatedLiveRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -581,7 +582,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
-  LiveRoute: LiveRoute,
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   MatchIdRoute: MatchIdRoute,
