@@ -103,6 +103,8 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           ))}
         </div>
       )}
+
+      <StreamDebug source={selected} />
     </div>
   );
 }
