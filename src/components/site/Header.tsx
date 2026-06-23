@@ -1,12 +1,12 @@
 import { Link } from "@tanstack/react-router";
 import { Search } from "lucide-react";
 
-const NAV = [
+const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/", label: "Home", exact: true },
   { to: "/live", label: "Live" },
   { to: "/schedule", label: "Matches" },
   { to: "/leagues", label: "Leagues" },
-] as const;
+];
 
 export function Header() {
   return (
