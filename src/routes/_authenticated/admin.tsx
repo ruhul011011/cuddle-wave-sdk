@@ -34,10 +34,13 @@ const NAV: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
 
 function AdminLayout() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const checkAdminFn = useServerFn(checkIsAdmin);
   const adminQ = useQuery({ queryKey: ["isAdmin"], queryFn: () => checkAdminFn() });
 
   async function signOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
     await supabase.auth.signOut();
     navigate({ to: "/auth", replace: true });
   }
