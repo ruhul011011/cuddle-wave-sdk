@@ -292,3 +292,11 @@ function eventIcon(type: string, detail: string) {
   if (t === "subst") return <ArrowLeftRight className="h-4 w-4 text-sky-400" />;
   return <Radio className="h-3 w-3 text-muted-foreground" />;
 }
+
+function formatMoney(cents: number, currency: string) {
+  try {
+    return new Intl.NumberFormat(undefined, { style: "currency", currency: currency.toUpperCase() }).format(cents / 100);
+  } catch {
+    return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
+  }
+}
