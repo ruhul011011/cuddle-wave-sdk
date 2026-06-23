@@ -94,28 +94,6 @@ function MatchPage() {
   const isMixLocked = access?.access === "mix" && !access.hasAccess;
   const showAdsNotice = access?.access === "ads";
 
-  async function handleBuy() {
-    setBuying(true);
-    try {
-      // Ensure signed in; if not, redirect to /auth with redirect back here.
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        const back = window.location.pathname + window.location.search;
-        window.location.assign(`/auth?redirect=${encodeURIComponent(back)}`);
-        return;
-      }
-      const res = await checkoutFn({ data: { fixtureId: Number(id) } });
-      if (res.alreadyPurchased) {
-        await refetchAccess();
-        return;
-      }
-      if (res.url) window.location.assign(res.url);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : "Checkout failed");
-    } finally {
-      setBuying(false);
-    }
-  }
 
   return (
     <div className="min-h-screen">
