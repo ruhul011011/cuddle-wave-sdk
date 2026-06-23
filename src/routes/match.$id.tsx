@@ -70,7 +70,7 @@ function MatchPage() {
   });
   const checkoutFn = useServerFn(createMatchCheckout);
   const [buying, setBuying] = useState(false);
-  const match = fixtureData ?? ({
+  const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
     id,
     league: "",
     leagueLogo: "",
@@ -79,11 +79,16 @@ function MatchPage() {
     homeLogo: "",
     awayLogo: "",
     kickoff: new Date().toISOString(),
-    status: "live" as const,
+    status: "live",
+    homeScore: undefined,
+    awayScore: undefined,
+    minute: undefined,
+    venue: undefined,
+    referee: undefined,
     events: [],
     lineups: [],
     statistics: [],
-  });
+  };
   const isLive = match.status === "live";
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = access?.access === "premium" && !access.hasAccess;
