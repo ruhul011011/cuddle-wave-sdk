@@ -77,6 +77,7 @@ export type Database = {
       match_access: {
         Row: {
           access: string
+          available_from: string | null
           created_at: string
           currency: string
           fixture_id: number
@@ -85,6 +86,7 @@ export type Database = {
         }
         Insert: {
           access?: string
+          available_from?: string | null
           created_at?: string
           currency?: string
           fixture_id: number
@@ -93,6 +95,7 @@ export type Database = {
         }
         Update: {
           access?: string
+          available_from?: string | null
           created_at?: string
           currency?: string
           fixture_id?: number
