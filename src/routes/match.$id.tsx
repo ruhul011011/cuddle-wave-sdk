@@ -3,7 +3,7 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
-import { Play, Radio, MapPin, Calendar, Whistle, Goal, Square, ArrowLeftRight, User } from "lucide-react";
+import { Play, Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User } from "lucide-react";
 
 const fixtureQuery = (id: string) =>
   queryOptions({
