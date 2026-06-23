@@ -60,7 +60,7 @@ function MatchPage() {
   // Fixture metadata is best-effort: when api-football rate-limits or fails,
   // we still render the player using stream rows from our DB so users can watch.
   const { data: fixtureData } = useQuery(fixtureQuery(id));
-  const { data: access, refetch: refetchAccess } = useQuery(accessQuery(id));
+  const { data: access } = useQuery(accessQuery(id));
   const { data: streams = [] } = useQuery({
     ...streamsQuery(id),
     // Streams must load even when fixture metadata fails (rate limit, etc.).
