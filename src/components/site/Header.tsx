@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, LogOut, Shield } from "lucide-react";
+import { Search, LogOut, Shield, User as UserIcon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
 
