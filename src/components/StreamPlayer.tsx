@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
+import Plyr from "plyr";
+import "plyr/dist/plyr.css";
 import { Play, Radio, Tv } from "lucide-react";
 
 export type StreamSource = {
@@ -71,11 +73,11 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <HlsVideo src={selected.url} type={selected.stream_type} poster={poster} />
+          <PlyrVideo src={selected.url} type={selected.stream_type} poster={poster} isLive={isLive} />
         )}
 
         {isLive && (
-          <div className="pointer-events-none absolute top-4 left-4 flex items-center gap-2 rounded-md bg-live px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground">
+          <div className="pointer-events-none absolute top-4 left-4 z-10 flex items-center gap-2 rounded-md bg-live px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground">
             <Radio className="h-3 w-3" /> Live
           </div>
         )}
@@ -103,41 +105,117 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   );
 }
 
-function HlsVideo({ src, type, poster }: { src: string; type: "hls" | "mp4"; poster?: string }) {
+function PlyrVideo({
+  src,
+  type,
+  poster,
+  isLive,
+}: {
+  src: string;
+  type: "hls" | "mp4";
+  poster?: string;
+  isLive?: boolean;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const plyrRef = useRef<Plyr | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
+    const controls = [
+      "play-large",
+      "play",
+      "rewind",
+      "fast-forward",
+      "progress",
+      "current-time",
+      "duration",
+      "mute",
+      "volume",
+      "settings",
+      "pip",
+      "airplay",
+      "fullscreen",
+    ];
+
+    // For live streams, hide seek-related controls
+    const liveControls = ["play-large", "play", "mute", "volume", "settings", "pip", "airplay", "fullscreen"];
+
+    const initPlyr = (qualities?: number[]) => {
+      plyrRef.current = new Plyr(video, {
+        controls: isLive ? liveControls : controls,
+        settings: ["captions", "quality", "speed"],
+        ratio: "16:9",
+        keyboard: { focused: true, global: true },
+        tooltips: { controls: true, seek: true },
+        quality: qualities && qualities.length
+          ? {
+              default: qualities[0],
+              options: qualities,
+              forced: true,
+              onChange: (newQuality: number) => {
+                if (!hlsRef.current) return;
+                hlsRef.current.levels.forEach((level, i) => {
+                  if (level.height === newQuality) hlsRef.current!.currentLevel = i;
+                });
+              },
+            }
+          : undefined,
+      });
+    };
+
     if (type === "mp4") {
       video.src = src;
+      initPlyr();
       video.play().catch(() => {});
-      return;
-    }
-
-    // HLS
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS (Safari/iOS)
       video.src = src;
+      initPlyr();
       video.play().catch(() => {});
-      return;
-    }
-    if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true });
+    } else if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 60,
+      });
+      hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-      return () => hls.destroy();
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        const qualities = hls.levels.map((l) => l.height).filter((h, i, a) => h && a.indexOf(h) === i);
+        initPlyr(qualities.length ? qualities : undefined);
+        video.play().catch(() => {});
+      });
+      hls.on(Hls.Events.ERROR, (_e, data) => {
+        if (!data.fatal) return;
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+        else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+      });
+    } else {
+      video.src = src;
+      initPlyr();
     }
-  }, [src, type]);
+
+    return () => {
+      plyrRef.current?.destroy();
+      plyrRef.current = null;
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+    };
+  }, [src, type, isLive]);
 
   return (
-    <video
-      ref={videoRef}
-      poster={poster}
-      controls
-      playsInline
-      className="absolute inset-0 h-full w-full bg-black"
-    />
+    <div className="absolute inset-0 h-full w-full bg-black [&_.plyr]:h-full [&_.plyr]:w-full">
+      <video
+        ref={videoRef}
+        poster={poster}
+        playsInline
+        crossOrigin="anonymous"
+        className="h-full w-full"
+      />
+    </div>
   );
 }
