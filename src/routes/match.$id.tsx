@@ -70,8 +70,21 @@ function MatchPage() {
   });
   const checkoutFn = useServerFn(createMatchCheckout);
   const [buying, setBuying] = useState(false);
-  const match = fixtureData ?? null;
-  const isLive = match?.status === "live";
+  const match = fixtureData ?? ({
+    id,
+    league: "",
+    leagueLogo: "",
+    homeTeam: "Home",
+    awayTeam: "Away",
+    homeLogo: "",
+    awayLogo: "",
+    kickoff: new Date().toISOString(),
+    status: "live" as const,
+    events: [],
+    lineups: [],
+    statistics: [],
+  });
+  const isLive = match.status === "live";
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
