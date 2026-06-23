@@ -1,13 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Trophy, Calendar, MapPin, Users, Flag, Clock } from "lucide-react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { supabase } from "@/integrations/supabase/client";
 import {
   wcInfo,
   qualifiedTeams,
-  groupStandings,
+  groupStandings as defaultGroupStandings,
   tournamentSchedule,
   keyMatches,
+  type Group,
 } from "@/lib/world-cup";
 
 export const Route = createFileRoute("/world-cup")({
@@ -23,6 +26,25 @@ export const Route = createFileRoute("/world-cup")({
 });
 
 function WorldCupPage() {
+  const { data: groupStandings = defaultGroupStandings } = useQuery({
+    queryKey: ["site_settings", "world_cup_groups"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "world_cup_groups")
+        .maybeSingle();
+      if (!data?.value) return defaultGroupStandings;
+      try {
+        const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
+        return Array.isArray(parsed) ? (parsed as Group[]) : defaultGroupStandings;
+      } catch {
+        return defaultGroupStandings;
+      }
+    },
+    staleTime: 60_000,
+  });
+
   return (
     <div className="min-h-screen">
       <Header />
