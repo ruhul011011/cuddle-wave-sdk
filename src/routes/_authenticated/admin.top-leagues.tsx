@@ -424,7 +424,7 @@ function LeaguePicker({
                   <Loader2 className="h-4 w-4 animate-spin" /> Loading leagues…
                 </div>
               )}
-              {!loading && error && (
+              {!loading && Boolean(error) && (
                 <div className="p-4 text-xs text-red-400">
                   Failed to load leagues. Check API connection.
                 </div>
