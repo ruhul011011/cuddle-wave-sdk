@@ -18,7 +18,8 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
-import { Route as AuthenticatedAdminStreamsRouteImport } from './routes/_authenticated/admin.streams'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
@@ -64,12 +65,16 @@ const MatchIdRoute = MatchIdRouteImport.update({
   path: '/match/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminStreamsRoute =
-  AuthenticatedAdminStreamsRouteImport.update({
-    id: '/admin/streams',
-    path: '/admin/streams',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,8 +84,9 @@ export interface FileRoutesByFullPath {
   '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
+  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/match/$id': typeof MatchIdRoute
-  '/admin/streams': typeof AuthenticatedAdminStreamsRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -91,7 +97,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
-  '/admin/streams': typeof AuthenticatedAdminStreamsRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -103,8 +109,9 @@ export interface FileRoutesById {
   '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
+  '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/match/$id': typeof MatchIdRoute
-  '/_authenticated/admin/streams': typeof AuthenticatedAdminStreamsRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,8 +123,9 @@ export interface FileRouteTypes {
     | '/live'
     | '/pricing'
     | '/schedule'
+    | '/admin'
     | '/match/$id'
-    | '/admin/streams'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -128,7 +136,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/schedule'
     | '/match/$id'
-    | '/admin/streams'
+    | '/admin'
   id:
     | '__root__'
     | '/'
@@ -139,8 +147,9 @@ export interface FileRouteTypes {
     | '/live'
     | '/pricing'
     | '/schedule'
+    | '/_authenticated/admin'
     | '/match/$id'
-    | '/_authenticated/admin/streams'
+    | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -220,22 +229,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MatchIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/streams': {
-      id: '/_authenticated/admin/streams'
-      path: '/admin/streams'
-      fullPath: '/admin/streams'
-      preLoaderRoute: typeof AuthenticatedAdminStreamsRouteImport
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
   }
 }
 
+interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+}
+
+const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+}
+
+const AuthenticatedAdminRouteWithChildren =
+  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
+
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminStreamsRoute: typeof AuthenticatedAdminStreamsRoute
+  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminStreamsRoute: AuthenticatedAdminStreamsRoute,
+  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
