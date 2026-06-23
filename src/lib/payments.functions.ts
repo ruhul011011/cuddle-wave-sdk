@@ -9,6 +9,8 @@ export type MatchAccess = {
   price_cents: number;
   currency: string;
   hasAccess: boolean;
+  available_from: string | null;
+  isAvailable: boolean;
 };
 
 // Public: read access info + whether current user has purchased.
@@ -18,13 +20,15 @@ export const getMatchAccess = createServerFn({ method: "GET" })
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: row } = await supabaseAdmin
       .from("match_access")
-      .select("fixture_id, access, price_cents, currency")
+      .select("fixture_id, access, price_cents, currency, available_from")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
 
     const access = (row?.access ?? "free") as "free" | "paid";
     const price_cents = row?.price_cents ?? 0;
     const currency = row?.currency ?? "usd";
+    const available_from = (row?.available_from as string | null | undefined) ?? null;
+    const isAvailable = !available_from || new Date(available_from).getTime() <= Date.now();
 
     // Determine signed-in user from bearer token (optional).
     let hasAccess = access === "free";
@@ -47,7 +51,7 @@ export const getMatchAccess = createServerFn({ method: "GET" })
       }
     }
 
-    return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess };
+    return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess, available_from, isAvailable };
   });
 
 // Admin: upsert access for a fixture.
