@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import Plyr from "plyr";
+import * as PlyrNS from "plyr";
+const Plyr = (PlyrNS as any).default ?? (PlyrNS as any);
+type Plyr = InstanceType<typeof Plyr>;
 import "plyr/dist/plyr.css";
 import { Play, Radio, Tv } from "lucide-react";
 
