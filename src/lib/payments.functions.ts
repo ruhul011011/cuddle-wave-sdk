@@ -111,7 +111,7 @@ export const createMatchCheckout = createServerFn({ method: "POST" })
       .select("access, price_cents, currency")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
-    if (!acc || acc.access !== "paid") throw new Error("This match is not a paid match");
+    if (!acc || !(acc.access === "premium" || acc.access === "paid")) throw new Error("This match is not a paid match");
     if (!acc.price_cents || acc.price_cents < 50) throw new Error("Invalid price");
 
     // Already purchased?
