@@ -113,7 +113,7 @@ function MatchPage() {
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <InfoCard icon={<MapPin className="h-5 w-5" />} label="Venue" value={match.venue ?? "TBD"} />
           <InfoCard icon={<Calendar className="h-5 w-5" />} label="Kickoff" value={kickoff.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} />
-          <InfoCard icon={<Whistle className="h-5 w-5" />} label="Referee" value={match.referee ?? "TBD"} />
+          <InfoCard icon={<Flag className="h-5 w-5" />} label="Referee" value={match.referee ?? "TBD"} />
           <InfoCard icon={<Radio className="h-5 w-5" />} label="Status" value={isLive ? `Live · ${match.minute}` : match.status === "finished" ? "Full Time" : "Upcoming"} />
         </div>
 
