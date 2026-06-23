@@ -22,6 +22,7 @@ const NAV: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
   { to: "/admin/notification", label: "Notification", icon: Bell },
   { to: "/admin/client-query", label: "Client Query", icon: MessageSquare },
   { to: "/admin/ratings", label: "Ratings", icon: Star },
+  { to: "/admin/admins", label: "Admin Users", icon: Shield },
   { to: "/admin/users", label: "All Users", icon: UsersRound },
   { to: "/admin/transactions", label: "Transactions", icon: CreditCard },
   { to: "/admin/stripe-webhooks", label: "Stripe Webhooks", icon: Webhook },

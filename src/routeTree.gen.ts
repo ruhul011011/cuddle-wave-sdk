@@ -38,6 +38,7 @@ import { Route as AuthenticatedAdminInsightsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminHotMatchesRouteImport } from './routes/_authenticated/admin.hot-matches'
 import { Route as AuthenticatedAdminClientQueryRouteImport } from './routes/_authenticated/admin.client-query'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
+import { Route as AuthenticatedAdminAdminsRouteImport } from './routes/_authenticated/admin.admins'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
@@ -197,6 +198,12 @@ const AuthenticatedAdminAnalyticsRoute =
     path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminAdminsRoute =
+  AuthenticatedAdminAdminsRouteImport.update({
+    id: '/admins',
+    path: '/admins',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/live': typeof AuthenticatedLiveRoute
   '/match/$id': typeof MatchIdRoute
+  '/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
   '/admin/hot-matches': typeof AuthenticatedAdminHotMatchesRoute
@@ -237,6 +245,7 @@ export interface FileRoutesByTo {
   '/schedule': typeof ScheduleRoute
   '/live': typeof AuthenticatedLiveRoute
   '/match/$id': typeof MatchIdRoute
+  '/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
   '/admin/hot-matches': typeof AuthenticatedAdminHotMatchesRoute
@@ -269,6 +278,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/match/$id': typeof MatchIdRoute
+  '/_authenticated/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
   '/_authenticated/admin/hot-matches': typeof AuthenticatedAdminHotMatchesRoute
@@ -301,6 +311,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/live'
     | '/match/$id'
+    | '/admin/admins'
     | '/admin/analytics'
     | '/admin/client-query'
     | '/admin/hot-matches'
@@ -330,6 +341,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/live'
     | '/match/$id'
+    | '/admin/admins'
     | '/admin/analytics'
     | '/admin/client-query'
     | '/admin/hot-matches'
@@ -361,6 +373,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/live'
     | '/match/$id'
+    | '/_authenticated/admin/admins'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/client-query'
     | '/_authenticated/admin/hot-matches'
@@ -601,10 +614,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/admins': {
+      id: '/_authenticated/admin/admins'
+      path: '/admins'
+      fullPath: '/admin/admins'
+      preLoaderRoute: typeof AuthenticatedAdminAdminsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAdminsRoute: typeof AuthenticatedAdminAdminsRoute
   AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
   AuthenticatedAdminClientQueryRoute: typeof AuthenticatedAdminClientQueryRoute
   AuthenticatedAdminHotMatchesRoute: typeof AuthenticatedAdminHotMatchesRoute
@@ -624,6 +645,7 @@ interface AuthenticatedAdminRouteChildren {
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAdminsRoute: AuthenticatedAdminAdminsRoute,
   AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
   AuthenticatedAdminClientQueryRoute: AuthenticatedAdminClientQueryRoute,
   AuthenticatedAdminHotMatchesRoute: AuthenticatedAdminHotMatchesRoute,
