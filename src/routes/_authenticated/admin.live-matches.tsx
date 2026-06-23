@@ -166,6 +166,46 @@ function AdminLiveMatchesPage() {
           </Field>
         </div>
 
+        <Field label="Availability">
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setAvailability("now")}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                availability === "now"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-foreground hover:bg-secondary/70"
+              }`}
+            >
+              Live now
+            </button>
+            <button
+              type="button"
+              onClick={() => setAvailability("pre10")}
+              disabled={!selectedFixture?.kickoff}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                availability === "pre10"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-foreground hover:bg-secondary/70"
+              }`}
+            >
+              Go live 10 min before kickoff
+            </button>
+          </div>
+          {availability === "pre10" && selectedFixture?.kickoff && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Stream unlocks at{" "}
+              {new Date(new Date(selectedFixture.kickoff).getTime() - 10 * 60 * 1000).toLocaleString(
+                [],
+                { dateStyle: "medium", timeStyle: "short" },
+              )}
+              .
+            </p>
+          )}
+        </Field>
+
+
+
 
         <div>
           <div className="flex items-center justify-between mb-2">
