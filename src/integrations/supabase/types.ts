@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_queries: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          message: string
+          name: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          message: string
+          name: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          message?: string
+          name?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
+      hot_matches: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          fixture_id: number
+          id: string
+          sort_order: number
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          fixture_id: number
+          id?: string
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          fixture_id?: number
+          id?: string
+          sort_order?: number
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       match_streams: {
         Row: {
           created_at: string
@@ -50,6 +110,180 @@ export type Database = {
           stream_type?: string
           updated_at?: string
           url?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          audience: string
+          body: string
+          created_at: string
+          created_by: string | null
+          id: string
+          link: string | null
+          title: string
+        }
+        Insert: {
+          audience?: string
+          body: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link?: string | null
+          title: string
+        }
+        Update: {
+          audience?: string
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          link?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
+      ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          stars: number
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          stars: number
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          stars?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      subscriptions: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          id?: string
+          plan?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      top_leagues: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          league_id: number
+          logo: string | null
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          league_id: number
+          logo?: string | null
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          league_id?: number
+          logo?: string | null
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      top_teams: {
+        Row: {
+          created_at: string
+          id: string
+          logo: string | null
+          name: string
+          sort_order: number
+          team_id: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          name: string
+          sort_order?: number
+          team_id: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          logo?: string | null
+          name?: string
+          sort_order?: number
+          team_id?: number
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          currency: string
+          id: string
+          provider: string | null
+          reference: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          currency?: string
+          id?: string
+          provider?: string | null
+          reference?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          currency?: string
+          id?: string
+          provider?: string | null
+          reference?: string | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
