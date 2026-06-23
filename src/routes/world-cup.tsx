@@ -16,14 +16,19 @@ import {
 export const Route = createFileRoute("/world-cup")({
   head: () => ({
     meta: [
-      { title: "FIFA World Cup 2026 — Schedule, Groups & Points Table" },
-      { name: "description", content: "Complete FIFA World Cup 2026 schedule, group standings, points table, qualified teams and key match dates. Hosts: USA, Canada, Mexico." },
-      { property: "og:title", content: "FIFA World Cup 2026 — Schedule & Points Table" },
-      { property: "og:description", content: "Group standings, tournament schedule and all qualified nations for the 2026 FIFA World Cup." },
+      { title: "World Cup TV 2026 — FIFA World Cup Schedule, Groups & Points Table" },
+      { name: "description", content: "World Cup TV 2026: complete FIFA World Cup schedule, group standings, points table, qualified teams and live TV streaming. Hosts: USA, Canada, Mexico." },
+      { name: "keywords", content: "World Cup TV 2026, World Cup 2026 Schedule, World Cup Points Table, FIFA World Cup Groups, World Cup Live TV, World Cup Fixtures 2026" },
+      { property: "og:title", content: "World Cup TV 2026 — Schedule, Groups & Points Table" },
+      { property: "og:description", content: "FIFA World Cup 2026 group standings, schedule and live TV streaming on World Cup TV." },
+      { property: "og:url", content: "https://www.worldcuptv.to/world-cup" },
+      { property: "og:type", content: "website" },
     ],
+    links: [{ rel: "canonical", href: "https://www.worldcuptv.to/world-cup" }],
   }),
   component: WorldCupPage,
 });
+
 
 function WorldCupPage() {
   const { data: groupStandings = defaultGroupStandings } = useQuery({
