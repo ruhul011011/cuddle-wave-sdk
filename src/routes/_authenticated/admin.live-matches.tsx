@@ -13,7 +13,7 @@ import {
 import { setMatchAccess } from "@/lib/payments.functions";
 import { listPopularLeagues, getFixturesByLeagueDate, getFixturesByIds } from "@/lib/api-football.functions";
 import { toast } from "sonner";
-import { Trash2, Plus, Loader2, Copy, X, Pencil } from "lucide-react";
+import { Trash2, Plus, Loader2, Copy, X, Pencil, Search } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/live-matches")({
   component: AdminLiveMatchesPage,
@@ -98,6 +98,32 @@ function AdminLiveMatchesPage() {
     queryFn: () => fixturesFn({ data: { leagueId: Number(leagueId), date } }),
     enabled: typeof leagueId === "number" && !editingFixture,
   });
+
+  const [search, setSearch] = useState("");
+  const [accessFilter, setAccessFilter] = useState<"all" | AccessType>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "finished">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
+
+  const filteredGroups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (groupsQ.data ?? []).filter((g) => {
+      if (accessFilter !== "all" && g.access !== accessFilter) return false;
+      if (activeFilter === "active" && g.active_count === 0) return false;
+      if (activeFilter === "inactive" && g.active_count > 0) return false;
+      const meta = fixtureMetaMap.get(g.fixture_id);
+      const status = meta?.status ?? "upcoming";
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (!q) return true;
+      const hay = [
+        String(g.fixture_id),
+        meta?.league,
+        meta?.leagueCountry,
+        meta?.homeTeam,
+        meta?.awayTeam,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [groupsQ.data, fixtureMetaMap, search, accessFilter, statusFilter, activeFilter]);
 
   const selectedFixture = useMemo(() => {
     if (editingFixture) {
@@ -451,7 +477,64 @@ function AdminLiveMatchesPage() {
 
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-xl">Live Matches ({groupsQ.data?.length ?? 0})</h2>
+          <h2 className="font-display text-xl">
+            Live Matches ({filteredGroups.length}
+            {groupsQ.data && filteredGroups.length !== groupsQ.data.length ? ` of ${groupsQ.data.length}` : ""})
+          </h2>
+        </div>
+        <div className="mb-3 flex flex-wrap gap-2 items-center">
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search team, league, or fixture ID…"
+              className="input-base bg-background w-full pl-9"
+            />
+          </div>
+          <select
+            className="input-base bg-background"
+            value={accessFilter}
+            onChange={(e) => setAccessFilter(e.target.value as typeof accessFilter)}
+            title="Access type"
+          >
+            <option value="all">All access</option>
+            <option value="free">Free</option>
+            <option value="premium">Premium</option>
+            <option value="ads">With ads</option>
+            <option value="mix">Mix</option>
+          </select>
+          <select
+            className="input-base bg-background"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            title="Match status"
+          >
+            <option value="all">All status</option>
+            <option value="live">Live</option>
+            <option value="upcoming">Upcoming</option>
+            <option value="finished">Finished</option>
+          </select>
+          <select
+            className="input-base bg-background"
+            value={activeFilter}
+            onChange={(e) => setActiveFilter(e.target.value as typeof activeFilter)}
+            title="Active streams"
+          >
+            <option value="all">All streams</option>
+            <option value="active">Active only</option>
+            <option value="inactive">Inactive only</option>
+          </select>
+          {(search || accessFilter !== "all" || statusFilter !== "all" || activeFilter !== "all") && (
+            <button
+              type="button"
+              onClick={() => { setSearch(""); setAccessFilter("all"); setStatusFilter("all"); setActiveFilter("all"); }}
+              className="inline-flex items-center gap-1 rounded-md border border-border/60 px-3 py-2 text-xs hover:bg-secondary/60"
+            >
+              <X className="h-3 w-3" /> Clear
+            </button>
+          )}
         </div>
         <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card">
           <table className="w-full text-sm">
@@ -472,7 +555,7 @@ function AdminLiveMatchesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {(groupsQ.data ?? []).map((g) => {
+              {filteredGroups.map((g) => {
                 const meta = fixtureMetaMap.get(g.fixture_id);
                 const kickoff = meta?.kickoff ? new Date(meta.kickoff) : null;
                 const status = meta?.status ?? "upcoming";
@@ -545,10 +628,10 @@ function AdminLiveMatchesPage() {
                   </tr>
                 );
               })}
-              {(!groupsQ.data || !groupsQ.data.length) && (
+              {filteredGroups.length === 0 && (
                 <tr>
                   <td colSpan={12} className="p-8 text-center text-sm text-muted-foreground">
-                    No live matches yet.
+                    {groupsQ.data && groupsQ.data.length > 0 ? "No matches match your filters." : "No live matches yet."}
                   </td>
                 </tr>
               )}
