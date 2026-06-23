@@ -102,6 +102,7 @@ const streamInputSchema = z.object({
   quality: z.string().min(1).max(20).default("HD"),
   url: z.string().url(),
   is_active: z.boolean().default(true),
+  link_mode: z.enum(["free", "premium", "ads"]).default("free"),
 });
 
 // Admin: create
@@ -117,7 +118,7 @@ export const createStream = createServerFn({ method: "POST" })
     const { data: row, error } = await context.supabase
       .from("match_streams")
       .insert({ ...data, created_by: context.userId })
-      .select("id, fixture_id, label, stream_type, quality, url, is_active")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
       .single();
     if (error) throw new Error(error.message);
     return row as StreamRow;
