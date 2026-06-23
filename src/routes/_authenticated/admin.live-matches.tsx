@@ -73,7 +73,7 @@ function AdminLiveMatchesPage() {
     enabled: groupIds.length > 0,
   });
   const fixtureMetaMap = useMemo(() => {
-    const m = new Map<number, (typeof fixturesMetaQ.data extends Array<infer T> ? T : never)>();
+    const m = new Map<number, NonNullable<typeof fixturesMetaQ.data>[number]>();
     for (const f of fixturesMetaQ.data ?? []) m.set(Number(f.id), f);
     return m;
   }, [fixturesMetaQ.data]);
