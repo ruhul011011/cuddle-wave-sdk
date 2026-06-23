@@ -99,6 +99,32 @@ function AdminLiveMatchesPage() {
     enabled: typeof leagueId === "number" && !editingFixture,
   });
 
+  const [search, setSearch] = useState("");
+  const [accessFilter, setAccessFilter] = useState<"all" | AccessType>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "finished">("all");
+  const [activeFilter, setActiveFilter] = useState<"all" | "active" | "inactive">("all");
+
+  const filteredGroups = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (groupsQ.data ?? []).filter((g) => {
+      if (accessFilter !== "all" && g.access !== accessFilter) return false;
+      if (activeFilter === "active" && g.active_count === 0) return false;
+      if (activeFilter === "inactive" && g.active_count > 0) return false;
+      const meta = fixtureMetaMap.get(g.fixture_id);
+      const status = meta?.status ?? "upcoming";
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+      if (!q) return true;
+      const hay = [
+        String(g.fixture_id),
+        meta?.league,
+        meta?.leagueCountry,
+        meta?.homeTeam,
+        meta?.awayTeam,
+      ].filter(Boolean).join(" ").toLowerCase();
+      return hay.includes(q);
+    });
+  }, [groupsQ.data, fixtureMetaMap, search, accessFilter, statusFilter, activeFilter]);
+
   const selectedFixture = useMemo(() => {
     if (editingFixture) {
       return {
