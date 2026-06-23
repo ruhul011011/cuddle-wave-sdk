@@ -24,6 +24,7 @@ const NAV: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
   { to: "/admin/ratings", label: "Ratings", icon: Star },
   { to: "/admin/users", label: "All Users", icon: UsersRound },
   { to: "/admin/transactions", label: "Transactions", icon: CreditCard },
+  { to: "/admin/stripe-webhooks", label: "Stripe Webhooks", icon: Webhook },
   { to: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/admin/support", label: "Support", icon: LifeBuoy },
   { to: "/admin/watch-live", label: "Watch-live analytics", icon: PlayCircle },
