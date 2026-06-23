@@ -12,6 +12,7 @@ export type StreamRow = {
   quality: string;
   url: string;
   is_active: boolean;
+  link_mode: "free" | "premium" | "ads";
 };
 
 // Public: get active streams for a fixture.
