@@ -3,23 +3,14 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { MatchCard } from "@/components/site/MatchCard";
-import { getLiveFixtures, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
+import { getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
 import { listStreamedFixtureIds } from "@/lib/streams.functions";
 
 async function loadLive(): Promise<Fixture[]> {
-  const [live, streamedIds] = await Promise.all([
-    getLiveFixtures().catch(() => [] as Fixture[]),
-    listStreamedFixtureIds().catch(() => [] as number[]),
-  ]);
-  const liveIds = new Set(live.map((m) => Number(m.id)));
-  const missing = streamedIds.filter((id) => !liveIds.has(id));
-  const streamed = missing.length
-    ? await getFixturesByIds({ data: { ids: missing } }).catch(() => [] as Fixture[])
-    : [];
-  // Merge & dedupe; streamed matches (even if not "live" on api-football) should show here.
-  const map = new Map<string, Fixture>();
-  for (const m of [...live, ...streamed]) map.set(m.id, m);
-  return Array.from(map.values()).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  const streamedIds = await listStreamedFixtureIds().catch(() => [] as number[]);
+  if (!streamedIds.length) return [];
+  const streamed = await getFixturesByIds({ data: { ids: streamedIds } }).catch(() => [] as Fixture[]);
+  return streamed.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
 
 const liveQuery = queryOptions({
