@@ -63,6 +63,7 @@ export const setMatchAccess = createServerFn({ method: "POST" })
       access: z.enum(["free", "paid"]),
       price_cents: z.number().int().min(0).default(0),
       currency: z.string().min(3).max(3).default("usd"),
+      available_from: z.string().datetime().nullable().optional(),
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
@@ -79,6 +80,7 @@ export const setMatchAccess = createServerFn({ method: "POST" })
           access: data.access,
           price_cents: data.access === "paid" ? data.price_cents : 0,
           currency: data.currency.toLowerCase(),
+          available_from: data.available_from ?? null,
         },
         { onConflict: "fixture_id" },
       );
