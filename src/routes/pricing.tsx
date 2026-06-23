@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { createPlanCheckout } from "@/lib/payments.functions";
+import { supabase } from "@/integrations/supabase/client";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -44,6 +48,26 @@ const features = [
 
 function PricingPage() {
   const [selected, setSelected] = useState("12m");
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const checkoutFn = useServerFn(createPlanCheckout);
+
+  async function handleChoose(planId: string) {
+    setSelected(planId);
+    setLoadingId(planId);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        window.location.assign(`/auth?redirect=${encodeURIComponent("/pricing")}`);
+        return;
+      }
+      const res = await checkoutFn({ data: { planId: planId as "1m" | "3m" | "6m" | "12m" } });
+      if (res.url) window.location.assign(res.url);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : "Checkout failed");
+    } finally {
+      setLoadingId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen">
@@ -86,14 +110,16 @@ function PricingPage() {
                 </div>
                 <div className="mt-1 text-sm text-emerald-400">Save ${save}</div>
                 <button
-                  onClick={() => setSelected(p.id)}
-                  className={`mt-5 inline-flex justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-colors ${
+                  onClick={() => handleChoose(p.id)}
+                  disabled={loadingId !== null}
+                  className={`mt-5 inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 text-sm font-semibold transition-colors disabled:opacity-60 ${
                     isSelected
                       ? "bg-primary text-primary-foreground hover:bg-primary/90"
                       : "bg-secondary text-foreground hover:bg-secondary/80"
                   }`}
                 >
-                  {isSelected ? "Selected" : "Choose Plan"}
+                  {loadingId === p.id && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {loadingId === p.id ? "Redirecting…" : `Choose ${p.name}`}
                 </button>
                 <ul className="mt-6 space-y-3 text-sm">
                   {features.map((f) => (
