@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { z } from "zod";
+import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
+import { submitClientQuery } from "@/lib/admin.functions";
 import { Mail, MessageSquare, MapPin, Send, CheckCircle2 } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
@@ -31,6 +33,7 @@ function ContactPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState(false);
+  const submitFn = useServerFn(submitClientQuery);
 
   const update = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -50,15 +53,15 @@ function ContactPage() {
       return;
     }
     setSubmitting(true);
-    // Open user's mail client with prefilled content (works without backend)
-    const body = `${result.data.message}\n\n— ${result.data.name} <${result.data.email}>`;
-    const href = `mailto:hello@footystream.app?subject=${encodeURIComponent(result.data.subject)}&body=${encodeURIComponent(body)}`;
-    window.location.href = href;
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      await submitFn({ data: result.data });
       setSent(true);
       setForm({ name: "", email: "", subject: "", message: "" });
-    }, 400);
+    } catch (err) {
+      setErrors({ message: err instanceof Error ? err.message : "Failed to send" });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -81,8 +84,8 @@ function ContactPage() {
               <div className="flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-300">
                 <CheckCircle2 className="mt-0.5 h-5 w-5 flex-none" />
                 <div>
-                  <div className="font-semibold">Message ready to send</div>
-                  <div className="text-emerald-200/80">Your email client opened with the message. Hit send there to deliver it.</div>
+                  <div className="font-semibold">Message received</div>
+                  <div className="text-emerald-200/80">Thanks — our team will get back to you shortly.</div>
                 </div>
               </div>
             )}

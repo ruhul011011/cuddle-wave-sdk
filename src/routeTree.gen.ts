@@ -20,7 +20,20 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin.transactions'
+import { Route as AuthenticatedAdminTopTeamsRouteImport } from './routes/_authenticated/admin.top-teams'
+import { Route as AuthenticatedAdminTopLeaguesRouteImport } from './routes/_authenticated/admin.top-leagues'
+import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin.support'
+import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
+import { Route as AuthenticatedAdminRatingsRouteImport } from './routes/_authenticated/admin.ratings'
+import { Route as AuthenticatedAdminNotificationRouteImport } from './routes/_authenticated/admin.notification'
 import { Route as AuthenticatedAdminLiveMatchesRouteImport } from './routes/_authenticated/admin.live-matches'
+import { Route as AuthenticatedAdminInsightsRouteImport } from './routes/_authenticated/admin.insights'
+import { Route as AuthenticatedAdminHotMatchesRouteImport } from './routes/_authenticated/admin.hot-matches'
+import { Route as AuthenticatedAdminClientQueryRouteImport } from './routes/_authenticated/admin.client-query'
+import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
@@ -76,10 +89,87 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminWatchLiveRoute =
+  AuthenticatedAdminWatchLiveRouteImport.update({
+    id: '/watch-live',
+    path: '/watch-live',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const AuthenticatedAdminTransactionsRoute =
+  AuthenticatedAdminTransactionsRouteImport.update({
+    id: '/transactions',
+    path: '/transactions',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminTopTeamsRoute =
+  AuthenticatedAdminTopTeamsRouteImport.update({
+    id: '/top-teams',
+    path: '/top-teams',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminTopLeaguesRoute =
+  AuthenticatedAdminTopLeaguesRouteImport.update({
+    id: '/top-leagues',
+    path: '/top-leagues',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSupportRoute =
+  AuthenticatedAdminSupportRouteImport.update({
+    id: '/support',
+    path: '/support',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminSubscriptionsRoute =
+  AuthenticatedAdminSubscriptionsRouteImport.update({
+    id: '/subscriptions',
+    path: '/subscriptions',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminRatingsRoute =
+  AuthenticatedAdminRatingsRouteImport.update({
+    id: '/ratings',
+    path: '/ratings',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminNotificationRoute =
+  AuthenticatedAdminNotificationRouteImport.update({
+    id: '/notification',
+    path: '/notification',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminLiveMatchesRoute =
   AuthenticatedAdminLiveMatchesRouteImport.update({
     id: '/live-matches',
     path: '/live-matches',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminInsightsRoute =
+  AuthenticatedAdminInsightsRouteImport.update({
+    id: '/insights',
+    path: '/insights',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminHotMatchesRoute =
+  AuthenticatedAdminHotMatchesRouteImport.update({
+    id: '/hot-matches',
+    path: '/hot-matches',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminClientQueryRoute =
+  AuthenticatedAdminClientQueryRouteImport.update({
+    id: '/client-query',
+    path: '/client-query',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminAnalyticsRoute =
+  AuthenticatedAdminAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
 
@@ -93,7 +183,20 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof ScheduleRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/match/$id': typeof MatchIdRoute
+  '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
+  '/admin/hot-matches': typeof AuthenticatedAdminHotMatchesRoute
+  '/admin/insights': typeof AuthenticatedAdminInsightsRoute
   '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
+  '/admin/notification': typeof AuthenticatedAdminNotificationRoute
+  '/admin/ratings': typeof AuthenticatedAdminRatingsRoute
+  '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
+  '/admin/top-teams': typeof AuthenticatedAdminTopTeamsRoute
+  '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -105,7 +208,20 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
+  '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
+  '/admin/hot-matches': typeof AuthenticatedAdminHotMatchesRoute
+  '/admin/insights': typeof AuthenticatedAdminInsightsRoute
   '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
+  '/admin/notification': typeof AuthenticatedAdminNotificationRoute
+  '/admin/ratings': typeof AuthenticatedAdminRatingsRoute
+  '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
+  '/admin/top-teams': typeof AuthenticatedAdminTopTeamsRoute
+  '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
+  '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -120,7 +236,20 @@ export interface FileRoutesById {
   '/schedule': typeof ScheduleRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/match/$id': typeof MatchIdRoute
+  '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
+  '/_authenticated/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
+  '/_authenticated/admin/hot-matches': typeof AuthenticatedAdminHotMatchesRoute
+  '/_authenticated/admin/insights': typeof AuthenticatedAdminInsightsRoute
   '/_authenticated/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
+  '/_authenticated/admin/notification': typeof AuthenticatedAdminNotificationRoute
+  '/_authenticated/admin/ratings': typeof AuthenticatedAdminRatingsRoute
+  '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
+  '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/_authenticated/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
+  '/_authenticated/admin/top-teams': typeof AuthenticatedAdminTopTeamsRoute
+  '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
+  '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/_authenticated/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -135,7 +264,20 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/admin'
     | '/match/$id'
+    | '/admin/analytics'
+    | '/admin/client-query'
+    | '/admin/hot-matches'
+    | '/admin/insights'
     | '/admin/live-matches'
+    | '/admin/notification'
+    | '/admin/ratings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/admin/top-leagues'
+    | '/admin/top-teams'
+    | '/admin/transactions'
+    | '/admin/users'
+    | '/admin/watch-live'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -147,7 +289,20 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/schedule'
     | '/match/$id'
+    | '/admin/analytics'
+    | '/admin/client-query'
+    | '/admin/hot-matches'
+    | '/admin/insights'
     | '/admin/live-matches'
+    | '/admin/notification'
+    | '/admin/ratings'
+    | '/admin/subscriptions'
+    | '/admin/support'
+    | '/admin/top-leagues'
+    | '/admin/top-teams'
+    | '/admin/transactions'
+    | '/admin/users'
+    | '/admin/watch-live'
     | '/admin'
   id:
     | '__root__'
@@ -161,7 +316,20 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/_authenticated/admin'
     | '/match/$id'
+    | '/_authenticated/admin/analytics'
+    | '/_authenticated/admin/client-query'
+    | '/_authenticated/admin/hot-matches'
+    | '/_authenticated/admin/insights'
     | '/_authenticated/admin/live-matches'
+    | '/_authenticated/admin/notification'
+    | '/_authenticated/admin/ratings'
+    | '/_authenticated/admin/subscriptions'
+    | '/_authenticated/admin/support'
+    | '/_authenticated/admin/top-leagues'
+    | '/_authenticated/admin/top-teams'
+    | '/_authenticated/admin/transactions'
+    | '/_authenticated/admin/users'
+    | '/_authenticated/admin/watch-live'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -256,6 +424,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/watch-live': {
+      id: '/_authenticated/admin/watch-live'
+      path: '/watch-live'
+      fullPath: '/admin/watch-live'
+      preLoaderRoute: typeof AuthenticatedAdminWatchLiveRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/transactions': {
+      id: '/_authenticated/admin/transactions'
+      path: '/transactions'
+      fullPath: '/admin/transactions'
+      preLoaderRoute: typeof AuthenticatedAdminTransactionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/top-teams': {
+      id: '/_authenticated/admin/top-teams'
+      path: '/top-teams'
+      fullPath: '/admin/top-teams'
+      preLoaderRoute: typeof AuthenticatedAdminTopTeamsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/top-leagues': {
+      id: '/_authenticated/admin/top-leagues'
+      path: '/top-leagues'
+      fullPath: '/admin/top-leagues'
+      preLoaderRoute: typeof AuthenticatedAdminTopLeaguesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/support': {
+      id: '/_authenticated/admin/support'
+      path: '/support'
+      fullPath: '/admin/support'
+      preLoaderRoute: typeof AuthenticatedAdminSupportRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/subscriptions': {
+      id: '/_authenticated/admin/subscriptions'
+      path: '/subscriptions'
+      fullPath: '/admin/subscriptions'
+      preLoaderRoute: typeof AuthenticatedAdminSubscriptionsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/ratings': {
+      id: '/_authenticated/admin/ratings'
+      path: '/ratings'
+      fullPath: '/admin/ratings'
+      preLoaderRoute: typeof AuthenticatedAdminRatingsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/notification': {
+      id: '/_authenticated/admin/notification'
+      path: '/notification'
+      fullPath: '/admin/notification'
+      preLoaderRoute: typeof AuthenticatedAdminNotificationRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/live-matches': {
       id: '/_authenticated/admin/live-matches'
       path: '/live-matches'
@@ -263,16 +494,70 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminLiveMatchesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/insights': {
+      id: '/_authenticated/admin/insights'
+      path: '/insights'
+      fullPath: '/admin/insights'
+      preLoaderRoute: typeof AuthenticatedAdminInsightsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/hot-matches': {
+      id: '/_authenticated/admin/hot-matches'
+      path: '/hot-matches'
+      fullPath: '/admin/hot-matches'
+      preLoaderRoute: typeof AuthenticatedAdminHotMatchesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/client-query': {
+      id: '/_authenticated/admin/client-query'
+      path: '/client-query'
+      fullPath: '/admin/client-query'
+      preLoaderRoute: typeof AuthenticatedAdminClientQueryRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/analytics': {
+      id: '/_authenticated/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AuthenticatedAdminAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminAnalyticsRoute: typeof AuthenticatedAdminAnalyticsRoute
+  AuthenticatedAdminClientQueryRoute: typeof AuthenticatedAdminClientQueryRoute
+  AuthenticatedAdminHotMatchesRoute: typeof AuthenticatedAdminHotMatchesRoute
+  AuthenticatedAdminInsightsRoute: typeof AuthenticatedAdminInsightsRoute
   AuthenticatedAdminLiveMatchesRoute: typeof AuthenticatedAdminLiveMatchesRoute
+  AuthenticatedAdminNotificationRoute: typeof AuthenticatedAdminNotificationRoute
+  AuthenticatedAdminRatingsRoute: typeof AuthenticatedAdminRatingsRoute
+  AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
+  AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
+  AuthenticatedAdminTopLeaguesRoute: typeof AuthenticatedAdminTopLeaguesRoute
+  AuthenticatedAdminTopTeamsRoute: typeof AuthenticatedAdminTopTeamsRoute
+  AuthenticatedAdminTransactionsRoute: typeof AuthenticatedAdminTransactionsRoute
+  AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminWatchLiveRoute: typeof AuthenticatedAdminWatchLiveRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminAnalyticsRoute: AuthenticatedAdminAnalyticsRoute,
+  AuthenticatedAdminClientQueryRoute: AuthenticatedAdminClientQueryRoute,
+  AuthenticatedAdminHotMatchesRoute: AuthenticatedAdminHotMatchesRoute,
+  AuthenticatedAdminInsightsRoute: AuthenticatedAdminInsightsRoute,
   AuthenticatedAdminLiveMatchesRoute: AuthenticatedAdminLiveMatchesRoute,
+  AuthenticatedAdminNotificationRoute: AuthenticatedAdminNotificationRoute,
+  AuthenticatedAdminRatingsRoute: AuthenticatedAdminRatingsRoute,
+  AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
+  AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
+  AuthenticatedAdminTopLeaguesRoute: AuthenticatedAdminTopLeaguesRoute,
+  AuthenticatedAdminTopTeamsRoute: AuthenticatedAdminTopTeamsRoute,
+  AuthenticatedAdminTransactionsRoute: AuthenticatedAdminTransactionsRoute,
+  AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminWatchLiveRoute: AuthenticatedAdminWatchLiveRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 

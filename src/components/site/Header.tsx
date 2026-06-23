@@ -50,7 +50,7 @@ export function Header() {
           {user ? (
             <>
               <Link
-                to="/admin/streams"
+                to="/admin"
                 className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
               >
                 <Shield className="h-4 w-4" /> Admin
