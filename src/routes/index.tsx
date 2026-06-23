@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
@@ -17,28 +17,21 @@ import {
   Radio,
 } from "lucide-react";
 
-async function loadHomeFeed() {
-  const [feed, streamedIds] = await Promise.all([
-    getHomeFeed(),
-    listStreamedFixtureIds().catch(() => [] as number[]),
-  ]);
-  const streamed = new Set(streamedIds);
-  // "Live" on the home page = matches that have admin-added streams.
-  const liveFromApi = feed.live.filter((m) => streamed.has(Number(m.id)));
-  const knownIds = new Set(liveFromApi.map((m) => Number(m.id)));
-  const missing = streamedIds.filter((id) => !knownIds.has(id));
-  const extra = missing.length
-    ? await getFixturesByIds({ data: { ids: missing } }).catch(() => [] as Fixture[])
-    : [];
-  const live = [...liveFromApi, ...extra].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
-  return { live, upcoming: feed.upcoming };
-}
-
+// Critical path: only the home feed blocks SSR. Streamed-ids + missing-fixtures
+// hydrate client-side after first paint.
 const homeFeedQuery = queryOptions({
-  queryKey: ["home-feed-with-streams"],
-  queryFn: loadHomeFeed,
-  staleTime: 15_000,
-  refetchInterval: 30_000,
+  queryKey: ["home-feed"],
+  queryFn: () => getHomeFeed(),
+  staleTime: 60_000,
+  refetchOnMount: false,
+  refetchOnWindowFocus: false,
+});
+
+const streamedIdsQuery = queryOptions({
+  queryKey: ["streamed-fixture-ids"],
+  queryFn: () => listStreamedFixtureIds().catch(() => [] as number[]),
+  staleTime: 60_000,
+  refetchOnWindowFocus: false,
 });
 
 export const Route = createFileRoute("/")({
@@ -64,10 +57,25 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { data } = useSuspenseQuery(homeFeedQuery);
-  const live = data.live;
-  const upcoming = data.upcoming;
+  const { data: feed } = useSuspenseQuery(homeFeedQuery);
+  // Client-only: which fixtures have admin streams
+  const { data: streamedIds = [] } = useQuery(streamedIdsQuery);
+  // Client-only: fetch any streamed fixtures missing from the popular-league feed
+  const knownIds = new Set(feed.live.map((m) => Number(m.id)));
+  const missing = streamedIds.filter((id) => !knownIds.has(id));
+  const { data: extraLive = [] } = useQuery({
+    queryKey: ["home-extra-live", missing.sort().join(",")],
+    queryFn: () => getFixturesByIds({ data: { ids: missing } }),
+    enabled: missing.length > 0,
+    staleTime: 60_000,
+  });
+
+  const streamed = new Set(streamedIds);
+  const liveFromFeed = feed.live.filter((m) => streamed.has(Number(m.id)));
+  const live = [...liveFromFeed, ...extraLive].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  const upcoming = feed.upcoming;
   const featured = upcoming[0] ?? live[0];
+
 
   return (
     <div className="min-h-screen">
