@@ -56,11 +56,27 @@ function AdminLiveMatchesPage() {
   const leaguesFn = useServerFn(listPopularLeagues);
   const fixturesFn = useServerFn(getFixturesByLeagueDate);
   const getStreamsForFixtureFn = useServerFn(getStreamsByFixture);
+  const listGroupsFn = useServerFn(listAdminMatchGroups);
+  const deleteFixtureFn = useServerFn(deleteFixtureStreams);
+  const fixturesByIdsFn = useServerFn(getFixturesByIds);
 
   const setAccessFn = useServerFn(setMatchAccess);
 
   const leaguesQ = useQuery({ queryKey: ["leagues", "popular"], queryFn: () => leaguesFn() });
   const streamsQ = useQuery({ queryKey: ["streams", "all"], queryFn: () => listFn() });
+  const groupsQ = useQuery({ queryKey: ["admin-match-groups"], queryFn: () => listGroupsFn() });
+
+  const groupIds = useMemo(() => (groupsQ.data ?? []).map((g) => g.fixture_id), [groupsQ.data]);
+  const fixturesMetaQ = useQuery({
+    queryKey: ["admin-fixture-meta", groupIds.join(",")],
+    queryFn: () => fixturesByIdsFn({ data: { ids: groupIds } }),
+    enabled: groupIds.length > 0,
+  });
+  const fixtureMetaMap = useMemo(() => {
+    const m = new Map<number, (typeof fixturesMetaQ.data extends Array<infer T> ? T : never)>();
+    for (const f of fixturesMetaQ.data ?? []) m.set(Number(f.id), f);
+    return m;
+  }, [fixturesMetaQ.data]);
 
   const [leagueId, setLeagueId] = useState<number | "">("");
   const [date, setDate] = useState(todayISO());
@@ -70,11 +86,17 @@ function AdminLiveMatchesPage() {
   const [priceUsd, setPriceUsd] = useState<string>("4.99");
   const [availability, setAvailability] = useState<"now" | "pre10">("now");
   const [copyOpen, setCopyOpen] = useState(false);
+  const [editingFixture, setEditingFixture] = useState<null | {
+    id: number;
+    label: string;
+    kickoff?: string;
+    league?: string;
+  }>(null);
 
   const fixturesQ = useQuery({
     queryKey: ["fixtures-admin", leagueId, date],
     queryFn: () => fixturesFn({ data: { leagueId: Number(leagueId), date } }),
-    enabled: typeof leagueId === "number",
+    enabled: typeof leagueId === "number" && !editingFixture,
   });
 
   const selectedFixture = useMemo(
