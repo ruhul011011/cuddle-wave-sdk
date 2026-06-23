@@ -89,6 +89,27 @@ export const getLiveFixtures = createServerFn({ method: "GET" }).handler(async (
   return raw.map(normalize);
 });
 
+export const getFixturesByIds = createServerFn({ method: "GET" })
+  .inputValidator((d: { ids: number[] }) => d)
+  .handler(async ({ data }) => {
+    const ids = Array.from(new Set((data.ids ?? []).filter((n) => Number.isFinite(n))));
+    if (!ids.length) return [];
+    // api-football supports id1-id2-id3 batch lookup
+    const results = await Promise.all(
+      // chunk to avoid URL length issues
+      chunk(ids, 20).map((batch) =>
+        af<any[]>(`/fixtures?ids=${batch.join("-")}`).catch(() => []),
+      ),
+    );
+    return results.flat().map(normalize);
+  });
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
 export const getScheduleFeed = createServerFn({ method: "GET" }).handler(async () => {
   const now = new Date();
   const dates = [0, 1, 2, 3].map((d) => isoDate(new Date(now.getTime() + d * 86400000)));
