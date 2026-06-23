@@ -161,3 +161,58 @@ export const createMatchCheckout = createServerFn({ method: "POST" })
 
     return { url: session.url, alreadyPurchased: false as const };
   });
+
+// Subscription/plan checkout (one-time payment for N months of access).
+const PLAN_CATALOG: Record<string, { name: string; price_cents: number; months: number }> = {
+  "1m":  { name: "1 Month Pass",  price_cents: 1500, months: 1 },
+  "3m":  { name: "3 Month Pass",  price_cents: 4200, months: 3 },
+  "6m":  { name: "6 Month Pass",  price_cents: 6000, months: 6 },
+  "12m": { name: "12 Month Pass", price_cents: 7200, months: 12 },
+};
+
+export const createPlanCheckout = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ planId: z.enum(["1m", "3m", "6m", "12m"]) }).parse(input))
+  .handler(async ({ data, context }) => {
+    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!stripeKey) throw new Error("Stripe is not configured");
+    if (!/^sk_(test|live)_/.test(stripeKey) && !/^rk_(test|live)_/.test(stripeKey)) {
+      throw new Error(
+        `STRIPE_SECRET_KEY has the wrong format (starts with "${stripeKey.slice(0, 6)}…"). ` +
+          `It must start with sk_test_ or sk_live_. Update the secret in Project Settings.`,
+      );
+    }
+
+    const plan = PLAN_CATALOG[data.planId];
+    const Stripe = (await import("stripe")).default;
+    const stripe = new Stripe(stripeKey);
+
+    const host = getRequestHost();
+    const proto = host?.includes("localhost") ? "http" : "https";
+    const origin = `${proto}://${host}`;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      customer_email: context.claims?.email as string | undefined,
+      line_items: [
+        {
+          quantity: 1,
+          price_data: {
+            currency: "usd",
+            unit_amount: plan.price_cents,
+            product_data: { name: plan.name, description: `${plan.months} month streaming pass` },
+          },
+        },
+      ],
+      metadata: {
+        plan_id: data.planId,
+        plan_months: String(plan.months),
+        user_id: context.userId,
+      },
+      success_url: `${origin}/pricing?purchase=success`,
+      cancel_url: `${origin}/pricing?purchase=cancel`,
+    });
+
+    return { url: session.url };
+  });
