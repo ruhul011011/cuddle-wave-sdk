@@ -6,6 +6,8 @@ const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/live", label: "Live" },
   { to: "/schedule", label: "Matches" },
   { to: "/leagues", label: "Leagues" },
+  { to: "/pricing", label: "Pricing" },
+  { to: "/contact", label: "Contact" },
 ];
 
 export function Header() {
@@ -29,8 +31,6 @@ export function Header() {
               {l.label}
             </Link>
           ))}
-          <span className="rounded-full px-5 py-2 text-muted-foreground cursor-pointer hover:text-foreground">Pricing</span>
-          <span className="rounded-full px-5 py-2 text-muted-foreground cursor-pointer hover:text-foreground">Contact</span>
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
