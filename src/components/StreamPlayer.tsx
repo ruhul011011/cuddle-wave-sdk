@@ -121,10 +121,12 @@ function PlyrVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const [useNativeControls, setUseNativeControls] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    setUseNativeControls(false);
 
     const controls = [
       "play-large",
@@ -146,16 +148,22 @@ function PlyrVideo({
     const liveControls = ["play-large", "play", "mute", "volume", "settings", "pip", "airplay", "fullscreen"];
 
     const initPlyr = (qualities?: number[]) => {
-      plyrRef.current = new Plyr(video, {
+      const qualityOptions = qualities?.filter(Boolean);
+      const config: Record<string, any> = {
         controls: isLive ? liveControls : controls,
-        settings: ["captions", "quality", "speed"],
+        settings: qualityOptions?.length ? ["captions", "quality", "speed"] : ["captions", "speed"],
         ratio: "16:9",
         keyboard: { focused: true, global: true },
         tooltips: { controls: true, seek: true },
-        quality: qualities && qualities.length
-          ? {
-              default: qualities[0],
-              options: qualities,
+      };
+
+      // Important: do not pass `quality: undefined`. Plyr 3.8 can overwrite
+      // its default quality config with undefined, then crash while reading
+      // `this.config.quality.forced`.
+      if (qualityOptions?.length) {
+        config.quality = {
+              default: qualityOptions[0],
+              options: qualityOptions,
               forced: true,
               onChange: (newQuality: number) => {
                 if (!hlsRef.current) return;
@@ -163,9 +171,15 @@ function PlyrVideo({
                   if (level.height === newQuality) hlsRef.current!.currentLevel = i;
                 });
               },
-            }
-          : undefined,
-      });
+            };
+      }
+
+      try {
+        plyrRef.current = new Plyr(video, config);
+      } catch (error) {
+        console.error("Player controls failed, falling back to native video", error);
+        setUseNativeControls(true);
+      }
     };
 
     if (type === "mp4") {
@@ -215,6 +229,7 @@ function PlyrVideo({
         ref={videoRef}
         poster={poster}
         playsInline
+        controls={useNativeControls}
         crossOrigin="anonymous"
         className="h-full w-full"
       />
