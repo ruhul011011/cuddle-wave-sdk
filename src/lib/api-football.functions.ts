@@ -2,16 +2,35 @@ import { createServerFn } from "@tanstack/react-start";
 
 const BASE = "https://v3.football.api-sports.io";
 
-async function af<T>(path: string): Promise<T> {
+// Simple in-memory TTL cache, shared across requests in the same worker.
+// Massively cuts upstream calls (api-football is slow, ~1-3s per /fixtures?date=).
+type CacheEntry = { value: unknown; expires: number };
+const _cache = new Map<string, CacheEntry>();
+const _inflight = new Map<string, Promise<unknown>>();
+
+async function af<T>(path: string, ttlMs = 30_000): Promise<T> {
   const key = process.env.API_FOOTBALL_KEY;
   if (!key) throw new Error("API_FOOTBALL_KEY is not configured");
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { "x-apisports-key": key },
-  });
-  if (!res.ok) throw new Error(`api-football error ${res.status}`);
-  const json = (await res.json()) as { response: T; errors?: unknown };
-  return json.response;
+  const now = Date.now();
+  const hit = _cache.get(path);
+  if (hit && hit.expires > now) return hit.value as T;
+  const pending = _inflight.get(path);
+  if (pending) return pending as Promise<T>;
+  const p = (async () => {
+    try {
+      const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
+      if (!res.ok) throw new Error(`api-football error ${res.status}`);
+      const json = (await res.json()) as { response: T; errors?: unknown };
+      _cache.set(path, { value: json.response, expires: Date.now() + ttlMs });
+      return json.response;
+    } finally {
+      _inflight.delete(path);
+    }
+  })();
+  _inflight.set(path, p);
+  return p;
 }
+
 
 export type Fixture = {
   id: string;
