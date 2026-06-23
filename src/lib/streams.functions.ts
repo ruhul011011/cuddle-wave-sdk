@@ -33,6 +33,20 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     return (rows ?? []) as StreamRow[];
   });
 
+// Public: list distinct fixture_ids that have at least one active stream.
+// Uses the admin client server-side to bypass auth-only RLS on match_streams
+// (only fixture_ids are returned — no URLs).
+export const listStreamedFixtureIds = createServerFn({ method: "GET" }).handler(async () => {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("match_streams")
+    .select("fixture_id")
+    .eq("is_active", true);
+  if (error) throw new Error(error.message);
+  const ids = Array.from(new Set((data ?? []).map((r) => r.fixture_id)));
+  return ids;
+});
+
 // Admin: list all streams (any fixture)
 export const listAllStreams = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
