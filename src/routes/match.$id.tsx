@@ -26,6 +26,13 @@ const streamsQuery = (id: string) =>
     staleTime: 30_000,
   });
 
+const accessQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["match-access", id],
+    queryFn: () => getMatchAccess({ data: { fixtureId: Number(id) } }),
+    staleTime: 30_000,
+  });
+
 export const Route = createFileRoute("/match/$id")({
   loader: async ({ params, context }) => {
     const data = await context.queryClient.ensureQueryData(fixtureQuery(params.id));
