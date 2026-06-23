@@ -82,6 +82,16 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
       result = result.filter((r) => r.link_mode !== "premium");
     }
 
+    // Replace raw upstream URLs with short-lived signed proxy URLs so the
+    // real source never reaches the browser. iframe sources are loaded by
+    // the browser directly and cannot be hidden — leave as-is.
+    const { signStreamId } = await import("@/lib/stream-sign.server");
+    result = result.map((r) => {
+      if (r.stream_type === "iframe") return r;
+      const { exp, sig } = signStreamId(r.id);
+      return { ...r, url: `/api/stream/${r.id}?exp=${exp}&sig=${encodeURIComponent(sig)}` };
+    });
+
     return result;
   });
 
