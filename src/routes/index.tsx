@@ -1,17 +1,33 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
-import { MatchCard } from "@/components/site/MatchCard";
-import { matches, leagues } from "@/lib/matches";
-import { Play, Radio, Calendar, Trophy } from "lucide-react";
+import {
+  matches,
+  popularLeagues,
+  topLeagues,
+  popularTeams,
+  groupByDate,
+  formatKickoffTime,
+} from "@/lib/matches";
+import {
+  Trophy,
+  ChevronRight,
+  Calendar,
+  Send,
+  Star,
+  ChevronDown,
+  Clock,
+  Play,
+  Radio,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Football Streaming — Watch Live Football Online" },
-      { name: "description", content: "Watch live football streams from the Premier League, La Liga, Bundesliga, Serie A, Ligue 1 and Champions League. Free HD football streaming." },
+      { title: "Football Streaming — Watch Live Football Online in HD" },
+      { name: "description", content: "Live football streams from the Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and World Cup. Free HD football streaming." },
       { property: "og:title", content: "Football Streaming — Watch Live Football Online" },
-      { property: "og:description", content: "Live football streams, schedules and highlights from every major league." },
+      { property: "og:description", content: "Live football streams, fixtures and highlights from every major league." },
     ],
   }),
   component: Index,
@@ -20,180 +36,246 @@ export const Route = createFileRoute("/")({
 function Index() {
   const live = matches.filter((m) => m.status === "live");
   const upcoming = matches.filter((m) => m.status === "upcoming");
-  const finished = matches.filter((m) => m.status === "finished");
-  const featured = live[0] ?? upcoming[0];
+  const featured = upcoming[0] ?? live[0];
 
   return (
     <div className="min-h-screen">
       <Header />
 
-      {/* HERO */}
-      <section className="pitch-gradient relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(oklch(1_0_0/0.4)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0/0.4)_1px,transparent_1px)] [background-size:48px_48px]" />
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 sm:px-6 py-16 lg:py-24 lg:grid-cols-[1.1fr_1fr]">
-          <div className="flex flex-col justify-center">
-            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-              <Radio className="h-3 w-3" /> Live HD Streaming
-            </span>
-            <h1 className="mt-5 font-display text-5xl leading-[0.95] sm:text-6xl lg:text-7xl">
-              Every match.<br />
-              <span className="text-primary">Every league.</span><br />
-              One screen.
-            </h1>
-            <p className="mt-5 max-w-lg text-base text-muted-foreground">
-              Stream live football matches from the Premier League, La Liga, Bundesliga, Serie A and Champions League — in stunning HD, no subscriptions, no hassle.
-            </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/live" className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-                <Play className="h-4 w-4 fill-current" /> Watch Live Now
-              </Link>
-              <Link to="/schedule" className="inline-flex items-center gap-2 rounded-md border border-border/80 bg-card/40 px-5 py-3 text-sm font-semibold hover:bg-secondary/60 transition-colors">
-                <Calendar className="h-4 w-4" /> View Schedule
-              </Link>
-            </div>
-            <div className="mt-10 grid max-w-md grid-cols-3 gap-6 text-center">
-              {[
-                { v: "120+", l: "Live Matches" },
-                { v: "30", l: "Leagues" },
-                { v: "HD", l: "Quality" },
-              ].map((s) => (
-                <div key={s.l}>
-                  <div className="font-display text-3xl text-primary">{s.v}</div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">{s.l}</div>
-                </div>
-              ))}
-            </div>
+      <main className="mx-auto max-w-[1400px] px-4 sm:px-6 py-6 space-y-8">
+        {/* POPULAR LEAGUES STRIP */}
+        <section>
+          <div className="mb-4 flex items-end justify-between">
+            <h2 className="flex items-center gap-2 font-display text-2xl sm:text-3xl">
+              <Trophy className="h-6 w-6 text-primary" /> Popular Leagues
+            </h2>
+            <Link to="/leagues" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+              View all <ChevronRight className="h-4 w-4" />
+            </Link>
           </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {popularLeagues.map((l) => (
+              <Link
+                key={l.id}
+                to="/leagues"
+                className={`group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br ${l.accent} p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50`}
+              >
+                <img src={l.logo} alt="" className="absolute -right-4 -top-4 h-24 w-24 opacity-20 transition-transform group-hover:scale-110" />
+                <div className="relative">
+                  <div className="font-display text-base leading-tight">{l.name}</div>
+                  <div className="mt-6 text-xs text-muted-foreground flex items-center justify-between">
+                    <span>{l.matches} matches</span>
+                    <ChevronRight className="h-3 w-3" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
 
-          {/* Featured match panel */}
-          {featured && (
-            <div className="relative">
-              <div className="absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/40 via-primary/10 to-transparent blur-2xl" />
-              <div className="relative rounded-2xl border border-border/60 bg-card/80 p-6 backdrop-blur-xl">
-                <div className="flex items-center justify-between text-xs uppercase tracking-wider">
-                  <span className="flex items-center gap-2 text-muted-foreground">
-                    <img src={featured.leagueLogo} className="h-4 w-4 rounded-sm" alt="" />
-                    {featured.league}
-                  </span>
-                  {featured.status === "live" ? (
-                    <span className="live-dot font-display text-live">LIVE · {featured.minute}</span>
-                  ) : (
-                    <span className="font-display text-primary">Upcoming</span>
-                  )}
+        {/* SIDEBAR + MAIN */}
+        <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+          {/* SIDEBAR */}
+          <aside className="space-y-4">
+            {/* Telegram card */}
+            <div className="rounded-2xl border border-border/60 bg-card p-5">
+              <div className="flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+                  <Send className="h-5 w-5" />
                 </div>
-                <div className="mt-8 grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-                  <div className="flex flex-col items-center text-center">
-                    <img src={featured.homeLogo} className="h-20 w-20 rounded-full ring-2 ring-primary/40" alt="" />
-                    <div className="mt-3 font-display text-xl">{featured.homeTeam}</div>
-                  </div>
-                  <div className="font-display text-5xl">
-                    {featured.status === "upcoming"
-                      ? new Date(featured.kickoff).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                      : <span>{featured.homeScore} <span className="text-muted-foreground/50">:</span> {featured.awayScore}</span>}
-                  </div>
-                  <div className="flex flex-col items-center text-center">
-                    <img src={featured.awayLogo} className="h-20 w-20 rounded-full ring-2 ring-primary/40" alt="" />
-                    <div className="mt-3 font-display text-xl">{featured.awayTeam}</div>
-                  </div>
-                </div>
-                <div className="mt-6 flex items-center justify-between border-t border-border/60 pt-5 text-sm text-muted-foreground">
-                  <span>{featured.venue}</span>
-                  <Link
-                    to="/match/$id"
-                    params={{ id: featured.id }}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 font-display tracking-wider text-primary-foreground hover:bg-primary/90 transition-colors"
-                  >
-                    <Play className="h-4 w-4 fill-current" /> WATCH NOW
-                  </Link>
+                <div>
+                  <div className="font-display text-lg leading-tight">Join our Telegram</div>
+                  <div className="text-xs text-muted-foreground">Connect with other sports fans</div>
                 </div>
               </div>
+              <button className="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
+                Join Telegram
+              </button>
             </div>
-          )}
-        </div>
-      </section>
 
-      {/* LIVE NOW */}
-      {live.length > 0 && (
-        <Section
-          eyebrow={<span className="live-dot text-live">LIVE NOW</span>}
-          title="Matches streaming right now"
-          link={{ to: "/live", label: "All live" }}
-        >
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {live.map((m) => <MatchCard key={m.id} match={m} />)}
+            {/* Top Leagues */}
+            <SidebarSection icon={<Trophy className="h-4 w-4 text-primary" />} title="Top Leagues">
+              <ul className="divide-y divide-border/60">
+                {topLeagues.map((l) => (
+                  <li key={l.id}>
+                    <Link to="/leagues" className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
+                      <img src={l.logo} alt="" className="h-7 w-7 rounded-full bg-secondary p-0.5" />
+                      <span className="flex-1 truncate">{l.name}</span>
+                      <span className="text-xs text-muted-foreground">{l.matches}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </SidebarSection>
+
+            {/* Popular Teams */}
+            <SidebarSection icon={<Star className="h-4 w-4 text-primary" />} title="Popular Teams">
+              <ul className="divide-y divide-border/60">
+                {popularTeams.map((t) => (
+                  <li key={t.id}>
+                    <a className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary cursor-pointer transition-colors">
+                      <img src={t.logo} alt="" className="h-7 w-7 rounded-full" />
+                      <span className="flex-1 truncate">{t.name}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </SidebarSection>
+          </aside>
+
+          {/* MAIN COLUMN */}
+          <div className="space-y-8 min-w-0">
+            {/* HERO BANNER */}
+            {featured && (
+              <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-emerald-900/60 via-card to-card p-6 sm:p-10">
+                <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(oklch(1_0_0/0.5)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0/0.5)_1px,transparent_1px)] [background-size:48px_48px]" />
+                <div className="absolute -right-12 -bottom-12 h-72 w-72 rounded-full bg-primary/30 blur-3xl" />
+                <div className="relative grid gap-6 sm:grid-cols-[1.2fr_auto] sm:items-center">
+                  <div>
+                    <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                      <Radio className="h-3 w-3" /> New Season
+                    </span>
+                    <h1 className="mt-4 font-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
+                      NEW SEASON <span className="text-primary">JUST STARTED!</span>
+                    </h1>
+                    <p className="mt-3 max-w-md text-sm text-muted-foreground">
+                      Kickstart the 2025–2026 season — every league, every match, in stunning HD on one screen.
+                    </p>
+                    <div className="mt-5 flex flex-wrap gap-3">
+                      <Link to="/live" className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
+                        <Play className="h-4 w-4 fill-current" /> Watch Live
+                      </Link>
+                      <Link to="/schedule" className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card/60 px-5 py-2.5 text-sm font-semibold hover:bg-secondary transition-colors">
+                        <Calendar className="h-4 w-4" /> Fixtures
+                      </Link>
+                    </div>
+                  </div>
+                  <div className="hidden sm:block font-display text-7xl lg:text-8xl text-primary/90 leading-none">
+                    70%
+                    <div className="text-base tracking-widest text-muted-foreground">OFF PRO</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LIVE NOW */}
+            {live.length > 0 && (
+              <FixturesBlock
+                icon={<span className="live-dot text-live font-display tracking-wider">LIVE NOW</span>}
+                title="Streaming right now"
+                allHref="/live"
+              >
+                {live.map((m) => (
+                  <FixtureRow key={m.id} match={m} />
+                ))}
+              </FixturesBlock>
+            )}
+
+            {/* UPCOMING grouped by date */}
+            <FixturesBlock
+              icon={<Calendar className="h-5 w-5 text-primary" />}
+              title="Upcoming Matches"
+              allHref="/schedule"
+            >
+              {groupByDate(upcoming).map(([date, list]) => (
+                <div key={date}>
+                  <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
+                    <Calendar className="h-4 w-4 text-primary" /> {date}
+                  </div>
+                  {list.map((m) => (
+                    <FixtureRow key={m.id} match={m} />
+                  ))}
+                </div>
+              ))}
+            </FixturesBlock>
           </div>
-        </Section>
-      )}
-
-      {/* UPCOMING */}
-      <Section
-        eyebrow={<span className="text-primary">UP NEXT</span>}
-        title="Upcoming fixtures"
-        link={{ to: "/schedule", label: "Full schedule" }}
-      >
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {upcoming.slice(0, 6).map((m) => <MatchCard key={m.id} match={m} />)}
         </div>
-      </Section>
-
-      {/* LEAGUES */}
-      <Section
-        eyebrow={<span className="text-primary">COMPETITIONS</span>}
-        title="Top leagues & cups"
-      >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-4">
-          {leagues.map((l) => (
-            <div key={l.id} className="group rounded-xl border border-border/60 bg-card p-5 transition-all hover:border-primary/50 hover:-translate-y-0.5">
-              <Trophy className="h-6 w-6 text-primary" />
-              <div className="mt-4 font-display text-xl">{l.name}</div>
-              <div className="text-xs uppercase tracking-wider text-muted-foreground">{l.country}</div>
-            </div>
-          ))}
-        </div>
-      </Section>
-
-      {/* RESULTS */}
-      {finished.length > 0 && (
-        <Section
-          eyebrow={<span className="text-muted-foreground">RESULTS</span>}
-          title="Latest results"
-        >
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {finished.map((m) => <MatchCard key={m.id} match={m} />)}
-          </div>
-        </Section>
-      )}
+      </main>
 
       <Footer />
     </div>
   );
 }
 
-function Section({
-  eyebrow,
+function SidebarSection({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/60">
+        <div className="flex items-center gap-2 font-display text-base">{icon} {title}</div>
+        <ChevronDown className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="px-3 py-2">{children}</div>
+    </div>
+  );
+}
+
+function FixturesBlock({
+  icon,
   title,
-  link,
+  allHref,
   children,
 }: {
-  eyebrow: React.ReactNode;
+  icon: React.ReactNode;
   title: string;
-  link?: { to: string; label: string };
+  allHref?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 py-14">
-      <div className="mb-7 flex items-end justify-between gap-4">
-        <div>
-          <div className="text-xs font-semibold uppercase tracking-[0.2em]">{eyebrow}</div>
-          <h2 className="mt-2 font-display text-3xl sm:text-4xl">{title}</h2>
-        </div>
-        {link && (
-          <Link to={link.to} className="text-sm font-semibold text-primary hover:underline">
-            {link.label} →
+    <section>
+      <div className="mb-4 flex items-end justify-between">
+        <h2 className="flex items-center gap-2 font-display text-2xl sm:text-3xl">
+          {icon} {title}
+        </h2>
+        {allHref && (
+          <Link to={allHref} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary">
+            View all <ChevronRight className="h-4 w-4" />
           </Link>
         )}
       </div>
-      {children}
+      <div className="overflow-hidden rounded-2xl border border-border/60 bg-card divide-y divide-border/60">
+        {children}
+      </div>
     </section>
+  );
+}
+
+function FixtureRow({ match: m }: { match: typeof matches[number] }) {
+  const isLive = m.status === "live";
+  return (
+    <Link
+      to="/match/$id"
+      params={{ id: m.id }}
+      className="block px-4 py-4 hover:bg-secondary/40 transition-colors"
+    >
+      <div className="mb-3 flex items-center justify-between text-xs">
+        <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-muted-foreground">
+          {m.league}
+        </span>
+        {isLive ? (
+          <span className="live-dot font-display tracking-wider text-live">{m.minute}</span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/40 px-2 py-1 font-display tracking-wider text-foreground">
+            <Clock className="h-3 w-3" /> {formatKickoffTime(m.kickoff)}
+          </span>
+        )}
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <img src={m.homeLogo} alt="" className="h-8 w-8 rounded-full object-cover bg-secondary" />
+          <span className="font-display text-base sm:text-lg truncate">{m.homeTeam}</span>
+        </div>
+        <div className="font-display text-lg tracking-wider text-muted-foreground">
+          {isLive ? (
+            <span className="text-foreground">{m.homeScore} <span className="text-muted-foreground/60">:</span> {m.awayScore}</span>
+          ) : (
+            "VS"
+          )}
+        </div>
+        <div className="flex items-center justify-end gap-3 min-w-0">
+          <span className="font-display text-base sm:text-lg truncate text-right">{m.awayTeam}</span>
+          <img src={m.awayLogo} alt="" className="h-8 w-8 rounded-full object-cover bg-secondary" />
+        </div>
+      </div>
+    </Link>
   );
 }
