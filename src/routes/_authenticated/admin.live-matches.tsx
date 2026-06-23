@@ -450,25 +450,113 @@ function AdminLiveMatchesPage() {
       </form>
 
       <div>
-        <h2 className="font-display text-xl mb-3">All streams ({streamsQ.data?.length ?? 0})</h2>
-        <div className="overflow-hidden rounded-2xl border border-border/60 bg-card divide-y divide-border/60">
-          {streamsQ.data?.map((s) => (
-            <div key={s.id} className="grid grid-cols-[90px_1fr_60px_90px_1fr_auto] items-center gap-3 px-4 py-3 text-sm">
-              <span className="font-display text-primary">#{s.fixture_id}</span>
-              <span className="truncate">{s.label}</span>
-              <span className="text-xs uppercase tracking-wider rounded bg-secondary px-2 py-0.5 text-center">{s.quality}</span>
-              <span className="text-xs uppercase tracking-wider rounded bg-secondary/60 px-2 py-0.5 text-center text-muted-foreground">{s.link_mode ?? "free"}</span>
-              <span className="truncate text-xs text-muted-foreground">{s.url}</span>
-              <button onClick={() => deleteM.mutate(s.id)} className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary text-muted-foreground hover:text-red-400">
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-          {(!streamsQ.data || !streamsQ.data.length) && (
-            <div className="p-8 text-center text-sm text-muted-foreground">No streams yet.</div>
-          )}
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display text-xl">Live Matches ({groupsQ.data?.length ?? 0})</h2>
+        </div>
+        <div className="overflow-x-auto rounded-2xl border border-border/60 bg-card">
+          <table className="w-full text-sm">
+            <thead className="text-xs uppercase tracking-wider text-muted-foreground border-b border-border/60">
+              <tr>
+                <th className="text-left font-medium px-4 py-3">Sport Type</th>
+                <th className="text-left font-medium px-4 py-3">Fixture ID</th>
+                <th className="text-left font-medium px-4 py-3">League/Series</th>
+                <th className="text-left font-medium px-4 py-3">Team (Home)</th>
+                <th className="text-left font-medium px-4 py-3">Team (Away)</th>
+                <th className="text-left font-medium px-4 py-3">Access Type</th>
+                <th className="text-left font-medium px-4 py-3">Free preview</th>
+                <th className="text-left font-medium px-4 py-3">Server modes</th>
+                <th className="text-left font-medium px-4 py-3">Active</th>
+                <th className="text-left font-medium px-4 py-3">Match status</th>
+                <th className="text-left font-medium px-4 py-3">Match Date</th>
+                <th className="text-right font-medium px-4 py-3">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/60">
+              {(groupsQ.data ?? []).map((g) => {
+                const meta = fixtureMetaMap.get(g.fixture_id);
+                const kickoff = meta?.kickoff ? new Date(meta.kickoff) : null;
+                const status = meta?.status ?? "upcoming";
+                const statusLabel =
+                  status === "live" ? "Live" : status === "finished" ? "Finished" : "Upcoming";
+                const serverModes = [
+                  g.premium_count ? `${g.premium_count} premium` : null,
+                  g.ads_count ? `${g.ads_count} ads` : null,
+                  g.free_count ? `${g.free_count} free` : null,
+                ].filter(Boolean).join(" · ") || `${g.link_count} link${g.link_count === 1 ? "" : "s"}`;
+                return (
+                  <tr key={g.fixture_id} className="hover:bg-secondary/30">
+                    <td className="px-4 py-3 capitalize">football</td>
+                    <td className="px-4 py-3 font-display text-primary">{g.fixture_id}</td>
+                    <td className="px-4 py-3">{meta?.league ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {meta?.homeLogo && <img src={meta.homeLogo} alt="" className="h-5 w-5" />}
+                        <span className="truncate">{meta?.homeTeam ?? "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {meta?.awayLogo && <img src={meta.awayLogo} alt="" className="h-5 w-5" />}
+                        <span className="truncate">{meta?.awayTeam ?? "—"}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 capitalize">{g.access}</td>
+                    <td className="px-4 py-3 text-muted-foreground">Off</td>
+                    <td className="px-4 py-3 text-muted-foreground">{serverModes}</td>
+                    <td className="px-4 py-3">
+                      <span className={g.active_count > 0 ? "text-emerald-400" : "text-muted-foreground"}>
+                        {g.active_count > 0 ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`inline-flex rounded-md border border-border/60 px-2 py-1 text-xs ${
+                        status === "live" ? "text-red-400" : status === "finished" ? "text-muted-foreground" : ""
+                      }`}>
+                        {statusLabel}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-muted-foreground">
+                      {kickoff
+                        ? `${kickoff.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} - ${kickoff.toLocaleDateString([], { month: "short", day: "numeric" })}`
+                        : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => startEdit(g.fixture_id)}
+                          className="grid h-8 w-8 place-items-center rounded-md hover:bg-secondary text-emerald-400"
+                          title="Edit match"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm("Delete this match and all its stream links?")) {
+                              deleteFixtureM.mutate(g.fixture_id);
+                            }
+                          }}
+                          className="grid h-8 w-8 place-items-center rounded-md hover:bg-red-500/10 text-red-400"
+                          title="Delete match"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+              {(!groupsQ.data || !groupsQ.data.length) && (
+                <tr>
+                  <td colSpan={12} className="p-8 text-center text-sm text-muted-foreground">
+                    No live matches yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
+
 
       {copyOpen && (
         <CopyFromMatchModal
