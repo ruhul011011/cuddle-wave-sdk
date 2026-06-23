@@ -305,7 +305,7 @@ function TelegramJoinCard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("site_settings")
-        .select("value")
+        .select("key, value")
         .in("key", ["telegram_join_url", "telegram_username"]);
       if (error) throw error;
       const map = new Map((data ?? []).map((r: any) => [r.key, r.value as string]));
