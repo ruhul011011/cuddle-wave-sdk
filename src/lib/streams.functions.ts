@@ -15,44 +15,58 @@ export type StreamRow = {
   link_mode: "free" | "premium" | "ads";
 };
 
-// Public: get active streams for a fixture.
-// Enforces paid access: if the match is paid and the caller hasn't purchased,
-// stream URLs are NOT returned.
+// Public: get active streams for a fixture, gated by Access Type:
+//  - free  → all links visible to anyone
+//  - ads   → all links visible to anyone (ad-supported)
+//  - premium → all links hidden unless the caller purchased
+//  - mix   → free/ads links visible; premium links hidden unless purchased
 export const getStreamsForFixture = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Check access tier
     const { data: acc } = await supabaseAdmin
       .from("match_access")
       .select("access, available_from")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
-    const isPaid = acc?.access === "paid";
 
-    // Scheduled go-live: hide streams until available_from has passed.
+    // Normalize access (legacy 'paid' === 'premium').
+    const rawAccess = (acc?.access ?? "free") as string;
+    const access: "free" | "premium" | "ads" | "mix" =
+      rawAccess === "paid" ? "premium"
+      : (rawAccess === "premium" || rawAccess === "ads" || rawAccess === "mix") ? rawAccess
+      : "free";
+
+    // Scheduled go-live: hide everything until available_from has passed.
     if (acc?.available_from && new Date(acc.available_from as string).getTime() > Date.now()) {
       return [] as StreamRow[];
     }
 
-    if (isPaid) {
+    // Resolve caller purchase status (best-effort; anonymous callers count as not-purchased).
+    let hasPurchase = false;
+    if (access === "premium" || access === "mix") {
       const { getRequestHeader } = await import("@tanstack/react-start/server");
       const auth = getRequestHeader("authorization") ?? "";
       const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
-      if (!token) return [] as StreamRow[];
-      const { data: userRes } = await supabaseAdmin.auth.getUser(token);
-      const uid = userRes?.user?.id;
-      if (!uid) return [] as StreamRow[];
-      const { data: purchase } = await supabaseAdmin
-        .from("match_purchases")
-        .select("id")
-        .eq("user_id", uid)
-        .eq("fixture_id", data.fixtureId)
-        .eq("status", "paid")
-        .maybeSingle();
-      if (!purchase) return [] as StreamRow[];
+      if (token) {
+        const { data: userRes } = await supabaseAdmin.auth.getUser(token);
+        const uid = userRes?.user?.id;
+        if (uid) {
+          const { data: purchase } = await supabaseAdmin
+            .from("match_purchases")
+            .select("id")
+            .eq("user_id", uid)
+            .eq("fixture_id", data.fixtureId)
+            .eq("status", "paid")
+            .maybeSingle();
+          hasPurchase = Boolean(purchase);
+        }
+      }
     }
+
+    // Premium fixture: zero links until purchase.
+    if (access === "premium" && !hasPurchase) return [] as StreamRow[];
 
     const { data: rows, error } = await supabaseAdmin
       .from("match_streams")
@@ -61,8 +75,17 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
       .eq("is_active", true)
       .order("created_at", { ascending: true });
     if (error) throw new Error(error.message);
-    return (rows ?? []) as StreamRow[];
+    let result = (rows ?? []) as StreamRow[];
+
+    // Mix fixture: hide premium-tagged links from non-purchasers.
+    if (access === "mix" && !hasPurchase) {
+      result = result.filter((r) => r.link_mode !== "premium");
+    }
+
+    return result;
   });
+
+
 
 // Public: list distinct fixture_ids that have at least one active stream.
 // Uses the admin client server-side to bypass auth-only RLS on match_streams
