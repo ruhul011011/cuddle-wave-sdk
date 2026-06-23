@@ -200,14 +200,13 @@ function MatchPage() {
                   <span className="text-muted-foreground">
                     Showing free streams. Premium streams for this match are locked.
                   </span>
-                  <button
-                    onClick={handleBuy}
-                    disabled={buying}
-                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                  <Link
+                    to="/pricing"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
                   >
-                    {buying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
-                    Unlock premium — {formatMoney(access!.price_cents, access!.currency)}
-                  </button>
+                    <Lock className="h-3.5 w-3.5" />
+                    View plans
+                  </Link>
                 </div>
               )}
               <StreamPlayer
