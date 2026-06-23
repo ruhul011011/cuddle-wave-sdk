@@ -109,6 +109,14 @@ function AdminLayout() {
             <div className="grid h-9 w-9 place-items-center rounded-full bg-primary text-primary-foreground font-semibold">
               A
             </div>
+            <button
+              onClick={signOut}
+              className="inline-flex items-center gap-2 rounded-lg border border-border/60 bg-card px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-secondary hover:text-foreground"
+              aria-label="Sign out"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
           </div>
         </div>
         <main className="p-4 sm:p-8 max-w-[1400px]">
