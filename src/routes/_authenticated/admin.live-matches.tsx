@@ -3,6 +3,7 @@ import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { listAllStreams, bulkCreateStreams, deleteStream } from "@/lib/streams.functions";
+import { setMatchAccess } from "@/lib/payments.functions";
 import { listPopularLeagues, getFixturesByLeagueDate } from "@/lib/api-football.functions";
 import { toast } from "sonner";
 import { Trash2, Plus, Loader2 } from "lucide-react";
