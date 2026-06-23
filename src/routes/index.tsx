@@ -114,20 +114,8 @@ function Index() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <aside className="space-y-4">
-            <div className="rounded-2xl border border-border/60 bg-card p-5">
-              <div className="flex items-center gap-3">
-                <div className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
-                  <Send className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="font-display text-lg leading-tight">Join our Telegram</div>
-                  <div className="text-xs text-muted-foreground">Connect with other sports fans</div>
-                </div>
-              </div>
-              <button className="mt-4 w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-                Join Telegram
-              </button>
-            </div>
+            <TelegramJoinCard />
+
 
             <SidebarSection icon={<Trophy className="h-4 w-4 text-primary" />} title="Top Leagues">
               <ul className="divide-y divide-border/60">
