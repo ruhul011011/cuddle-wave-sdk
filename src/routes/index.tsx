@@ -37,10 +37,10 @@ const streamedIdsQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Football Streaming — Watch Live Football Online in HD" },
-      { name: "description", content: "Live football streams from the Premier League, La Liga, Bundesliga, Serie A, Ligue 1, Champions League and World Cup. Free HD football streaming." },
-      { property: "og:title", content: "Football Streaming — Watch Live Football Online" },
-      { property: "og:description", content: "Live football streams, fixtures and highlights from every major league." },
+      { title: "Watch Football World Cup 2026 Live in HD" },
+      { name: "description", content: "Watch the FIFA World Cup 2026 live in HD. Free football streaming for every World Cup match, fixtures, groups and highlights." },
+      { property: "og:title", content: "Watch Football World Cup 2026 Live in HD" },
+      { property: "og:description", content: "Live HD streams for every FIFA World Cup 2026 match — fixtures, groups and highlights." },
     ],
   }),
   loader: ({ context }) => context.queryClient.ensureQueryData(homeFeedQuery),
