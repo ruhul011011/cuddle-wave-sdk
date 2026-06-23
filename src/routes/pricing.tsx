@@ -1,13 +1,13 @@
+import { useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
-import { Check, Zap, Crown, Rocket } from "lucide-react";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
       { title: "Pricing — Football Streaming" },
-      { name: "description", content: "Choose a plan to watch live football streams in HD. Free, Pro and Ultra tiers." },
+      { name: "description", content: "Choose a plan to watch live football streams in HD. 1, 3, 6 and 12 month subscriptions." },
       { property: "og:title", content: "Football Streaming Pricing" },
       { property: "og:description", content: "Simple pricing for live football streaming in HD." },
     ],
@@ -18,71 +18,37 @@ export const Route = createFileRoute("/pricing")({
 type Plan = {
   id: string;
   name: string;
-  price: string;
-  period: string;
-  tagline: string;
-  icon: React.ReactNode;
-  features: string[];
-  cta: string;
+  price: number;
+  oldPrice: number;
+  months: number;
   highlight?: boolean;
 };
 
 const plans: Plan[] = [
-  {
-    id: "free",
-    name: "Free",
-    price: "$0",
-    period: "forever",
-    tagline: "Casual viewing, no card needed.",
-    icon: <Zap className="h-5 w-5" />,
-    features: [
-      "Live scores & fixtures",
-      "SD streams with ads",
-      "1 device at a time",
-      "Standard commentary",
-    ],
-    cta: "Get started",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    price: "$8.99",
-    period: "per month",
-    tagline: "The fan favourite — every league in HD.",
-    icon: <Crown className="h-5 w-5" />,
-    features: [
-      "Full HD streams, ad-free",
-      "All major leagues & cups",
-      "3 devices at a time",
-      "Multi-language commentary",
-      "Replays & highlights",
-    ],
-    cta: "Start 7-day trial",
-    highlight: true,
-  },
-  {
-    id: "ultra",
-    name: "Ultra",
-    price: "$14.99",
-    period: "per month",
-    tagline: "4K, multi-cam, zero compromise.",
-    icon: <Rocket className="h-5 w-5" />,
-    features: [
-      "4K HDR streams",
-      "Every Pro feature",
-      "5 devices at a time",
-      "Tactical & multi-cam angles",
-      "Priority support",
-    ],
-    cta: "Go Ultra",
-  },
+  { id: "12m", name: "12 Month", price: 72, oldPrice: 240, months: 12, highlight: true },
+  { id: "1m", name: "1 Month", price: 15, oldPrice: 20, months: 1 },
+  { id: "3m", name: "3 Month", price: 42, oldPrice: 60, months: 3 },
+  { id: "6m", name: "6 Month", price: 60, oldPrice: 120, months: 6 },
+];
+
+const features = [
+  "⚽ 100+ Football Leagues & Tournaments",
+  "🎙️ English Commentary",
+  "🚫 No Ads or Pop-ups",
+  "🔒 256-bit Encrypted Security",
+  "🕐 24/7 Dedicated Support",
+  "📦 Discreet Billing",
+  "✅ 100% Safe & Secure",
+  "💻📱 Watch on Laptop, Phone, or Tablet",
 ];
 
 function PricingPage() {
+  const [selected, setSelected] = useState("12m");
+
   return (
     <div className="min-h-screen">
       <Header />
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16">
         <div className="text-center max-w-2xl mx-auto">
           <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Pricing</div>
           <h1 className="mt-2 font-display text-4xl sm:text-6xl leading-[0.95]">
@@ -93,50 +59,53 @@ function PricingPage() {
           </p>
         </div>
 
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
-          {plans.map((p) => (
-            <div
-              key={p.id}
-              className={`relative flex flex-col rounded-2xl border p-7 transition-all ${
-                p.highlight
-                  ? "border-primary/60 bg-gradient-to-b from-primary/10 to-card shadow-[0_0_60px_-20px_oklch(0.66_0.24_18/0.5)]"
-                  : "border-border/60 bg-card hover:border-primary/40"
-              }`}
-            >
-              {p.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground">
-                  Most Popular
-                </span>
-              )}
-              <div className="flex items-center gap-2 text-primary">
-                {p.icon}
-                <h2 className="font-display text-2xl">{p.name}</h2>
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">{p.tagline}</p>
-              <div className="mt-6 flex items-baseline gap-2">
-                <span className="font-display text-5xl">{p.price}</span>
-                <span className="text-sm text-muted-foreground">/ {p.period}</span>
-              </div>
-              <ul className="mt-6 space-y-3 text-sm">
-                {p.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2">
-                    <Check className="mt-0.5 h-4 w-4 flex-none text-primary" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to="/contact"
-                className={`mt-8 inline-flex justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-colors ${
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {plans.map((p) => {
+            const perMonth = (p.price / p.months).toFixed(2);
+            const save = (p.oldPrice - p.price).toFixed(2);
+            const isSelected = selected === p.id;
+            return (
+              <div
+                key={p.id}
+                className={`relative flex flex-col rounded-2xl border p-6 transition-all ${
                   p.highlight
-                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                    : "border border-border/80 bg-card/60 text-foreground hover:bg-secondary"
+                    ? "border-primary/60 bg-card shadow-[0_0_60px_-20px_oklch(0.66_0.24_18/0.5)]"
+                    : "border-border/60 bg-card hover:border-primary/40"
                 }`}
               >
-                {p.cta}
-              </Link>
-            </div>
-          ))}
+                {p.highlight && (
+                  <span className="absolute -top-3 right-4 rounded-md bg-background border border-border px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-foreground">
+                    Most Popular
+                  </span>
+                )}
+                <h2 className="font-display text-2xl">{p.name}</h2>
+                <div className="mt-4 flex items-baseline gap-2 flex-wrap">
+                  <span className="font-display text-4xl">${p.price}</span>
+                  <span className="text-sm text-muted-foreground line-through">${p.oldPrice}</span>
+                  <span className="text-sm text-muted-foreground">${perMonth}/month</span>
+                </div>
+                <div className="mt-1 text-sm text-emerald-400">Save ${save}</div>
+                <button
+                  onClick={() => setSelected(p.id)}
+                  className={`mt-5 inline-flex justify-center rounded-lg px-5 py-3 text-sm font-semibold transition-colors ${
+                    isSelected
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-secondary text-foreground hover:bg-secondary/80"
+                  }`}
+                >
+                  {isSelected ? "Selected" : "Choose Plan"}
+                </button>
+                <ul className="mt-6 space-y-3 text-sm">
+                  {features.map((f) => (
+                    <li key={f} className="flex items-start gap-2">
+                      <span className="mt-1.5 h-1.5 w-1.5 flex-none rounded-full bg-emerald-400" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-16 rounded-2xl border border-border/60 bg-card p-8 text-center">
