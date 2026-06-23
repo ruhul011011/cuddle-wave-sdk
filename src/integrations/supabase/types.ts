@@ -22,6 +22,7 @@ export type Database = {
           id: string
           is_active: boolean
           label: string
+          quality: string
           stream_type: string
           updated_at: string
           url: string
@@ -33,6 +34,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          quality?: string
           stream_type: string
           updated_at?: string
           url: string
@@ -44,6 +46,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           label?: string
+          quality?: string
           stream_type?: string
           updated_at?: string
           url?: string
