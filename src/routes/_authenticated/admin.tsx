@@ -78,7 +78,7 @@ function AdminLayout() {
           {NAV.map((n) => (
             <Link
               key={n.to}
-              to={n.to}
+              to={n.to as any}
               activeOptions={{ exact: n.exact ?? false }}
               activeProps={{ className: "bg-primary/15 text-primary" }}
               className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-colors"
