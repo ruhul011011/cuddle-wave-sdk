@@ -149,7 +149,7 @@ function PlyrVideo({
 
     const initPlyr = (qualities?: number[]) => {
       const qualityOptions = qualities?.filter(Boolean);
-      const config: ConstructorParameters<typeof Plyr>[1] = {
+      const config: Record<string, any> = {
         controls: isLive ? liveControls : controls,
         settings: qualityOptions?.length ? ["captions", "quality", "speed"] : ["captions", "speed"],
         ratio: "16:9",
