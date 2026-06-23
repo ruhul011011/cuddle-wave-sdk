@@ -43,6 +43,7 @@ function AdminLiveMatchesPage() {
   const [links, setLinks] = useState<LinkRow[]>([{ ...EMPTY_LINK }]);
   const [access, setAccess] = useState<"free" | "paid">("free");
   const [priceUsd, setPriceUsd] = useState<string>("4.99");
+  const [availability, setAvailability] = useState<"now" | "pre10">("now");
 
   const fixturesQ = useQuery({
     queryKey: ["fixtures-admin", leagueId, date],
