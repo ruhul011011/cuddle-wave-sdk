@@ -20,6 +20,7 @@ import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiStreamIdRouteImport } from './routes/api/stream.$id'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
@@ -90,6 +91,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const ApiStreamIdRoute = ApiStreamIdRouteImport.update({
+  id: '/api/stream/$id',
+  path: '/api/stream/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/api/stream/$id': typeof ApiStreamIdRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/api/stream/$id': typeof ApiStreamIdRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
+  '/api/stream/$id': typeof ApiStreamIdRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -299,6 +308,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/watch-live'
     | '/api/public/stripe-webhook'
+    | '/api/stream/$id'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -326,6 +336,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/watch-live'
     | '/api/public/stripe-webhook'
+    | '/api/stream/$id'
     | '/admin'
   id:
     | '__root__'
@@ -355,6 +366,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/watch-live'
     | '/api/public/stripe-webhook'
+    | '/api/stream/$id'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -368,6 +380,7 @@ export interface RootRouteChildren {
   ScheduleRoute: typeof ScheduleRoute
   MatchIdRoute: typeof MatchIdRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
+  ApiStreamIdRoute: typeof ApiStreamIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/stream/$id': {
+      id: '/api/stream/$id'
+      path: '/api/stream/$id'
+      fullPath: '/api/stream/$id'
+      preLoaderRoute: typeof ApiStreamIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/stripe-webhook': {
       id: '/api/public/stripe-webhook'
@@ -628,6 +648,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScheduleRoute: ScheduleRoute,
   MatchIdRoute: MatchIdRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
+  ApiStreamIdRoute: ApiStreamIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
