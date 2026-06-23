@@ -135,6 +135,7 @@ export const bulkCreateStreams = createServerFn({ method: "POST" })
           stream_type: z.enum(["hls", "iframe", "mp4"]),
           quality: z.string().min(1).max(20).default("HD"),
           url: z.string().url(),
+          link_mode: z.enum(["free", "premium", "ads"]).default("free"),
         }),
       ).min(1),
     }).parse(input),
@@ -154,9 +155,28 @@ export const bulkCreateStreams = createServerFn({ method: "POST" })
     const { data: inserted, error } = await context.supabase
       .from("match_streams")
       .insert(rows)
-      .select("id, fixture_id, label, stream_type, quality, url, is_active");
+      .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode");
     if (error) throw new Error(error.message);
     return (inserted ?? []) as StreamRow[];
+  });
+
+// Admin: list streams for a single fixture (used by "copy links" picker)
+export const getStreamsByFixture = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) => z.object({ fixtureId: z.number().int().positive() }).parse(input))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { data: rows, error } = await context.supabase
+      .from("match_streams")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
+      .eq("fixture_id", data.fixtureId)
+      .order("created_at", { ascending: true });
+    if (error) throw new Error(error.message);
+    return (rows ?? []) as StreamRow[];
   });
 
 // Admin: delete
