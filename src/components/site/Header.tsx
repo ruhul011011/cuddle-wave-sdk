@@ -69,12 +69,22 @@ export function Header() {
           </button>
           {user ? (
             <>
-              <Link
-                to="/admin"
-                className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
-              >
-                <Shield className="h-4 w-4" /> Admin
-              </Link>
+              {isAdmin ? (
+                <Link
+                  to="/admin"
+                  className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+                >
+                  <Shield className="h-4 w-4" /> Admin
+                </Link>
+              ) : (
+                <span
+                  title={user.email ?? undefined}
+                  className="hidden sm:inline-flex h-10 max-w-[200px] items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground"
+                >
+                  <UserIcon className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{displayName}</span>
+                </span>
+              )}
               <button
                 onClick={signOut}
                 className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
