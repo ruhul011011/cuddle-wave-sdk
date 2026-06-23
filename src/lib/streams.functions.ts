@@ -9,6 +9,7 @@ export type StreamRow = {
   fixture_id: number;
   label: string;
   stream_type: "hls" | "iframe" | "mp4";
+  quality: string;
   url: string;
   is_active: boolean;
 };
@@ -24,7 +25,7 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     );
     const { data: rows, error } = await supabase
       .from("match_streams")
-      .select("id, fixture_id, label, stream_type, url, is_active")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active")
       .eq("fixture_id", data.fixtureId)
       .eq("is_active", true)
       .order("created_at", { ascending: true });
@@ -43,24 +44,25 @@ export const listAllStreams = createServerFn({ method: "GET" })
     if (!isAdmin) throw new Error("Forbidden");
     const { data, error } = await context.supabase
       .from("match_streams")
-      .select("id, fixture_id, label, stream_type, url, is_active")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []) as StreamRow[];
   });
 
+const streamInputSchema = z.object({
+  fixture_id: z.number().int().positive(),
+  label: z.string().min(1).max(60),
+  stream_type: z.enum(["hls", "iframe", "mp4"]),
+  quality: z.string().min(1).max(20).default("HD"),
+  url: z.string().url(),
+  is_active: z.boolean().default(true),
+});
+
 // Admin: create
 export const createStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input) =>
-    z.object({
-      fixture_id: z.number().int().positive(),
-      label: z.string().min(1).max(60),
-      stream_type: z.enum(["hls", "iframe", "mp4"]),
-      url: z.string().url(),
-      is_active: z.boolean().default(true),
-    }).parse(input),
-  )
+  .inputValidator((input) => streamInputSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { data: isAdmin } = await context.supabase.rpc("has_role", {
       _user_id: context.userId,
@@ -70,10 +72,46 @@ export const createStream = createServerFn({ method: "POST" })
     const { data: row, error } = await context.supabase
       .from("match_streams")
       .insert({ ...data, created_by: context.userId })
-      .select("id, fixture_id, label, stream_type, url, is_active")
+      .select("id, fixture_id, label, stream_type, quality, url, is_active")
       .single();
     if (error) throw new Error(error.message);
     return row as StreamRow;
+  });
+
+// Admin: bulk create multiple streams for a fixture
+export const bulkCreateStreams = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input) =>
+    z.object({
+      fixture_id: z.number().int().positive(),
+      streams: z.array(
+        z.object({
+          label: z.string().min(1).max(60).default("Main"),
+          stream_type: z.enum(["hls", "iframe", "mp4"]),
+          quality: z.string().min(1).max(20).default("HD"),
+          url: z.string().url(),
+        }),
+      ).min(1),
+    }).parse(input),
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin",
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+    const rows = data.streams.map((s) => ({
+      ...s,
+      fixture_id: data.fixture_id,
+      is_active: true,
+      created_by: context.userId,
+    }));
+    const { data: inserted, error } = await context.supabase
+      .from("match_streams")
+      .insert(rows)
+      .select("id, fixture_id, label, stream_type, quality, url, is_active");
+    if (error) throw new Error(error.message);
+    return (inserted ?? []) as StreamRow[];
   });
 
 // Admin: delete

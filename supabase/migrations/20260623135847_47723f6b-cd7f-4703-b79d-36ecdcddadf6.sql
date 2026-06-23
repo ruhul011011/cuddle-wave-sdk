@@ -1,0 +1,1 @@
+ALTER TABLE public.match_streams ADD COLUMN IF NOT EXISTS quality text NOT NULL DEFAULT 'HD';
