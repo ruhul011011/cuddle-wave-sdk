@@ -103,6 +103,91 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           ))}
         </div>
       )}
+
+      <StreamDebug source={selected} />
+    </div>
+  );
+}
+
+
+function StreamDebug({ source }: { source: StreamSource }) {
+  const [info, setInfo] = useState<{
+    status?: number;
+    contentType?: string | null;
+    bytes?: number;
+    snippet?: string;
+    error?: string;
+    loading: boolean;
+  }>({ loading: true });
+
+  useEffect(() => {
+    let cancelled = false;
+    setInfo({ loading: true });
+
+    if (source.stream_type === "iframe") {
+      setInfo({ loading: false });
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch(source.url, { method: "GET", headers: { range: "bytes=0-2047" } });
+        const ct = res.headers.get("content-type");
+        const buf = await res.arrayBuffer();
+        let snippet = "";
+        try {
+          snippet = new TextDecoder().decode(buf.slice(0, 512));
+        } catch {}
+        if (!cancelled) {
+          setInfo({
+            loading: false,
+            status: res.status,
+            contentType: ct,
+            bytes: buf.byteLength,
+            snippet: /[\x00-\x08\x0E-\x1F]/.test(snippet) ? "<binary data>" : snippet,
+          });
+        }
+      } catch (e: any) {
+        if (!cancelled) setInfo({ loading: false, error: String(e?.message || e) });
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [source.url, source.stream_type]);
+
+  const ok = info.status && info.status >= 200 && info.status < 400;
+
+  return (
+    <div className="border-t border-border/60 bg-card/40 p-3 text-xs font-mono">
+      <div className="mb-1 flex items-center gap-2">
+        <span className="uppercase tracking-wider text-muted-foreground">Stream Debug</span>
+        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px]">{source.stream_type}</span>
+        <span className="rounded bg-secondary px-1.5 py-0.5 text-[10px]">{source.label}</span>
+        {info.loading ? (
+          <span className="text-muted-foreground">resolving…</span>
+        ) : info.error ? (
+          <span className="text-destructive">ERROR</span>
+        ) : info.status ? (
+          <span className={ok ? "text-green-500" : "text-destructive"}>
+            HTTP {info.status}
+          </span>
+        ) : null}
+      </div>
+      <div className="break-all text-muted-foreground">
+        <span className="text-foreground">URL:</span> {source.url}
+      </div>
+      {info.contentType && (
+        <div className="text-muted-foreground">
+          <span className="text-foreground">content-type:</span> {info.contentType}
+          {typeof info.bytes === "number" && <> · {info.bytes} bytes sampled</>}
+        </div>
+      )}
+      {info.error && <div className="mt-1 text-destructive">{info.error}</div>}
+      {info.snippet && (
+        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-black/40 p-2 text-[11px] leading-snug text-foreground/80">
+{info.snippet}
+        </pre>
+      )}
     </div>
   );
 }
