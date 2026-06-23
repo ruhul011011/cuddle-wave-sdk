@@ -338,3 +338,38 @@ function formatMoney(cents: number, currency: string) {
     return `${(cents / 100).toFixed(2)} ${currency.toUpperCase()}`;
   }
 }
+
+function MatchError({ message, reset }: { message: string; reset: () => void }) {
+  const router = useRouter();
+  const rateLimited = /too many requests|rate/i.test(message);
+  return (
+    <div className="min-h-screen">
+      <Header />
+      <div className="mx-auto max-w-3xl px-4 py-24 text-center">
+        <h1 className="font-display text-5xl">
+          {rateLimited ? "Stream temporarily busy" : "Couldn't load match"}
+        </h1>
+        <p className="mt-3 text-muted-foreground">
+          {rateLimited
+            ? "We're hitting the live data provider's rate limit. Please try again in a moment."
+            : message}
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          <button
+            onClick={() => {
+              reset();
+              router.invalidate();
+            }}
+            className="rounded-md bg-primary px-5 py-3 font-semibold text-primary-foreground"
+          >
+            Try again
+          </button>
+          <Link to="/" className="rounded-md border border-border/60 px-5 py-3 font-semibold">
+            Back home
+          </Link>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+}
