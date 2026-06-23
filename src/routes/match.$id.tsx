@@ -68,8 +68,6 @@ function MatchPage() {
     // Streams must load even when fixture metadata fails (rate limit, etc.).
     enabled: !access || !(access.access === "premium" && !access.hasAccess),
   });
-  const checkoutFn = useServerFn(createMatchCheckout);
-  const [buying, setBuying] = useState(false);
   const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
     id,
     league: "",
