@@ -1,5 +1,7 @@
-import { Link } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { Search, LogOut, Shield } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { supabase } from "@/integrations/supabase/client";
 
 const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/", label: "Home", exact: true },
@@ -11,6 +13,14 @@ const NAV: { to: string; label: string; exact?: boolean }[] = [
 ];
 
 export function Header() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  async function signOut() {
+    await supabase.auth.signOut();
+    navigate({ to: "/", replace: true });
+  }
+
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-4 px-4 sm:px-6">
@@ -37,12 +47,37 @@ export function Header() {
           <button className="grid h-10 w-10 place-items-center rounded-full border border-border/60 bg-card/60 text-muted-foreground hover:text-foreground transition-colors" aria-label="Search">
             <Search className="h-4 w-4" />
           </button>
-          <button className="hidden sm:inline-flex h-10 items-center rounded-full border border-border/60 bg-card/60 px-5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors">
-            Sign In
-          </button>
-          <button className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-            Sign Up
-          </button>
+          {user ? (
+            <>
+              <Link
+                to="/admin/streams"
+                className="hidden sm:inline-flex h-10 items-center gap-1.5 rounded-full border border-border/60 bg-card/60 px-4 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+              >
+                <Shield className="h-4 w-4" /> Admin
+              </Link>
+              <button
+                onClick={signOut}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                <LogOut className="h-4 w-4" /> Sign out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/auth"
+                className="hidden sm:inline-flex h-10 items-center rounded-full border border-border/60 bg-card/60 px-5 text-sm font-semibold text-foreground hover:bg-secondary transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/auth"
+                className="inline-flex h-10 items-center rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
