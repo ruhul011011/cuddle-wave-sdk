@@ -21,6 +21,16 @@ async function af<T>(path: string, ttlMs = 30_000): Promise<T> {
       const res = await fetch(`${BASE}${path}`, { headers: { "x-apisports-key": key } });
       if (!res.ok) throw new Error(`api-football error ${res.status}`);
       const json = (await res.json()) as { response: T; errors?: unknown };
+      // api-football returns 200 with an `errors` object on rate limit / auth
+      // failure and an empty `response`. Don't cache those as "no data" —
+      // surface as an error so callers can retry instead of showing "not found".
+      const errs = json.errors;
+      const hasErrors =
+        errs && typeof errs === "object" && !Array.isArray(errs) && Object.keys(errs as object).length > 0;
+      if (hasErrors) {
+        const msg = Object.values(errs as Record<string, string>)[0] ?? "api-football error";
+        throw new Error(String(msg));
+      }
       _cache.set(path, { value: json.response, expires: Date.now() + ttlMs });
       return json.response;
     } finally {
