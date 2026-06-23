@@ -29,6 +29,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin.transactions'
 import { Route as AuthenticatedAdminTopTeamsRouteImport } from './routes/_authenticated/admin.top-teams'
 import { Route as AuthenticatedAdminTopLeaguesRouteImport } from './routes/_authenticated/admin.top-leagues'
+import { Route as AuthenticatedAdminTelegramRouteImport } from './routes/_authenticated/admin.telegram'
 import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authenticated/admin.support'
 import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
 import { Route as AuthenticatedAdminStripeWebhooksRouteImport } from './routes/_authenticated/admin.stripe-webhooks'
@@ -144,6 +145,12 @@ const AuthenticatedAdminTopLeaguesRoute =
     path: '/top-leagues',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminTelegramRoute =
+  AuthenticatedAdminTelegramRouteImport.update({
+    id: '/telegram',
+    path: '/telegram',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminSupportRoute =
   AuthenticatedAdminSupportRouteImport.update({
     id: '/support',
@@ -233,6 +240,7 @@ export interface FileRoutesByFullPath {
   '/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/admin/telegram': typeof AuthenticatedAdminTelegramRoute
   '/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
   '/admin/top-teams': typeof AuthenticatedAdminTopTeamsRoute
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
@@ -264,6 +272,7 @@ export interface FileRoutesByTo {
   '/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/admin/telegram': typeof AuthenticatedAdminTelegramRoute
   '/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
   '/admin/top-teams': typeof AuthenticatedAdminTopTeamsRoute
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
@@ -298,6 +307,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
   '/_authenticated/admin/support': typeof AuthenticatedAdminSupportRoute
+  '/_authenticated/admin/telegram': typeof AuthenticatedAdminTelegramRoute
   '/_authenticated/admin/top-leagues': typeof AuthenticatedAdminTopLeaguesRoute
   '/_authenticated/admin/top-teams': typeof AuthenticatedAdminTopTeamsRoute
   '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
@@ -332,6 +342,7 @@ export interface FileRouteTypes {
     | '/admin/stripe-webhooks'
     | '/admin/subscriptions'
     | '/admin/support'
+    | '/admin/telegram'
     | '/admin/top-leagues'
     | '/admin/top-teams'
     | '/admin/transactions'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/admin/stripe-webhooks'
     | '/admin/subscriptions'
     | '/admin/support'
+    | '/admin/telegram'
     | '/admin/top-leagues'
     | '/admin/top-teams'
     | '/admin/transactions'
@@ -396,6 +408,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/stripe-webhooks'
     | '/_authenticated/admin/subscriptions'
     | '/_authenticated/admin/support'
+    | '/_authenticated/admin/telegram'
     | '/_authenticated/admin/top-leagues'
     | '/_authenticated/admin/top-teams'
     | '/_authenticated/admin/transactions'
@@ -564,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTopLeaguesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/telegram': {
+      id: '/_authenticated/admin/telegram'
+      path: '/telegram'
+      fullPath: '/admin/telegram'
+      preLoaderRoute: typeof AuthenticatedAdminTelegramRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/support': {
       id: '/_authenticated/admin/support'
       path: '/support'
@@ -656,6 +676,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminStripeWebhooksRoute: typeof AuthenticatedAdminStripeWebhooksRoute
   AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
   AuthenticatedAdminSupportRoute: typeof AuthenticatedAdminSupportRoute
+  AuthenticatedAdminTelegramRoute: typeof AuthenticatedAdminTelegramRoute
   AuthenticatedAdminTopLeaguesRoute: typeof AuthenticatedAdminTopLeaguesRoute
   AuthenticatedAdminTopTeamsRoute: typeof AuthenticatedAdminTopTeamsRoute
   AuthenticatedAdminTransactionsRoute: typeof AuthenticatedAdminTransactionsRoute
@@ -676,6 +697,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminStripeWebhooksRoute: AuthenticatedAdminStripeWebhooksRoute,
   AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
   AuthenticatedAdminSupportRoute: AuthenticatedAdminSupportRoute,
+  AuthenticatedAdminTelegramRoute: AuthenticatedAdminTelegramRoute,
   AuthenticatedAdminTopLeaguesRoute: AuthenticatedAdminTopLeaguesRoute,
   AuthenticatedAdminTopTeamsRoute: AuthenticatedAdminTopTeamsRoute,
   AuthenticatedAdminTransactionsRoute: AuthenticatedAdminTransactionsRoute,
