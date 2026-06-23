@@ -279,51 +279,31 @@ function TopLeaguesPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <label className="space-y-1 text-xs">
-                <span className="text-muted-foreground">Position</span>
-                <input
-                  type="number"
-                  className="input-base w-full bg-background"
-                  value={form.sort_order}
-                  onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
-                />
-              </label>
-              <label className="space-y-1 text-xs">
-                <span className="text-muted-foreground">League ID *</span>
-                <input
-                  type="number"
-                  required
-                  className="input-base w-full bg-background"
-                  value={form.league_id}
-                  onChange={(e) => setForm({ ...form, league_id: e.target.value })}
-                />
-              </label>
-            </div>
+            <LeaguePicker
+              options={availableQ.data ?? []}
+              loading={availableQ.isLoading}
+              error={availableQ.error}
+              value={form.league_id ? Number(form.league_id) : null}
+              currentLabel={form.name}
+              currentLogo={form.logo}
+              onSelect={(opt) =>
+                setForm((f) => ({
+                  ...f,
+                  league_id: String(opt.id),
+                  name: opt.name,
+                  country: opt.country ?? "",
+                  logo: opt.logo ?? "",
+                }))
+              }
+            />
+
             <label className="block space-y-1 text-xs">
-              <span className="text-muted-foreground">Name *</span>
+              <span className="text-muted-foreground">Position</span>
               <input
-                required
+                type="number"
                 className="input-base w-full bg-background"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </label>
-            <label className="block space-y-1 text-xs">
-              <span className="text-muted-foreground">Country</span>
-              <input
-                className="input-base w-full bg-background"
-                value={form.country}
-                onChange={(e) => setForm({ ...form, country: e.target.value })}
-              />
-            </label>
-            <label className="block space-y-1 text-xs">
-              <span className="text-muted-foreground">Logo URL</span>
-              <input
-                className="input-base w-full bg-background"
-                value={form.logo}
-                onChange={(e) => setForm({ ...form, logo: e.target.value })}
-                placeholder="https://..."
+                value={form.sort_order}
+                onChange={(e) => setForm({ ...form, sort_order: e.target.value })}
               />
             </label>
 
