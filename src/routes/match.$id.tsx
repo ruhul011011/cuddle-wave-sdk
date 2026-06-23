@@ -1,9 +1,11 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
-import { Play, Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User } from "lucide-react";
+import { getStreamsForFixture } from "@/lib/streams.functions";
+import { StreamPlayer } from "@/components/StreamPlayer";
+import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User } from "lucide-react";
 
 const fixtureQuery = (id: string) =>
   queryOptions({
@@ -11,6 +13,13 @@ const fixtureQuery = (id: string) =>
     queryFn: () => getFixtureDetail({ data: { id } }),
     staleTime: 15_000,
     refetchInterval: 30_000,
+  });
+
+const streamsQuery = (id: string) =>
+  queryOptions({
+    queryKey: ["streams", id],
+    queryFn: () => getStreamsForFixture({ data: { fixtureId: Number(id) } }),
+    staleTime: 30_000,
   });
 
 export const Route = createFileRoute("/match/$id")({
