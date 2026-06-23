@@ -1,15 +1,13 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
 import { getStreamsForFixture } from "@/lib/streams.functions";
-import { getMatchAccess, createMatchCheckout } from "@/lib/payments.functions";
-import { supabase } from "@/integrations/supabase/client";
+import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
-import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock, Loader2 } from "lucide-react";
+import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock } from "lucide-react";
 
 const fixtureQuery = (id: string) =>
   queryOptions({
