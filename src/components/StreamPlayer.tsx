@@ -140,6 +140,12 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           <div className="flex flex-wrap gap-2">
             {sources.map((s, i) => {
               const active = s.id === selected.id;
+              const q = qualities[s.id] ?? {};
+              const heightNum = q.resolution ? parseInt(q.resolution, 10) : 0;
+              const tier = heightNum ? tierFromHeight(heightNum) : "HD";
+              const detail = q.resolution
+                ? (q.bitrate ? `${q.resolution} · ${q.bitrate}` : q.resolution)
+                : (s.label?.toUpperCase() || `SERVER ${i + 1}`);
               return (
                 <button
                   key={s.id}
@@ -151,9 +157,9 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
                       : "bg-secondary/70 text-foreground hover:bg-secondary")
                   }
                 >
-                  <span className="tracking-wide">HD</span>
+                  <span className="tracking-wide">{tier}</span>
                   <span className={active ? "text-white/95" : "text-amber-400"}>
-                    {s.label?.toUpperCase() || `SERVER ${i + 1}`}
+                    {detail}
                   </span>
                 </button>
               );
