@@ -1,8 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { MatchCard } from "@/components/site/MatchCard";
-import { matches } from "@/lib/matches";
+import { getLiveFixtures } from "@/lib/api-football.functions";
+
+const liveQuery = queryOptions({
+  queryKey: ["live-fixtures"],
+  queryFn: () => getLiveFixtures(),
+  staleTime: 10_000,
+  refetchInterval: 15_000,
+});
 
 export const Route = createFileRoute("/live")({
   head: () => ({
@@ -13,11 +21,18 @@ export const Route = createFileRoute("/live")({
       { property: "og:description", content: "Watch live football matches streaming right now in HD." },
     ],
   }),
+  loader: ({ context }) => context.queryClient.ensureQueryData(liveQuery),
+  errorComponent: ({ error }) => (
+    <div className="min-h-screen grid place-items-center p-8 text-center">
+      <p className="text-muted-foreground">{error.message}</p>
+    </div>
+  ),
+  notFoundComponent: () => <div className="p-12 text-center">No live matches.</div>,
   component: LivePage,
 });
 
 function LivePage() {
-  const live = matches.filter((m) => m.status === "live");
+  const { data: live } = useSuspenseQuery(liveQuery);
   return (
     <div className="min-h-screen">
       <Header />
