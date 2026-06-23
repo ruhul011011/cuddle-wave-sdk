@@ -329,3 +329,142 @@ function TopLeaguesPage() {
     </div>
   );
 }
+
+function LeaguePicker({
+  options,
+  loading,
+  error,
+  value,
+  currentLabel,
+  currentLogo,
+  onSelect,
+}: {
+  options: LeagueOption[];
+  loading: boolean;
+  error: unknown;
+  value: number | null;
+  currentLabel: string;
+  currentLogo: string;
+  onSelect: (opt: LeagueOption) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return options.slice(0, 200);
+    return options
+      .filter(
+        (o) =>
+          o.name.toLowerCase().includes(q) ||
+          (o.country ?? "").toLowerCase().includes(q) ||
+          String(o.id) === q,
+      )
+      .slice(0, 200);
+  }, [options, query]);
+
+  const selected = value
+    ? options.find((o) => o.id === value) ?? {
+        id: value,
+        name: currentLabel,
+        logo: currentLogo,
+      }
+    : null;
+
+  return (
+    <div className="space-y-1 text-xs" ref={ref}>
+      <span className="text-muted-foreground">League *</span>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/60 bg-background px-3 py-2.5 text-left text-sm"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            {selected?.logo && (
+              <img src={selected.logo} alt="" className="h-5 w-5 shrink-0 object-contain" />
+            )}
+            <span className={`truncate ${selected ? "" : "text-muted-foreground"}`}>
+              {selected ? selected.name : "Select league…"}
+            </span>
+            {selected?.country && (
+              <span className="truncate text-xs text-muted-foreground">
+                · {selected.country}
+              </span>
+            )}
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
+        </button>
+
+        {open && (
+          <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-lg border border-border/60 bg-popover shadow-xl">
+            <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2">
+              <Search className="h-4 w-4 text-muted-foreground" />
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search leagues…"
+                className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              {loading && (
+                <div className="flex items-center justify-center gap-2 p-6 text-xs text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Loading leagues…
+                </div>
+              )}
+              {!loading && error && (
+                <div className="p-4 text-xs text-red-400">
+                  Failed to load leagues. Check API connection.
+                </div>
+              )}
+              {!loading && !error && filtered.length === 0 && (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  No leagues match "{query}".
+                </div>
+              )}
+              {!loading &&
+                !error &&
+                filtered.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => {
+                      onSelect(o);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                    className={`flex w-full items-center gap-3 px-3 py-2 text-left text-sm hover:bg-muted/60 ${
+                      value === o.id ? "bg-primary/10" : ""
+                    }`}
+                  >
+                    {o.logo ? (
+                      <img src={o.logo} alt="" className="h-6 w-6 shrink-0 object-contain" />
+                    ) : (
+                      <div className="h-6 w-6 shrink-0 rounded bg-muted" />
+                    )}
+                    <span className="flex-1 truncate">{o.name}</span>
+                    {o.country && (
+                      <span className="text-xs text-muted-foreground">{o.country}</span>
+                    )}
+                    <span className="text-[10px] text-muted-foreground">#{o.id}</span>
+                  </button>
+                ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
