@@ -99,10 +99,29 @@ function AdminLiveMatchesPage() {
     enabled: typeof leagueId === "number" && !editingFixture,
   });
 
-  const selectedFixture = useMemo(
-    () => fixturesQ.data?.find((f) => f.id === fixtureId),
-    [fixturesQ.data, fixtureId],
-  );
+  const selectedFixture = useMemo(() => {
+    if (editingFixture) {
+      return {
+        id: String(editingFixture.id),
+        kickoff: editingFixture.kickoff ?? "",
+        league: editingFixture.league ?? "",
+        leagueLogo: "",
+        homeTeam: "",
+        awayTeam: "",
+      };
+    }
+    return fixturesQ.data?.find((f) => f.id === fixtureId);
+  }, [editingFixture, fixturesQ.data, fixtureId]);
+
+  function resetForm() {
+    setLinks([{ ...EMPTY_LINK }]);
+    setFixtureId("");
+    setAccess("free");
+    setPriceUsd("4.99");
+    setAvailability("now");
+    setEditingFixture(null);
+    setLeagueId("");
+  }
 
   // When access type changes, sync each link's link_mode if the access type
   // forces it (premium / ads / free). For 'mix' we leave the per-row choice.
@@ -129,21 +148,85 @@ function AdminLiveMatchesPage() {
           available_from,
         },
       });
+      // When editing, wipe the existing stream rows before re-inserting.
+      if (editingFixture) {
+        await deleteFixtureFn({ data: { fixtureId: vars.fixture_id } });
+        // Re-apply access since deleteFixtureFn also clears match_access.
+        await setAccessFn({
+          data: {
+            fixture_id: vars.fixture_id,
+            access,
+            price_cents: access === "premium" ? Math.round(parseFloat(priceUsd || "0") * 100) : 0,
+            currency: "usd",
+            available_from,
+          },
+        });
+      }
       return bulkCreateFn({ data: vars });
     },
     onSuccess: () => {
-      toast.success("Match saved");
-      setLinks([{ ...EMPTY_LINK }]); setFixtureId("");
-      setAccess("free"); setPriceUsd("4.99"); setAvailability("now");
-      streamsQ.refetch(); router.invalidate();
+      toast.success(editingFixture ? "Match updated" : "Match saved");
+      resetForm();
+      streamsQ.refetch();
+      groupsQ.refetch();
+      router.invalidate();
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
   const deleteM = useMutation({
     mutationFn: (id: string) => deleteFn({ data: { id } }),
-    onSuccess: () => { toast.success("Removed"); streamsQ.refetch(); },
+    onSuccess: () => { toast.success("Removed"); streamsQ.refetch(); groupsQ.refetch(); },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
   });
+  const deleteFixtureM = useMutation({
+    mutationFn: (fixtureId: number) => deleteFixtureFn({ data: { fixtureId } }),
+    onSuccess: () => {
+      toast.success("Match removed");
+      streamsQ.refetch();
+      groupsQ.refetch();
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Failed"),
+  });
+
+  async function startEdit(fixtureId: number) {
+    try {
+      const meta = fixtureMetaMap.get(fixtureId);
+      const group = groupsQ.data?.find((g) => g.fixture_id === fixtureId);
+      const rows = await getStreamsForFixtureFn({ data: { fixtureId } });
+      setEditingFixture({
+        id: fixtureId,
+        label: meta ? `${meta.homeTeam} vs ${meta.awayTeam}` : `Fixture #${fixtureId}`,
+        kickoff: meta?.kickoff,
+        league: meta?.league,
+      });
+      setFixtureId(String(fixtureId));
+      setLinks(
+        rows.length
+          ? rows.map((r) => ({
+              url: r.url,
+              quality: (r.quality as LinkRow["quality"]) ?? "HD",
+              stream_type: r.stream_type,
+              label: r.label || "Main",
+              link_mode: (r.link_mode as LinkMode) ?? "free",
+            }))
+          : [{ ...EMPTY_LINK }],
+      );
+      if (group) {
+        setAccess(group.access);
+        if (group.access === "premium") setPriceUsd(((group.price_cents || 0) / 100).toFixed(2));
+        setAvailability(group.available_from ? "pre10" : "now");
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load match");
+    }
+  }
+
+  useEffect(() => {
+    if (!editingFixture) return;
+    // keep fixtureId synced with editing state
+    setFixtureId(String(editingFixture.id));
+  }, [editingFixture]);
 
   function updateLink(i: number, patch: Partial<LinkRow>) {
     setLinks((arr) => arr.map((l, idx) => (idx === i ? { ...l, ...patch } : l)));
