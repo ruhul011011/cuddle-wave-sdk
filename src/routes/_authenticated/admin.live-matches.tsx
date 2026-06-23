@@ -271,41 +271,66 @@ function AdminLiveMatchesPage() {
       <h1 className="font-display text-3xl">Live Matches</h1>
 
       <form onSubmit={submit} className="rounded-2xl border border-border/60 bg-card p-6 space-y-4">
-        <h2 className="font-display text-xl">Add Live Match</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="League">
-            <select className="input-base bg-background w-full" value={leagueId}
-              onChange={(e) => { setLeagueId(e.target.value ? Number(e.target.value) : ""); setFixtureId(""); }} required>
-              <option value="">Select league…</option>
-              {leaguesQ.data?.map((l) => (
-                <option key={l.id} value={l.id}>{l.name}{l.country ? ` — ${l.country}` : ""}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Date">
-            <input type="date" className="input-base bg-background w-full" value={date}
-              onChange={(e) => { setDate(e.target.value); setFixtureId(""); }} required />
-          </Field>
-        </div>
-        <Field label="Match">
-          <select className="input-base bg-background w-full" value={fixtureId}
-            onChange={(e) => setFixtureId(e.target.value)} disabled={!leagueId || fixturesQ.isLoading} required>
-            <option value="">
-              {!leagueId ? "Pick a league first" : fixturesQ.isLoading ? "Loading…" : !fixturesQ.data?.length ? "No matches" : "Select match…"}
-            </option>
-            {fixturesQ.data?.map((f) => {
-              const t = f.kickoff ? new Date(f.kickoff).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
-              return <option key={f.id} value={f.id}>{t} — {f.homeTeam} vs {f.awayTeam}</option>;
-            })}
-          </select>
-          {selectedFixture && (
-            <div className="mt-2 flex items-center gap-3 rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
-              {selectedFixture.leagueLogo && <img src={selectedFixture.leagueLogo} alt="" className="h-6 w-6" />}
-              <span className="text-muted-foreground">{selectedFixture.league}</span>
-              <span className="ml-auto font-display text-primary">Fixture ID: {selectedFixture.id}</span>
-            </div>
+        <div className="flex items-center justify-between">
+          <h2 className="font-display text-xl">
+            {editingFixture ? `Edit Match — ${editingFixture.label}` : "Add Live Match"}
+          </h2>
+          {editingFixture && (
+            <button
+              type="button"
+              onClick={resetForm}
+              className="inline-flex items-center gap-1 rounded-md border border-border/60 px-3 py-1.5 text-xs hover:bg-secondary/60"
+            >
+              <X className="h-3 w-3" /> Cancel edit
+            </button>
           )}
-        </Field>
+        </div>
+        {!editingFixture && (
+          <>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="League">
+                <select className="input-base bg-background w-full" value={leagueId}
+                  onChange={(e) => { setLeagueId(e.target.value ? Number(e.target.value) : ""); setFixtureId(""); }} required>
+                  <option value="">Select league…</option>
+                  {leaguesQ.data?.map((l) => (
+                    <option key={l.id} value={l.id}>{l.name}{l.country ? ` — ${l.country}` : ""}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Date">
+                <input type="date" className="input-base bg-background w-full" value={date}
+                  onChange={(e) => { setDate(e.target.value); setFixtureId(""); }} required />
+              </Field>
+            </div>
+            <Field label="Match">
+              <select className="input-base bg-background w-full" value={fixtureId}
+                onChange={(e) => setFixtureId(e.target.value)} disabled={!leagueId || fixturesQ.isLoading} required>
+                <option value="">
+                  {!leagueId ? "Pick a league first" : fixturesQ.isLoading ? "Loading…" : !fixturesQ.data?.length ? "No matches" : "Select match…"}
+                </option>
+                {fixturesQ.data?.map((f) => {
+                  const t = f.kickoff ? new Date(f.kickoff).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+                  return <option key={f.id} value={f.id}>{t} — {f.homeTeam} vs {f.awayTeam}</option>;
+                })}
+              </select>
+              {selectedFixture && !editingFixture && (
+                <div className="mt-2 flex items-center gap-3 rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
+                  {"leagueLogo" in selectedFixture && selectedFixture.leagueLogo && (
+                    <img src={selectedFixture.leagueLogo} alt="" className="h-6 w-6" />
+                  )}
+                  <span className="text-muted-foreground">{selectedFixture.league}</span>
+                  <span className="ml-auto font-display text-primary">Fixture ID: {selectedFixture.id}</span>
+                </div>
+              )}
+            </Field>
+          </>
+        )}
+        {editingFixture && (
+          <div className="flex items-center gap-3 rounded-lg border border-border/60 bg-background/60 p-3 text-sm">
+            <span className="text-muted-foreground">{editingFixture.league ?? ""}</span>
+            <span className="ml-auto font-display text-primary">Fixture ID: {editingFixture.id}</span>
+          </div>
+        )}
 
         <Field label="Access Type">
           <select
