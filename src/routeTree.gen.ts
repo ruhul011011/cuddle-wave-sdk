@@ -20,6 +20,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as AuthenticatedAdminLiveMatchesRouteImport } from './routes/_authenticated/admin.live-matches'
 
 const ScheduleRoute = ScheduleRouteImport.update({
   id: '/schedule',
@@ -75,6 +76,12 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminLiveMatchesRoute =
+  AuthenticatedAdminLiveMatchesRouteImport.update({
+    id: '/live-matches',
+    path: '/live-matches',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -86,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/schedule': typeof ScheduleRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/match/$id': typeof MatchIdRoute
+  '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesByTo {
@@ -97,6 +105,7 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/match/$id': typeof MatchIdRoute
+  '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRoutesById {
@@ -111,6 +120,7 @@ export interface FileRoutesById {
   '/schedule': typeof ScheduleRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/match/$id': typeof MatchIdRoute
+  '/_authenticated/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
@@ -125,6 +135,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/admin'
     | '/match/$id'
+    | '/admin/live-matches'
     | '/admin/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -136,6 +147,7 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/schedule'
     | '/match/$id'
+    | '/admin/live-matches'
     | '/admin'
   id:
     | '__root__'
@@ -149,6 +161,7 @@ export interface FileRouteTypes {
     | '/schedule'
     | '/_authenticated/admin'
     | '/match/$id'
+    | '/_authenticated/admin/live-matches'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
 }
@@ -243,14 +256,23 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/live-matches': {
+      id: '/_authenticated/admin/live-matches'
+      path: '/live-matches'
+      fullPath: '/admin/live-matches'
+      preLoaderRoute: typeof AuthenticatedAdminLiveMatchesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminLiveMatchesRoute: typeof AuthenticatedAdminLiveMatchesRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminLiveMatchesRoute: AuthenticatedAdminLiveMatchesRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
