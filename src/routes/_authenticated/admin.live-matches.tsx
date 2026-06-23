@@ -139,6 +139,27 @@ function AdminLiveMatchesPage() {
           )}
         </Field>
 
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Access">
+            <select className="input-base bg-background w-full" value={access}
+              onChange={(e) => setAccess(e.target.value as "free" | "paid")}>
+              <option value="free">Free (sign-in only)</option>
+              <option value="paid">Paid (Stripe Checkout)</option>
+            </select>
+          </Field>
+          <Field label="Price (USD)">
+            <input
+              type="number" min="0.50" step="0.01"
+              className="input-base bg-background w-full disabled:opacity-50"
+              value={priceUsd}
+              onChange={(e) => setPriceUsd(e.target.value)}
+              disabled={access !== "paid"}
+              placeholder="4.99"
+            />
+          </Field>
+        </div>
+
+
         <div>
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-display text-lg">Stream links</h3>
