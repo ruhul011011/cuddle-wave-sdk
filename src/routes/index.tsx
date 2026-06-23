@@ -3,7 +3,8 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
-import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
+import { getHomeFeed, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
+import { listStreamedFixtureIds } from "@/lib/streams.functions";
 import {
   Trophy,
   ChevronRight,
@@ -16,9 +17,26 @@ import {
   Radio,
 } from "lucide-react";
 
+async function loadHomeFeed() {
+  const [feed, streamedIds] = await Promise.all([
+    getHomeFeed(),
+    listStreamedFixtureIds().catch(() => [] as number[]),
+  ]);
+  const streamed = new Set(streamedIds);
+  // "Live" on the home page = matches that have admin-added streams.
+  const liveFromApi = feed.live.filter((m) => streamed.has(Number(m.id)));
+  const knownIds = new Set(liveFromApi.map((m) => Number(m.id)));
+  const missing = streamedIds.filter((id) => !knownIds.has(id));
+  const extra = missing.length
+    ? await getFixturesByIds({ data: { ids: missing } }).catch(() => [] as Fixture[])
+    : [];
+  const live = [...liveFromApi, ...extra].sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  return { live, upcoming: feed.upcoming };
+}
+
 const homeFeedQuery = queryOptions({
-  queryKey: ["home-feed"],
-  queryFn: () => getHomeFeed(),
+  queryKey: ["home-feed-with-streams"],
+  queryFn: loadHomeFeed,
   staleTime: 15_000,
   refetchInterval: 30_000,
 });
