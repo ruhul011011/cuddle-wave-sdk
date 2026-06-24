@@ -6,6 +6,11 @@ type Plyr = InstanceType<typeof Plyr>;
 import "plyr/dist/plyr.css";
 import { Activity, Loader2, Play, Radio, Tv } from "lucide-react";
 
+const LIVE_HARD_RESET_COOLDOWN_MS = 8_000;
+const LIVE_STARTUP_GRACE_MS = 18_000;
+const LIVE_STALL_RESET_MS = 14_000;
+const LIVE_SEGMENT_GRACE_MS = 28_000;
+
 export type StreamSource = {
   id: string;
   label: string;
@@ -69,6 +74,17 @@ function tierFromHeight(h: number): string {
   if (h >= 720) return "HD";
   if (h >= 480) return "SD";
   return "LD";
+}
+
+function withCacheBust(url: string): string {
+  try {
+    const u = new URL(url, window.location.origin);
+    u.searchParams.set("_r", String(Date.now()));
+    return u.pathname + u.search + u.hash;
+  } catch {
+    const joiner = url.includes("?") ? "&" : "?";
+    return `${url}${joiner}_r=${Date.now()}`;
+  }
 }
 
 
@@ -498,6 +514,28 @@ function PlyrVideo({
     };
 
     let hardResetHls: (() => void) | null = null;
+    let hardResetPlayback: (() => void) | null = null;
+    let lastAnyHardResetAt = 0;
+    const mountedAt = Date.now();
+
+    const resetDirectSource = () => {
+      if (!isLive || userPausedRef.current) return;
+      const now = Date.now();
+      if (now - lastAnyHardResetAt < LIVE_HARD_RESET_COOLDOWN_MS) {
+        playSafely();
+        return;
+      }
+      lastAnyHardResetAt = now;
+      emitDiag({ retryCount: diagRef.current.retryCount + 1, stallState: "recovering" });
+      try {
+        video.pause();
+        video.removeAttribute("src");
+        video.load();
+      } catch {}
+      video.src = withCacheBust(src);
+      video.load();
+      playSafely();
+    };
 
     const restartLiveLoad = () => {
       try { hlsRef.current?.startLoad(-1); } catch {}
@@ -511,11 +549,12 @@ function PlyrVideo({
       if (typeof liveSyncPosition === "number" && liveSyncPosition > 0 && liveSyncPosition - video.currentTime > 20) {
         video.currentTime = liveSyncPosition;
       }
-      const stalledTooLong = Date.now() - lastPlaybackRef.current.checkedAt > 20_000;
+      const stalledTooLong = Date.now() - lastPlaybackRef.current.checkedAt > LIVE_STALL_RESET_MS;
       const noRecentSegments =
-        diagRef.current.lastSegmentAt !== null && Date.now() - diagRef.current.lastSegmentAt > 25_000;
-      if ((stalledTooLong || noRecentSegments) && hardResetHls) {
-        hardResetHls();
+        diagRef.current.lastSegmentAt !== null && Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS;
+      const neverLoaded = video.readyState < 2 && Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS;
+      if ((stalledTooLong || noRecentSegments || neverLoaded) && hardResetPlayback) {
+        hardResetPlayback();
         return;
       }
       playSafely();
@@ -567,13 +606,16 @@ function PlyrVideo({
     const watchdog = window.setInterval(() => {
       if (!isLive || userPausedRef.current || document.visibilityState !== "visible") return;
       const previous = lastPlaybackRef.current;
+      const noDataAfterStartup = video.readyState < 2 && Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS;
+      const noRecentSegments =
+        diagRef.current.lastSegmentAt !== null && Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS;
       const playbackStuck =
         !video.paused &&
         Math.abs(video.currentTime - previous.time) <= 0.25 &&
-        Date.now() - previous.checkedAt > 12_000;
+        Date.now() - previous.checkedAt > LIVE_STALL_RESET_MS;
 
-      if (video.paused || video.ended || playbackStuck) {
-        if (playbackStuck && diagRef.current.stallState === "ok") {
+      if (video.paused || video.ended || playbackStuck || noDataAfterStartup || noRecentSegments) {
+        if ((playbackStuck || noDataAfterStartup || noRecentSegments) && diagRef.current.stallState === "ok") {
           emitDiag({ stallState: "stalled" });
         }
         recoverLivePlayback();
@@ -585,45 +627,82 @@ function PlyrVideo({
     if (type === "mp4") {
       emitDiag({ mode: "MP4" });
       video.src = src;
+      hardResetPlayback = resetDirectSource;
       initPlyr();
       playSafely();
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Native HLS (Safari/iOS)
       emitDiag({ mode: "Native HLS" });
       video.src = src;
+      hardResetPlayback = resetDirectSource;
       initPlyr();
       playSafely();
     } else if (Hls.isSupported()) {
       emitDiag({ mode: "HLS.js" });
       const buildHls = () =>
         new Hls({
-          enableWorker: true,
+          enableWorker: false,
           lowLatencyMode: true,
+          initialLiveManifestSize: 3,
+          maxBufferLength: 45,
+          maxMaxBufferLength: 90,
           backBufferLength: 60,
           liveBackBufferLength: 90,
           liveDurationInfinity: true,
+          liveSyncMode: "edge",
           liveSyncDurationCount: 3,
           liveMaxLatencyDurationCount: 12,
+          liveSyncOnStallIncrease: 1,
           maxLiveSyncPlaybackRate: 1.2,
+          maxBufferHole: 0.25,
+          detectStallWithCurrentTimeMs: 800,
           nudgeOffset: 0.2,
           nudgeMaxRetry: 8,
+          startFragPrefetch: true,
           manifestLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
           levelLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
           fragLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
           manifestLoadingRetryDelay: 1_000,
           levelLoadingRetryDelay: 1_000,
           fragLoadingRetryDelay: 1_000,
-          manifestLoadingMaxRetryTimeout: 8_000,
-          levelLoadingMaxRetryTimeout: 8_000,
-          fragLoadingMaxRetryTimeout: 8_000,
+          manifestLoadingMaxRetryTimeout: 6_000,
+          levelLoadingMaxRetryTimeout: 6_000,
+          fragLoadingMaxRetryTimeout: 6_000,
+          manifestLoadPolicy: {
+            default: {
+              maxTimeToFirstByteMs: 6_000,
+              maxLoadTimeMs: 12_000,
+              timeoutRetry: { maxNumRetry: 4, retryDelayMs: 500, maxRetryDelayMs: 3_000, backoff: "linear" },
+              errorRetry: { maxNumRetry: 8, retryDelayMs: 1_000, maxRetryDelayMs: 5_000, backoff: "linear" },
+            },
+          },
+          playlistLoadPolicy: {
+            default: {
+              maxTimeToFirstByteMs: 6_000,
+              maxLoadTimeMs: 12_000,
+              timeoutRetry: { maxNumRetry: 4, retryDelayMs: 500, maxRetryDelayMs: 3_000, backoff: "linear" },
+              errorRetry: { maxNumRetry: 10, retryDelayMs: 1_000, maxRetryDelayMs: 5_000, backoff: "linear" },
+            },
+          },
+          fragLoadPolicy: {
+            default: {
+              maxTimeToFirstByteMs: 7_000,
+              maxLoadTimeMs: 18_000,
+              timeoutRetry: { maxNumRetry: 4, retryDelayMs: 0, maxRetryDelayMs: 2_000, backoff: "linear" },
+              errorRetry: { maxNumRetry: 10, retryDelayMs: 750, maxRetryDelayMs: 4_000, backoff: "linear" },
+            },
+          },
         });
 
       let recoverCount = 0;
       let lastHardResetAt = 0;
-      const attachHls = (hls: Hls) => {
+      const attachHls = (hls: Hls, sourceUrl = src) => {
         hlsRef.current = hls;
-        hls.loadSource(src);
+        hls.loadSource(sourceUrl);
         hls.attachMedia(video);
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls.startLoad(-1);
+        });
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           if (!plyrRef.current) {
             const qualities = hls.levels
@@ -639,11 +718,18 @@ function PlyrVideo({
         hls.on(Hls.Events.ERROR, (_e, data) => {
           const isNetwork = data.type === Hls.ErrorTypes.NETWORK_ERROR;
           const isMedia = data.type === Hls.ErrorTypes.MEDIA_ERROR;
+          const details = String(data.details ?? "").toLowerCase();
           if (!data.fatal) {
-            if (isNetwork) {
+            if (isNetwork || details.includes("stall") || details.includes("timeout")) {
               emitDiag({ retryCount: diagRef.current.retryCount + 1, stallState: "recovering" });
-              hls.startLoad(-1);
-              playSafely();
+              recoverCount += 1;
+              if (recoverCount > 3) {
+                recoverCount = 0;
+                hardResetPlayback?.();
+              } else {
+                hls.startLoad(-1);
+                playSafely();
+              }
             } else if (isMedia) {
               recoverLivePlayback();
             }
@@ -677,61 +763,86 @@ function PlyrVideo({
       };
       hardResetHls = () => {
         const now = Date.now();
-        if (now - lastHardResetAt < 10_000) {
+        if (now - lastHardResetAt < LIVE_HARD_RESET_COOLDOWN_MS) {
           restartLiveLoad();
           playSafely();
           return;
         }
         lastHardResetAt = now;
+        lastAnyHardResetAt = now;
         emitDiag({ retryCount: diagRef.current.retryCount + 1, stallState: "recovering" });
-        try { hlsRef.current?.destroy(); } catch {}
-        attachHls(buildHls());
+        try {
+          hlsRef.current?.destroy();
+          video.pause();
+          video.removeAttribute("src");
+          video.load();
+        } catch {}
+        attachHls(buildHls(), withCacheBust(src));
       };
+      hardResetPlayback = hardResetHls;
       attachHls(buildHls());
-
-      // Auto-resume on stalls, live "ended", and tab visibility changes
-      const onStalled = () => {
-        emitDiag({ stallState: "stalled" });
-        recoverLivePlayback();
-      };
-      const onEnded = () => {
-        if (isLive) {
-          hardResetHls?.();
-        }
-      };
-      const onVideoError = () => {
-        if (isLive) hardResetHls?.();
-      };
-      const onVisibility = () => {
-        if (document.visibilityState === "visible" && isLive && video.paused) {
-          recoverLivePlayback();
-        }
-      };
-      video.addEventListener("stalled", onStalled);
-      video.addEventListener("waiting", onStalled);
-      video.addEventListener("ended", onEnded);
-      video.addEventListener("error", onVideoError);
-      document.addEventListener("visibilitychange", onVisibility);
-      (hlsRef as any).cleanupExtra = () => {
-        video.removeEventListener("stalled", onStalled);
-        video.removeEventListener("waiting", onStalled);
-        video.removeEventListener("ended", onEnded);
-        video.removeEventListener("error", onVideoError);
-        document.removeEventListener("visibilitychange", onVisibility);
-      };
     } else {
       video.src = src;
+      hardResetPlayback = resetDirectSource;
       initPlyr();
     }
 
+    // Auto-resume on stalls, live "ended", and tab visibility changes for
+    // HLS.js, native HLS, and direct progressive streams.
+    let waitingResetTimer: number | null = null;
+    const onStalled = () => {
+      if (!isLive) return;
+      emitDiag({ stallState: "stalled" });
+      recoverLivePlayback();
+      if (waitingResetTimer) window.clearTimeout(waitingResetTimer);
+      waitingResetTimer = window.setTimeout(() => hardResetPlayback?.(), 5_000);
+    };
+    const onCanPlayOrPlaying = () => {
+      if (waitingResetTimer) {
+        window.clearTimeout(waitingResetTimer);
+        waitingResetTimer = null;
+      }
+      emitDiag({ stallState: "ok" });
+    };
+    const onEnded = () => {
+      if (isLive) hardResetPlayback?.();
+    };
+    const onVideoError = () => {
+      if (isLive) hardResetPlayback?.();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && isLive) {
+        if (video.paused || video.readyState < 2) recoverLivePlayback();
+        else restartLiveLoad();
+      }
+    };
+    video.addEventListener("stalled", onStalled);
+    video.addEventListener("waiting", onStalled);
+    video.addEventListener("emptied", onStalled);
+    video.addEventListener("suspend", onStalled);
+    video.addEventListener("canplay", onCanPlayOrPlaying);
+    video.addEventListener("playing", onCanPlayOrPlaying);
+    video.addEventListener("ended", onEnded);
+    video.addEventListener("error", onVideoError);
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       window.clearInterval(watchdog);
+      if (waitingResetTimer) window.clearTimeout(waitingResetTimer);
       document.removeEventListener("pointerdown", markUserAction, true);
       document.removeEventListener("keydown", markUserAction, true);
       video.removeEventListener("play", onPlay);
       video.removeEventListener("pause", onPause);
       video.removeEventListener("timeupdate", onProgressTick);
-      try { (hlsRef as any).cleanupExtra?.(); } catch {}
+      video.removeEventListener("stalled", onStalled);
+      video.removeEventListener("waiting", onStalled);
+      video.removeEventListener("emptied", onStalled);
+      video.removeEventListener("suspend", onStalled);
+      video.removeEventListener("canplay", onCanPlayOrPlaying);
+      video.removeEventListener("playing", onCanPlayOrPlaying);
+      video.removeEventListener("ended", onEnded);
+      video.removeEventListener("error", onVideoError);
+      document.removeEventListener("visibilitychange", onVisibility);
       plyrRef.current?.destroy();
       plyrRef.current = null;
       hlsRef.current?.destroy();
