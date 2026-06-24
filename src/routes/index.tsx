@@ -119,7 +119,6 @@ function Index() {
   const streamed = new Set(streamedIds);
   const liveFromFeed = feed.live.filter((m) => streamed.has(Number(m.id)));
   const live = [...liveFromFeed, ...extraLive]
-    .filter((m) => m.status !== "finished")
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   const upcoming = feed.upcoming;
   const featured = upcoming[0] ?? live[0];
