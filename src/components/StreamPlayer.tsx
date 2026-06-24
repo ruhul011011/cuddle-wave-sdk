@@ -83,6 +83,21 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
     if (started) setLoading(true);
   }, [selectedId, started]);
 
+export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
+  const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
+  const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
+  const [diagnostics, setDiagnostics] = useState<StreamDiagnostics>(INITIAL_DIAGNOSTICS);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
+  const selectedLooksLive = Boolean(isLive || selected?.stream_type === "hls");
+
+  useEffect(() => {
+    if (started) setLoading(true);
+    setDiagnostics(INITIAL_DIAGNOSTICS);
+  }, [selectedId, started]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
