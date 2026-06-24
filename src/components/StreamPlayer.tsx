@@ -71,17 +71,6 @@ function tierFromHeight(h: number): string {
   return "LD";
 }
 
-export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
-  const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
-  const [started, setStarted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
-  const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
-  const selectedLooksLive = Boolean(isLive || selected?.stream_type === "hls");
-
-  useEffect(() => {
-    if (started) setLoading(true);
-  }, [selectedId, started]);
 
 export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
