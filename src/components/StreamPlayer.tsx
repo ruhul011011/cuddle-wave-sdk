@@ -406,6 +406,8 @@ function PlyrVideo({
         playsInline
         controls={useNativeControls}
         crossOrigin="anonymous"
+        onPlaying={() => onPlaying?.()}
+        onCanPlay={() => onPlaying?.()}
         className="h-full w-full"
       />
     </div>
