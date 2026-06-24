@@ -4,7 +4,7 @@ import * as PlyrNS from "plyr";
 const Plyr = (PlyrNS as any).default ?? (PlyrNS as any);
 type Plyr = InstanceType<typeof Plyr>;
 import "plyr/dist/plyr.css";
-import { Loader2, Play, Radio, Tv } from "lucide-react";
+import { Activity, Loader2, Play, Radio, Tv } from "lucide-react";
 
 export type StreamSource = {
   id: string;
@@ -18,6 +18,20 @@ type Props = {
   poster?: string;
   isLive?: boolean;
   placeholder?: string;
+};
+
+export type StreamDiagnostics = {
+  mode: "HLS.js" | "Native HLS" | "MP4" | "iframe" | "idle";
+  stallState: "ok" | "stalled" | "recovering";
+  retryCount: number;
+  lastSegmentAt: number | null;
+};
+
+const INITIAL_DIAGNOSTICS: StreamDiagnostics = {
+  mode: "idle",
+  stallState: "ok",
+  retryCount: 0,
+  lastSegmentAt: null,
 };
 
 type QualityInfo = { resolution?: string; bitrate?: string };
