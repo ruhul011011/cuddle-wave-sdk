@@ -10,7 +10,9 @@ async function loadLive(): Promise<Fixture[]> {
   const streamedIds = await listStreamedFixtureIds().catch(() => [] as number[]);
   if (!streamedIds.length) return [];
   const streamed = await getFixturesByIds({ data: { ids: streamedIds } }).catch(() => [] as Fixture[]);
-  return streamed.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  return streamed
+    .filter((m) => m.status !== "finished")
+    .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
 
 const liveQuery = queryOptions({
