@@ -6,6 +6,8 @@ const HOP_BY_HOP = new Set([
   "content-encoding", "content-length",
 ]);
 
+const UPSTREAM_TIMEOUT_MS = 45_000;
+
 function passHeaders(src: Headers): Headers {
   const h = new Headers();
   src.forEach((v, k) => { if (!HOP_BY_HOP.has(k.toLowerCase())) h.set(k, v); });
@@ -27,7 +29,12 @@ async function fetchUpstream(url: string, request: Request): Promise<Response> {
   forward.set("user-agent", request.headers.get("user-agent") ?? "Mozilla/5.0");
   forward.set("cache-control", "no-cache");
   forward.set("pragma", "no-cache");
-  return fetch(url, { headers: forward, redirect: "follow", cache: "no-store" });
+  return fetch(url, {
+    headers: forward,
+    redirect: "follow",
+    cache: "no-store",
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+  });
 }
 
 export const Route = createFileRoute("/api/stream/$id")({
@@ -58,7 +65,28 @@ export const Route = createFileRoute("/api/stream/$id")({
           return new Response("Unsupported", { status: 400 });
         }
 
-        const upstream = await fetchUpstream(row.url, request);
+        // Do not proxy MP4/progressive streams through the serverless route: those
+        // requests can stay open for minutes and get terminated by the runtime.
+        // Redirecting keeps long-running media playback in the browser instead.
+        if (row.stream_type === "mp4") {
+          return new Response(null, {
+            status: 302,
+            headers: {
+              Location: row.url,
+              "Cache-Control": "no-store",
+            },
+          });
+        }
+
+        let upstream: Response;
+        try {
+          upstream = await fetchUpstream(row.url, request);
+        } catch {
+          return new Response("Upstream stream timed out", {
+            status: 504,
+            headers: { "Cache-Control": "no-store" },
+          });
+        }
         const headers = passHeaders(upstream.headers);
         const ct = (upstream.headers.get("content-type") || "").toLowerCase();
         const looksHls = row.stream_type === "hls" || ct.includes("mpegurl") || row.url.toLowerCase().includes(".m3u8");
