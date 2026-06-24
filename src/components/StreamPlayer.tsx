@@ -649,7 +649,6 @@ function PlyrVideo({
             }
             return;
           }
-          if (!data.fatal) return;
           emitDiag({
             retryCount: diagRef.current.retryCount + 1,
             stallState: "recovering",
@@ -747,7 +746,6 @@ function PlyrVideo({
         poster={poster}
         playsInline
         controls={useNativeControls}
-        crossOrigin="anonymous"
         onPlaying={() => onPlaying?.()}
         onCanPlay={() => onPlaying?.()}
         className="h-full w-full"
