@@ -12,7 +12,7 @@ import {
   keyMatches as fallbackKeyMatches,
   type Group,
 } from "@/lib/world-cup";
-import { getWorldCupFixtures } from "@/lib/world-cup.functions";
+import { getWorldCupFixtures, getWorldCupStandings } from "@/lib/world-cup.functions";
 
 export const Route = createFileRoute("/world-cup")({
   head: () => ({
