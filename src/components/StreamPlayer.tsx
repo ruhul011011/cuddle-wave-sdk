@@ -381,7 +381,7 @@ function PlyrVideo({
     };
 
     const markUserAction = (event: PointerEvent | KeyboardEvent) => {
-      if (event instanceof PointerEvent) {
+      if (typeof PointerEvent !== "undefined" && event instanceof PointerEvent) {
         const rect = video.getBoundingClientRect();
         const insidePlayer =
           event.clientX >= rect.left &&
@@ -426,7 +426,7 @@ function PlyrVideo({
       const previous = lastPlaybackRef.current;
       const playbackStuck =
         !video.paused &&
-        video.readyState < 3 &&
+        Math.abs(video.currentTime - previous.time) <= 0.25 &&
         Date.now() - previous.checkedAt > 12_000;
 
       if (video.paused || video.ended || playbackStuck) {
