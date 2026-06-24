@@ -4,7 +4,7 @@ import * as PlyrNS from "plyr";
 const Plyr = (PlyrNS as any).default ?? (PlyrNS as any);
 type Plyr = InstanceType<typeof Plyr>;
 import "plyr/dist/plyr.css";
-import { Loader2, Play, Radio, Tv } from "lucide-react";
+import { Activity, Loader2, Play, Radio, Tv } from "lucide-react";
 
 export type StreamSource = {
   id: string;
@@ -18,6 +18,20 @@ type Props = {
   poster?: string;
   isLive?: boolean;
   placeholder?: string;
+};
+
+export type StreamDiagnostics = {
+  mode: "HLS.js" | "Native HLS" | "MP4" | "iframe" | "idle";
+  stallState: "ok" | "stalled" | "recovering";
+  retryCount: number;
+  lastSegmentAt: number | null;
+};
+
+const INITIAL_DIAGNOSTICS: StreamDiagnostics = {
+  mode: "idle",
+  stallState: "ok",
+  retryCount: 0,
+  lastSegmentAt: null,
 };
 
 type QualityInfo = { resolution?: string; bitrate?: string };
@@ -57,16 +71,20 @@ function tierFromHeight(h: number): string {
   return "LD";
 }
 
+
 export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
   const [started, setStarted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
+  const [diagnostics, setDiagnostics] = useState<StreamDiagnostics>(INITIAL_DIAGNOSTICS);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
   const selectedLooksLive = Boolean(isLive || selected?.stream_type === "hls");
 
   useEffect(() => {
     if (started) setLoading(true);
+    setDiagnostics(INITIAL_DIAGNOSTICS);
   }, [selectedId, started]);
 
   useEffect(() => {
@@ -126,7 +144,10 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           <iframe
             key={selected.id}
             src={selected.url}
-            onLoad={() => setLoading(false)}
+            onLoad={() => {
+              setLoading(false);
+              setDiagnostics({ mode: "iframe", stallState: "ok", retryCount: 0, lastSegmentAt: null });
+            }}
             className="absolute inset-0 h-full w-full"
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             allowFullScreen
@@ -140,6 +161,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             poster={poster}
             isLive={selectedLooksLive}
             onPlaying={() => setLoading(false)}
+            onDiagnostics={setDiagnostics}
           />
         )}
 
@@ -194,6 +216,106 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           </p>
         </div>
       )}
+
+      {started && selected.stream_type !== "iframe" && (
+        <DiagnosticsPanel
+          diagnostics={diagnostics}
+          isLive={selectedLooksLive}
+          open={showDiagnostics}
+          onToggle={() => setShowDiagnostics((v) => !v)}
+        />
+      )}
+    </div>
+  );
+}
+
+function DiagnosticsPanel({
+  diagnostics,
+  isLive,
+  open,
+  onToggle,
+}: {
+  diagnostics: StreamDiagnostics;
+  isLive: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [open]);
+
+  const stallColor =
+    diagnostics.stallState === "ok"
+      ? "text-green-500"
+      : diagnostics.stallState === "stalled"
+        ? "text-destructive"
+        : "text-amber-400";
+
+  const lastSegAgo =
+    diagnostics.lastSegmentAt != null
+      ? `${Math.max(0, Math.round((now - diagnostics.lastSegmentAt) / 1000))}s ago`
+      : "—";
+  const lastSegAbs =
+    diagnostics.lastSegmentAt != null
+      ? new Date(diagnostics.lastSegmentAt).toLocaleTimeString()
+      : null;
+
+  return (
+    <div className="border-t border-border/60 bg-card/40">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      >
+        <span className="flex items-center gap-2">
+          <Activity className="h-3.5 w-3.5" />
+          Stream Diagnostics
+        </span>
+        <span className="flex items-center gap-3 text-[11px] font-mono normal-case tracking-normal">
+          <span className="text-foreground">{diagnostics.mode}</span>
+          <span className={stallColor}>{diagnostics.stallState}</span>
+          <span className="text-muted-foreground">{open ? "Hide" : "Show"}</span>
+        </span>
+      </button>
+      {open && (
+        <div className="grid grid-cols-2 gap-3 border-t border-border/60 p-4 text-xs font-mono sm:grid-cols-4">
+          <Stat label="Mode" value={diagnostics.mode} />
+          <Stat
+            label="Stall State"
+            value={diagnostics.stallState}
+            valueClass={stallColor}
+          />
+          <Stat label="Retries" value={String(diagnostics.retryCount)} />
+          <Stat
+            label="Last Segment"
+            value={lastSegAgo}
+            subValue={lastSegAbs ?? (isLive ? "waiting…" : "n/a")}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  subValue,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  subValue?: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={"text-sm text-foreground " + (valueClass ?? "")}>{value}</span>
+      {subValue && <span className="text-[10px] text-muted-foreground">{subValue}</span>}
     </div>
   );
 }
@@ -287,13 +409,22 @@ function PlyrVideo({
   poster,
   isLive,
   onPlaying,
+  onDiagnostics,
 }: {
   src: string;
   type: "hls" | "mp4";
   poster?: string;
   isLive?: boolean;
   onPlaying?: () => void;
+  onDiagnostics?: (d: StreamDiagnostics) => void;
 }) {
+  const diagRef = useRef<StreamDiagnostics>({ ...INITIAL_DIAGNOSTICS });
+  const onDiagnosticsRef = useRef(onDiagnostics);
+  onDiagnosticsRef.current = onDiagnostics;
+  const emitDiag = (patch: Partial<StreamDiagnostics>) => {
+    diagRef.current = { ...diagRef.current, ...patch };
+    onDiagnosticsRef.current?.(diagRef.current);
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -372,6 +503,7 @@ function PlyrVideo({
 
     const recoverLivePlayback = () => {
       if (!isLive || userPausedRef.current) return;
+      emitDiag({ stallState: "recovering" });
       restartLiveLoad();
       const liveSyncPosition = hlsRef.current?.liveSyncPosition;
       if (typeof liveSyncPosition === "number" && liveSyncPosition > 0 && liveSyncPosition - video.currentTime > 20) {
@@ -396,6 +528,7 @@ function PlyrVideo({
     const onPlay = () => {
       userPausedRef.current = false;
       lastPlaybackRef.current = { time: video.currentTime, checkedAt: Date.now() };
+      emitDiag({ stallState: "ok" });
     };
 
     const onPause = () => {
@@ -412,6 +545,7 @@ function PlyrVideo({
       const previous = lastPlaybackRef.current;
       if (Math.abs(video.currentTime - previous.time) > 0.25) {
         lastPlaybackRef.current = { time: video.currentTime, checkedAt: Date.now() };
+        if (diagRef.current.stallState !== "ok") emitDiag({ stallState: "ok" });
       }
     };
 
@@ -430,6 +564,9 @@ function PlyrVideo({
         Date.now() - previous.checkedAt > 12_000;
 
       if (video.paused || video.ended || playbackStuck) {
+        if (playbackStuck && diagRef.current.stallState === "ok") {
+          emitDiag({ stallState: "stalled" });
+        }
         recoverLivePlayback();
       } else {
         restartLiveLoad();
@@ -437,15 +574,18 @@ function PlyrVideo({
     }, 8_000);
 
     if (type === "mp4") {
+      emitDiag({ mode: "MP4" });
       video.src = src;
       initPlyr();
       playSafely();
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Native HLS (Safari/iOS)
+      emitDiag({ mode: "Native HLS" });
       video.src = src;
       initPlyr();
       playSafely();
     } else if (Hls.isSupported()) {
+      emitDiag({ mode: "HLS.js" });
       const buildHls = () =>
         new Hls({
           enableWorker: true,
@@ -480,8 +620,15 @@ function PlyrVideo({
           }
           playSafely();
         });
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          emitDiag({ lastSegmentAt: Date.now(), stallState: "ok" });
+        });
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (!data.fatal) return;
+          emitDiag({
+            retryCount: diagRef.current.retryCount + 1,
+            stallState: "recovering",
+          });
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             recoverCount += 1;
             if (recoverCount > 4) {
@@ -511,6 +658,7 @@ function PlyrVideo({
 
       // Auto-resume on stalls, live "ended", and tab visibility changes
       const onStalled = () => {
+        emitDiag({ stallState: "stalled" });
         recoverLivePlayback();
       };
       const onEnded = () => {
