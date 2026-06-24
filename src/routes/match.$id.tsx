@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
@@ -24,6 +24,8 @@ const streamsQuery = (id: string) =>
     queryKey: ["streams", id],
     queryFn: () => getStreamsForFixture({ data: { fixtureId: Number(id) } }),
     staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   });
 
 const accessQuery = (id: string) =>
@@ -91,6 +93,10 @@ function MatchPage() {
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
   const isMixLocked = access?.access === "mix" && !access.hasAccess;
   const showAdsNotice = access?.access === "ads";
+  const playerSources = useMemo(
+    () => streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url })),
+    [streams],
+  );
 
 
   return (
@@ -184,7 +190,7 @@ function MatchPage() {
                 </div>
               )}
               <StreamPlayer
-                sources={streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url }))}
+                sources={playerSources}
                 isLive={isLive}
                 placeholder={
                   isLive ? "NO STREAM AVAILABLE" :
