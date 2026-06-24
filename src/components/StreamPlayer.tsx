@@ -564,6 +564,9 @@ function PlyrVideo({
         Date.now() - previous.checkedAt > 12_000;
 
       if (video.paused || video.ended || playbackStuck) {
+        if (playbackStuck && diagRef.current.stallState === "ok") {
+          emitDiag({ stallState: "stalled" });
+        }
         recoverLivePlayback();
       } else {
         restartLiveLoad();
