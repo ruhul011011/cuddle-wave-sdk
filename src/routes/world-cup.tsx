@@ -12,7 +12,7 @@ import {
   keyMatches as fallbackKeyMatches,
   type Group,
 } from "@/lib/world-cup";
-import { getWorldCupFixtures } from "@/lib/world-cup.functions";
+import { getWorldCupFixtures, getWorldCupStandings } from "@/lib/world-cup.functions";
 
 export const Route = createFileRoute("/world-cup")({
   head: () => ({
@@ -32,7 +32,14 @@ export const Route = createFileRoute("/world-cup")({
 
 
 function WorldCupPage() {
-  const { data: groupStandings = defaultGroupStandings } = useQuery({
+  const { data: liveStandings } = useQuery({
+    queryKey: ["wc-standings"],
+    queryFn: () => getWorldCupStandings(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  const { data: overrideGroups } = useQuery({
     queryKey: ["site_settings", "world_cup_groups"],
     queryFn: async () => {
       const { data } = await supabase
@@ -40,16 +47,21 @@ function WorldCupPage() {
         .select("value")
         .eq("key", "world_cup_groups")
         .maybeSingle();
-      if (!data?.value) return defaultGroupStandings;
+      if (!data?.value) return null;
       try {
         const parsed = typeof data.value === "string" ? JSON.parse(data.value) : data.value;
-        return Array.isArray(parsed) ? (parsed as Group[]) : defaultGroupStandings;
+        return Array.isArray(parsed) ? (parsed as Group[]) : null;
       } catch {
-        return defaultGroupStandings;
+        return null;
       }
     },
     staleTime: 60_000,
   });
+
+  const groupStandings: Group[] =
+    liveStandings && liveStandings.source === "api" && liveStandings.groups.length > 0
+      ? liveStandings.groups
+      : overrideGroups ?? defaultGroupStandings;
 
   const { data: liveMatches } = useQuery({
     queryKey: ["wc-fixtures"],

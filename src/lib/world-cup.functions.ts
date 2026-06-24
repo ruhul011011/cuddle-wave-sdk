@@ -1,5 +1,51 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { KeyMatch } from "./world-cup";
+import type { KeyMatch, Group, GroupRow } from "./world-cup";
+
+type ApiStandingRow = {
+  rank: number;
+  team: { id: number; name: string };
+  points: number;
+  goalsDiff: number;
+  group: string;
+  all: { played: number; win: number; draw: number; lose: number; goals: { for: number; against: number } };
+};
+
+export const getWorldCupStandings = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ groups: Group[]; source: "api" | "fallback"; updatedAt: string }> => {
+    const apiKey = process.env.API_FOOTBALL_KEY;
+    if (!apiKey) return { groups: [], source: "fallback", updatedAt: new Date().toISOString() };
+    try {
+      const res = await fetch(
+        "https://v3.football.api-sports.io/standings?league=1&season=2026",
+        { headers: { "x-apisports-key": apiKey } },
+      );
+      if (!res.ok) return { groups: [], source: "fallback", updatedAt: new Date().toISOString() };
+      const json = (await res.json()) as { response?: Array<{ league?: { standings?: ApiStandingRow[][] } }> };
+      const standings = json.response?.[0]?.league?.standings ?? [];
+      const groups: Group[] = standings.map((rows) => {
+        const groupName = rows[0]?.group ?? "Group";
+        return {
+          name: groupName,
+          rows: rows.map<GroupRow>((r) => ({
+            team: r.team.name,
+            code: r.team.name.slice(0, 3).toUpperCase(),
+            p: r.all.played,
+            w: r.all.win,
+            d: r.all.draw,
+            l: r.all.lose,
+            gf: r.all.goals.for,
+            ga: r.all.goals.against,
+            pts: r.points,
+          })),
+        };
+      });
+      return { groups, source: "api", updatedAt: new Date().toISOString() };
+    } catch {
+      return { groups: [], source: "fallback", updatedAt: new Date().toISOString() };
+    }
+  },
+);
+
 
 type ApiFixture = {
   fixture: {
