@@ -296,6 +296,9 @@ function PlyrVideo({
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const userPausedRef = useRef(false);
+  const lastUserActionAtRef = useRef(0);
+  const lastPlaybackRef = useRef({ time: 0, checkedAt: 0 });
   const [useNativeControls, setUseNativeControls] = useState(false);
 
   useEffect(() => {
@@ -357,15 +360,90 @@ function PlyrVideo({
       }
     };
 
+    const playSafely = () => {
+      if (document.visibilityState !== "visible") return;
+      video.play().catch(() => {});
+    };
+
+    const restartLiveLoad = () => {
+      try { hlsRef.current?.startLoad(-1); } catch {}
+    };
+
+    const recoverLivePlayback = () => {
+      if (!isLive || userPausedRef.current) return;
+      restartLiveLoad();
+      const liveSyncPosition = hlsRef.current?.liveSyncPosition;
+      if (typeof liveSyncPosition === "number" && liveSyncPosition > 0 && liveSyncPosition - video.currentTime > 20) {
+        video.currentTime = liveSyncPosition;
+      }
+      playSafely();
+    };
+
+    const markUserAction = (event: PointerEvent | KeyboardEvent) => {
+      if (event instanceof PointerEvent) {
+        const rect = video.getBoundingClientRect();
+        const insidePlayer =
+          event.clientX >= rect.left &&
+          event.clientX <= rect.right &&
+          event.clientY >= rect.top &&
+          event.clientY <= rect.bottom;
+        if (!insidePlayer) return;
+      }
+      lastUserActionAtRef.current = Date.now();
+    };
+
+    const onPlay = () => {
+      userPausedRef.current = false;
+      lastPlaybackRef.current = { time: video.currentTime, checkedAt: Date.now() };
+    };
+
+    const onPause = () => {
+      if (!isLive || video.ended) return;
+      const recentUserAction = Date.now() - lastUserActionAtRef.current < 1500;
+      if (recentUserAction) {
+        userPausedRef.current = true;
+        return;
+      }
+      window.setTimeout(recoverLivePlayback, 750);
+    };
+
+    const onProgressTick = () => {
+      const previous = lastPlaybackRef.current;
+      if (Math.abs(video.currentTime - previous.time) > 0.25) {
+        lastPlaybackRef.current = { time: video.currentTime, checkedAt: Date.now() };
+      }
+    };
+
+    document.addEventListener("pointerdown", markUserAction, true);
+    document.addEventListener("keydown", markUserAction, true);
+    video.addEventListener("play", onPlay);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("timeupdate", onProgressTick);
+
+    const watchdog = window.setInterval(() => {
+      if (!isLive || userPausedRef.current || document.visibilityState !== "visible") return;
+      const previous = lastPlaybackRef.current;
+      const playbackStuck =
+        !video.paused &&
+        video.readyState < 3 &&
+        Date.now() - previous.checkedAt > 12_000;
+
+      if (video.paused || video.ended || playbackStuck) {
+        recoverLivePlayback();
+      } else {
+        restartLiveLoad();
+      }
+    }, 8_000);
+
     if (type === "mp4") {
       video.src = src;
       initPlyr();
-      video.play().catch(() => {});
+      playSafely();
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Native HLS (Safari/iOS)
       video.src = src;
       initPlyr();
-      video.play().catch(() => {});
+      playSafely();
     } else if (Hls.isSupported()) {
       const buildHls = () =>
         new Hls({
@@ -373,9 +451,18 @@ function PlyrVideo({
           lowLatencyMode: true,
           backBufferLength: 60,
           liveDurationInfinity: true,
-          manifestLoadingMaxRetry: 6,
-          levelLoadingMaxRetry: 6,
-          fragLoadingMaxRetry: 6,
+          liveSyncDurationCount: 3,
+          liveMaxLatencyDurationCount: 12,
+          maxLiveSyncPlaybackRate: 1.2,
+          manifestLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
+          levelLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
+          fragLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
+          manifestLoadingRetryDelay: 1_000,
+          levelLoadingRetryDelay: 1_000,
+          fragLoadingRetryDelay: 1_000,
+          manifestLoadingMaxRetryTimeout: 8_000,
+          levelLoadingMaxRetryTimeout: 8_000,
+          fragLoadingMaxRetryTimeout: 8_000,
         });
 
       let recoverCount = 0;
@@ -390,15 +477,24 @@ function PlyrVideo({
               .filter((h, i, a) => h && a.indexOf(h) === i);
             initPlyr(qualities.length ? qualities : undefined);
           }
-          video.play().catch(() => {});
+          playSafely();
         });
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (!data.fatal) return;
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            hls.startLoad();
+            recoverCount += 1;
+            if (recoverCount > 4) {
+              recoverCount = 0;
+              try { hls.destroy(); } catch {}
+              attachHls(buildHls());
+            } else {
+              hls.startLoad(-1);
+              playSafely();
+            }
           } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
             recoverCount += 1;
             if (recoverCount > 2) {
+              recoverCount = 0;
               try { hls.destroy(); } catch {}
               attachHls(buildHls());
             } else {
@@ -414,9 +510,7 @@ function PlyrVideo({
 
       // Auto-resume on stalls, live "ended", and tab visibility changes
       const onStalled = () => {
-        if (video.paused) return;
-        try { hlsRef.current?.startLoad(); } catch {}
-        video.play().catch(() => {});
+        recoverLivePlayback();
       };
       const onEnded = () => {
         if (isLive) {
@@ -426,7 +520,7 @@ function PlyrVideo({
       };
       const onVisibility = () => {
         if (document.visibilityState === "visible" && isLive && video.paused) {
-          video.play().catch(() => {});
+          recoverLivePlayback();
         }
       };
       video.addEventListener("stalled", onStalled);
@@ -445,6 +539,12 @@ function PlyrVideo({
     }
 
     return () => {
+      window.clearInterval(watchdog);
+      document.removeEventListener("pointerdown", markUserAction, true);
+      document.removeEventListener("keydown", markUserAction, true);
+      video.removeEventListener("play", onPlay);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("timeupdate", onProgressTick);
       try { (hlsRef as any).cleanupExtra?.(); } catch {}
       plyrRef.current?.destroy();
       plyrRef.current = null;
