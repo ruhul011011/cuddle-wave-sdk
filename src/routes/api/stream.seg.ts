@@ -6,6 +6,8 @@ const HOP_BY_HOP = new Set([
   "content-encoding", "content-length",
 ]);
 
+const UPSTREAM_TIMEOUT_MS = 45_000;
+
 function passHeaders(src: Headers): Headers {
   const h = new Headers();
   src.forEach((v, k) => { if (!HOP_BY_HOP.has(k.toLowerCase())) h.set(k, v); });
@@ -37,7 +39,20 @@ export const Route = createFileRoute("/api/stream/seg")({
         forward.set("cache-control", "no-cache");
         forward.set("pragma", "no-cache");
 
-        const upstream = await fetch(upstreamUrl, { headers: forward, redirect: "follow", cache: "no-store" });
+        let upstream: Response;
+        try {
+          upstream = await fetch(upstreamUrl, {
+            headers: forward,
+            redirect: "follow",
+            cache: "no-store",
+            signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+          });
+        } catch {
+          return new Response("Upstream stream timed out", {
+            status: 504,
+            headers: { "Cache-Control": "no-store", "Access-Control-Allow-Origin": "*" },
+          });
+        }
         const headers = passHeaders(upstream.headers);
         const ct = (upstream.headers.get("content-type") || "").toLowerCase();
         const looksHls = ct.includes("mpegurl") || upstreamUrl.toLowerCase().includes(".m3u8");
