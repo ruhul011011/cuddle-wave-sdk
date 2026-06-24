@@ -60,8 +60,13 @@ function tierFromHeight(h: number): string {
 export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
   const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
   const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
+
+  useEffect(() => {
+    if (started) setLoading(true);
+  }, [selectedId, started]);
 
   useEffect(() => {
     let cancelled = false;
