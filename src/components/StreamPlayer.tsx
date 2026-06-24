@@ -4,7 +4,7 @@ import * as PlyrNS from "plyr";
 const Plyr = (PlyrNS as any).default ?? (PlyrNS as any);
 type Plyr = InstanceType<typeof Plyr>;
 import "plyr/dist/plyr.css";
-import { Play, Radio, Tv } from "lucide-react";
+import { Loader2, Play, Radio, Tv } from "lucide-react";
 
 export type StreamSource = {
   id: string;
@@ -60,8 +60,13 @@ function tierFromHeight(h: number): string {
 export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(sources[0]?.id ?? null);
   const [started, setStarted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
   const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
+
+  useEffect(() => {
+    if (started) setLoading(true);
+  }, [selectedId, started]);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,7 +105,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
       <div className="relative aspect-video w-full">
         {!started ? (
           <button
-            onClick={() => setStarted(true)}
+            onClick={() => { setLoading(true); setStarted(true); }}
             className="absolute inset-0 grid place-items-center pitch-gradient group"
           >
             {poster && (
@@ -120,13 +125,30 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           <iframe
             key={selected.id}
             src={selected.url}
+            onLoad={() => setLoading(false)}
             className="absolute inset-0 h-full w-full"
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             allowFullScreen
             referrerPolicy="no-referrer"
           />
         ) : (
-          <PlyrVideo key={selected.id} src={selected.url} type={selected.stream_type} poster={poster} isLive={isLive} />
+          <PlyrVideo
+            key={selected.id}
+            src={selected.url}
+            type={selected.stream_type}
+            poster={poster}
+            isLive={isLive}
+            onPlaying={() => setLoading(false)}
+          />
+        )}
+
+        {started && loading && (
+          <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/60 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-3 text-white">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <div className="text-sm font-medium tracking-wide uppercase text-white/80">Loading stream…</div>
+            </div>
+          </div>
         )}
 
         {isLive && (
@@ -263,11 +285,13 @@ function PlyrVideo({
   type,
   poster,
   isLive,
+  onPlaying,
 }: {
   src: string;
   type: "hls" | "mp4";
   poster?: string;
   isLive?: boolean;
+  onPlaying?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
@@ -382,6 +406,8 @@ function PlyrVideo({
         playsInline
         controls={useNativeControls}
         crossOrigin="anonymous"
+        onPlaying={() => onPlaying?.()}
+        onCanPlay={() => onPlaying?.()}
         className="h-full w-full"
       />
     </div>
