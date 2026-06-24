@@ -81,6 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "World Cup TV is the #1 place to watch the FIFA World Cup 2026 live in HD. Free World Cup live TV streaming, fixtures, schedule, groups and points table." },
       { name: "keywords", content: "World Cup Live TV, World Cup TV, World Cup TV 2026, FIFA World Cup 2026, Watch World Cup Live, World Cup Live Streaming, World Cup 2026 Live, World Cup Online TV, Football Live TV, World Cup HD Streaming" },
       { name: "robots", content: "index, follow, max-image-preview:large" },
+      { name: "google-site-verification", content: "5YWLez48JOIO95ILOd7kFEFNXL5lh6Fbbjt4UlZ7tyE" },
       { name: "author", content: "World Cup TV" },
       { name: "application-name", content: "World Cup TV" },
       { name: "theme-color", content: "#0b0f1a" },
