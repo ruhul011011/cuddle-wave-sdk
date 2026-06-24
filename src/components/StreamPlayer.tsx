@@ -527,6 +527,7 @@ function PlyrVideo({
     const onPlay = () => {
       userPausedRef.current = false;
       lastPlaybackRef.current = { time: video.currentTime, checkedAt: Date.now() };
+      emitDiag({ stallState: "ok" });
     };
 
     const onPause = () => {
@@ -543,6 +544,7 @@ function PlyrVideo({
       const previous = lastPlaybackRef.current;
       if (Math.abs(video.currentTime - previous.time) > 0.25) {
         lastPlaybackRef.current = { time: video.currentTime, checkedAt: Date.now() };
+        if (diagRef.current.stallState !== "ok") emitDiag({ stallState: "ok" });
       }
     };
 
