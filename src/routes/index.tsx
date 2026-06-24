@@ -102,6 +102,8 @@ function Index() {
   // refresh. We intentionally do NOT subscribe to match_streams via Realtime
   // here — that would broadcast row payloads (including premium stream URLs)
   // to all authenticated subscribers.
+  const { data: streamedIds = [] } = useQuery(streamedIdsQuery);
+
 
 
   // Client-only: fetch any streamed fixtures missing from the popular-league feed
