@@ -3,18 +3,10 @@ import { queryOptions, useSuspenseQuery } from "@tanstack/react-query";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { MatchCard } from "@/components/site/MatchCard";
-import { getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
-import { listStreamedFixtureIds } from "@/lib/streams.functions";
+import { getStreamedFixtures, type Fixture } from "@/lib/api-football.functions";
 
 async function loadLive(): Promise<Fixture[]> {
-  const streamedIds = await listStreamedFixtureIds().catch(() => [] as number[]);
-  if (!streamedIds.length) return [];
-  const streamed = await getFixturesByIds({ data: { ids: streamedIds } }).catch(() => [] as Fixture[]);
-  // Source of truth for "available to stream" is match_streams.is_active —
-  // we intentionally do NOT filter by api-football status here (it often
-  // mislabels recent/upcoming fixtures as FT). Admins toggle is_active off
-  // when a stream should no longer appear.
-  return streamed.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  return getStreamedFixtures().catch(() => [] as Fixture[]);
 }
 
 const liveQuery = queryOptions({
