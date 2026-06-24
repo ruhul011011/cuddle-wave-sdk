@@ -503,6 +503,7 @@ function PlyrVideo({
 
     const recoverLivePlayback = () => {
       if (!isLive || userPausedRef.current) return;
+      emitDiag({ stallState: "recovering" });
       restartLiveLoad();
       const liveSyncPosition = hlsRef.current?.liveSyncPosition;
       if (typeof liveSyncPosition === "number" && liveSyncPosition > 0 && liveSyncPosition - video.currentTime > 20) {
