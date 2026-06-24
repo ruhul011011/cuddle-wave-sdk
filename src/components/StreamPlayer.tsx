@@ -216,6 +216,106 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           </p>
         </div>
       )}
+
+      {started && selected.stream_type !== "iframe" && (
+        <DiagnosticsPanel
+          diagnostics={diagnostics}
+          isLive={selectedLooksLive}
+          open={showDiagnostics}
+          onToggle={() => setShowDiagnostics((v) => !v)}
+        />
+      )}
+    </div>
+  );
+}
+
+function DiagnosticsPanel({
+  diagnostics,
+  isLive,
+  open,
+  onToggle,
+}: {
+  diagnostics: StreamDiagnostics;
+  isLive: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => {
+    if (!open) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [open]);
+
+  const stallColor =
+    diagnostics.stallState === "ok"
+      ? "text-green-500"
+      : diagnostics.stallState === "stalled"
+        ? "text-destructive"
+        : "text-amber-400";
+
+  const lastSegAgo =
+    diagnostics.lastSegmentAt != null
+      ? `${Math.max(0, Math.round((now - diagnostics.lastSegmentAt) / 1000))}s ago`
+      : "—";
+  const lastSegAbs =
+    diagnostics.lastSegmentAt != null
+      ? new Date(diagnostics.lastSegmentAt).toLocaleTimeString()
+      : null;
+
+  return (
+    <div className="border-t border-border/60 bg-card/40">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider text-muted-foreground hover:text-foreground"
+      >
+        <span className="flex items-center gap-2">
+          <Activity className="h-3.5 w-3.5" />
+          Stream Diagnostics
+        </span>
+        <span className="flex items-center gap-3 text-[11px] font-mono normal-case tracking-normal">
+          <span className="text-foreground">{diagnostics.mode}</span>
+          <span className={stallColor}>{diagnostics.stallState}</span>
+          <span className="text-muted-foreground">{open ? "Hide" : "Show"}</span>
+        </span>
+      </button>
+      {open && (
+        <div className="grid grid-cols-2 gap-3 border-t border-border/60 p-4 text-xs font-mono sm:grid-cols-4">
+          <Stat label="Mode" value={diagnostics.mode} />
+          <Stat
+            label="Stall State"
+            value={diagnostics.stallState}
+            valueClass={stallColor}
+          />
+          <Stat label="Retries" value={String(diagnostics.retryCount)} />
+          <Stat
+            label="Last Segment"
+            value={lastSegAgo}
+            subValue={lastSegAbs ?? (isLive ? "waiting…" : "n/a")}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  subValue,
+  valueClass,
+}: {
+  label: string;
+  value: string;
+  subValue?: string;
+  valueClass?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <span className={"text-sm text-foreground " + (valueClass ?? "")}>{value}</span>
+      {subValue && <span className="text-[10px] text-muted-foreground">{subValue}</span>}
     </div>
   );
 }
