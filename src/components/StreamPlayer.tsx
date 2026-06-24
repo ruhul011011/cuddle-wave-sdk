@@ -63,6 +63,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [loading, setLoading] = useState(false);
   const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
   const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
+  const selectedLooksLive = Boolean(isLive || selected?.stream_type === "hls");
 
   useEffect(() => {
     if (started) setLoading(true);
@@ -116,7 +117,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
                 <Play className="h-8 w-8 fill-current" />
               </div>
               <div className="mt-4 font-display text-2xl tracking-wider">
-                {isLive ? "TAP TO WATCH LIVE" : "PLAY STREAM"}
+                {selectedLooksLive ? "TAP TO WATCH LIVE" : "PLAY STREAM"}
               </div>
               <div className="mt-1 text-sm text-muted-foreground">HD · Click to start playback</div>
             </div>
@@ -137,7 +138,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             src={selected.url}
             type={selected.stream_type}
             poster={poster}
-            isLive={isLive}
+            isLive={selectedLooksLive}
             onPlaying={() => setLoading(false)}
           />
         )}
@@ -151,7 +152,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           </div>
         )}
 
-        {isLive && (
+        {selectedLooksLive && (
           <div className="pointer-events-none absolute top-4 left-4 z-10 flex items-center gap-2 rounded-md bg-live px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground">
             <Radio className="h-3 w-3" /> Live
           </div>
