@@ -144,7 +144,10 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           <iframe
             key={selected.id}
             src={selected.url}
-            onLoad={() => setLoading(false)}
+            onLoad={() => {
+              setLoading(false);
+              setDiagnostics({ mode: "iframe", stallState: "ok", retryCount: 0, lastSegmentAt: null });
+            }}
             className="absolute inset-0 h-full w-full"
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
             allowFullScreen
@@ -158,6 +161,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             poster={poster}
             isLive={selectedLooksLive}
             onPlaying={() => setLoading(false)}
+            onDiagnostics={setDiagnostics}
           />
         )}
 
