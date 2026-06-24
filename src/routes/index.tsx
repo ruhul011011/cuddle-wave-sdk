@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { queryOptions, useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
@@ -23,16 +24,19 @@ import {
 const homeFeedQuery = queryOptions({
   queryKey: ["home-feed"],
   queryFn: () => getHomeFeed(),
-  staleTime: 60_000,
-  refetchOnMount: false,
-  refetchOnWindowFocus: false,
+  staleTime: 30_000,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
 });
 
 const streamedIdsQuery = queryOptions({
   queryKey: ["streamed-fixture-ids"],
   queryFn: () => listStreamedFixtureIds().catch(() => [] as number[]),
-  staleTime: 60_000,
-  refetchOnWindowFocus: false,
+  staleTime: 15_000,
+  refetchOnMount: true,
+  refetchOnWindowFocus: true,
+  refetchOnReconnect: true,
+  refetchInterval: 20_000,
 });
 
 export const Route = createFileRoute("/")({
@@ -92,9 +96,29 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
+  const queryClient = useQueryClient();
   const { data: feed } = useSuspenseQuery(homeFeedQuery);
   // Client-only: which fixtures have admin streams
   const { data: streamedIds = [] } = useQuery(streamedIdsQuery);
+
+  // Realtime: invalidate streamed-ids whenever match_streams changes so
+  // newly-added live streams appear without a manual refresh.
+  useEffect(() => {
+    const channel = supabase
+      .channel("home-match-streams")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "match_streams" },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["streamed-fixture-ids"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
+
   // Client-only: fetch any streamed fixtures missing from the popular-league feed
   const knownIds = new Set(feed.live.map((m) => Number(m.id)));
   const missing = streamedIds.filter((id) => !knownIds.has(id));
@@ -102,7 +126,7 @@ function Index() {
     queryKey: ["home-extra-live", missing.sort().join(",")],
     queryFn: () => getFixturesByIds({ data: { ids: missing } }),
     enabled: missing.length > 0,
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 
   const streamed = new Set(streamedIds);
