@@ -6,7 +6,7 @@ const HOP_BY_HOP = new Set([
   "content-encoding", "content-length",
 ]);
 
-const UPSTREAM_TIMEOUT_MS = 45_000;
+const UPSTREAM_TIMEOUT_MS = 20_000;
 
 function passHeaders(src: Headers): Headers {
   const h = new Headers();
