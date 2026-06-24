@@ -4,8 +4,7 @@ import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query"
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
-import { getHomeFeed, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
-import { listStreamedFixtureIds } from "@/lib/streams.functions";
+import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
@@ -25,15 +24,6 @@ const homeFeedQuery = queryOptions({
   queryKey: ["home-feed"],
   queryFn: () => getHomeFeed(),
   staleTime: 30_000,
-  refetchOnWindowFocus: true,
-  refetchOnReconnect: true,
-});
-
-const streamedIdsQuery = queryOptions({
-  queryKey: ["streamed-fixture-ids"],
-  queryFn: () => listStreamedFixtureIds().catch(() => [] as number[]),
-  staleTime: 15_000,
-  refetchOnMount: true,
   refetchOnWindowFocus: true,
   refetchOnReconnect: true,
   refetchInterval: 20_000,
@@ -97,28 +87,7 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const { data: feed } = useSuspenseQuery(homeFeedQuery);
-  // Client-only: which fixtures have admin streams. Polled every 20s by
-  // streamedIdsQuery so newly-added live streams appear without a manual
-  // refresh. We intentionally do NOT subscribe to match_streams via Realtime
-  // here — that would broadcast row payloads (including premium stream URLs)
-  // to all authenticated subscribers.
-  const { data: streamedIds = [] } = useQuery(streamedIdsQuery);
-
-
-
-  // Client-only: fetch any streamed fixtures missing from the popular-league feed
-  const knownIds = new Set(feed.live.map((m) => Number(m.id)));
-  const missing = streamedIds.filter((id) => !knownIds.has(id));
-  const { data: extraLive = [] } = useQuery({
-    queryKey: ["home-extra-live", missing.sort().join(",")],
-    queryFn: () => getFixturesByIds({ data: { ids: missing } }),
-    enabled: missing.length > 0,
-    staleTime: 30_000,
-  });
-
-  const streamed = new Set(streamedIds);
-  const liveFromFeed = feed.live.filter((m) => streamed.has(Number(m.id)));
-  const live = [...liveFromFeed, ...extraLive]
+  const live = [...(feed.streamed ?? [])]
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   const upcoming = feed.upcoming;
   const featured = upcoming[0] ?? live[0];

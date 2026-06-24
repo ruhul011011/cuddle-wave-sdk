@@ -91,6 +91,41 @@ function normalize(raw: any): Fixture {
   };
 }
 
+function streamFixtureIsVisible(match: Fixture, now = Date.now()) {
+  if (match.status !== "finished") return true;
+  const kickoffMs = Date.parse(match.kickoff);
+  return Number.isFinite(kickoffMs) && kickoffMs > now;
+}
+
+async function listActiveStreamFixtureIds(): Promise<number[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("match_streams")
+    .select("fixture_id")
+    .eq("is_active", true);
+  if (error) throw new Error(error.message);
+  return Array.from(new Set((data ?? []).map((row) => Number(row.fixture_id)).filter(Number.isFinite)));
+}
+
+async function fetchFixturesByIds(ids: number[]): Promise<Fixture[]> {
+  const uniqueIds = Array.from(new Set((ids ?? []).filter((n) => Number.isFinite(n))));
+  if (!uniqueIds.length) return [];
+  const results = await Promise.all(
+    chunk(uniqueIds, 20).map((batch) =>
+      af<any[]>(`/fixtures?ids=${batch.join("-")}`).catch(() => []),
+    ),
+  );
+  return results.flat().map(normalize);
+}
+
+async function loadStreamedFixtures(): Promise<Fixture[]> {
+  const ids = await listActiveStreamFixtureIds();
+  if (!ids.length) return [];
+  return (await fetchFixturesByIds(ids))
+    .filter((match) => streamFixtureIsVisible(match))
+    .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+}
+
 function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
@@ -99,10 +134,11 @@ export const getHomeFeed = createServerFn({ method: "GET" }).handler(async () =>
   const today = new Date();
   const tomorrow = new Date(today.getTime() + 86400000);
   // Live updates every 30s, fixture lists every 5m — drops upstream load dramatically.
-  const [live, todayList, tomorrowList] = await Promise.all([
+  const [live, todayList, tomorrowList, streamed] = await Promise.all([
     af<any[]>(`/fixtures?live=all`, 30_000).catch(() => []),
     af<any[]>(`/fixtures?date=${isoDate(today)}`, 300_000).catch(() => []),
     af<any[]>(`/fixtures?date=${isoDate(tomorrow)}`, 300_000).catch(() => []),
+    loadStreamedFixtures().catch(() => []),
   ]);
   // Keep only fixtures from popular leagues — payload shrinks ~10x.
   const popularSet = new Set(POPULAR_LEAGUES.map((l) => l.id));
@@ -115,6 +151,7 @@ export const getHomeFeed = createServerFn({ method: "GET" }).handler(async () =>
   return {
     live: live.filter(inPopular).map(normalize).slice(0, 30),
     upcoming: upcoming.slice(0, 30),
+    streamed,
   };
 });
 
@@ -127,17 +164,12 @@ export const getLiveFixtures = createServerFn({ method: "GET" }).handler(async (
 export const getFixturesByIds = createServerFn({ method: "GET" })
   .inputValidator((d: { ids: number[] }) => d)
   .handler(async ({ data }) => {
-    const ids = Array.from(new Set((data.ids ?? []).filter((n) => Number.isFinite(n))));
-    if (!ids.length) return [];
-    // api-football supports id1-id2-id3 batch lookup
-    const results = await Promise.all(
-      // chunk to avoid URL length issues
-      chunk(ids, 20).map((batch) =>
-        af<any[]>(`/fixtures?ids=${batch.join("-")}`).catch(() => []),
-      ),
-    );
-    return results.flat().map(normalize);
+    return fetchFixturesByIds(data.ids ?? []);
   });
+
+export const getStreamedFixtures = createServerFn({ method: "GET" }).handler(async () => {
+  return loadStreamedFixtures();
+});
 
 function chunk<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
