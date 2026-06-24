@@ -409,13 +409,22 @@ function PlyrVideo({
   poster,
   isLive,
   onPlaying,
+  onDiagnostics,
 }: {
   src: string;
   type: "hls" | "mp4";
   poster?: string;
   isLive?: boolean;
   onPlaying?: () => void;
+  onDiagnostics?: (d: StreamDiagnostics) => void;
 }) {
+  const diagRef = useRef<StreamDiagnostics>({ ...INITIAL_DIAGNOSTICS });
+  const onDiagnosticsRef = useRef(onDiagnostics);
+  onDiagnosticsRef.current = onDiagnostics;
+  const emitDiag = (patch: Partial<StreamDiagnostics>) => {
+    diagRef.current = { ...diagRef.current, ...patch };
+    onDiagnosticsRef.current?.(diagRef.current);
+  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
   const hlsRef = useRef<Hls | null>(null);
