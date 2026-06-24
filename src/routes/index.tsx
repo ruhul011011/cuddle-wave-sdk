@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
+
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
