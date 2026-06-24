@@ -118,6 +118,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           </button>
         ) : selected.stream_type === "iframe" ? (
           <iframe
+            key={selected.id}
             src={selected.url}
             className="absolute inset-0 h-full w-full"
             allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
@@ -125,7 +126,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <PlyrVideo src={selected.url} type={selected.stream_type} poster={poster} isLive={isLive} />
+          <PlyrVideo key={selected.id} src={selected.url} type={selected.stream_type} poster={poster} isLive={isLive} />
         )}
 
         {isLive && (
