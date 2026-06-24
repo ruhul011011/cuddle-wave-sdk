@@ -9,9 +9,10 @@ import {
   qualifiedTeams,
   groupStandings as defaultGroupStandings,
   tournamentSchedule,
-  keyMatches,
+  keyMatches as fallbackKeyMatches,
   type Group,
 } from "@/lib/world-cup";
+import { getWorldCupFixtures } from "@/lib/world-cup.functions";
 
 export const Route = createFileRoute("/world-cup")({
   head: () => ({
@@ -49,6 +50,18 @@ function WorldCupPage() {
     },
     staleTime: 60_000,
   });
+
+  const { data: liveMatches } = useQuery({
+    queryKey: ["wc-fixtures"],
+    queryFn: () => getWorldCupFixtures(),
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+
+  const keyMatches =
+    liveMatches && liveMatches.source === "api" && liveMatches.matches.length > 0
+      ? liveMatches.matches
+      : fallbackKeyMatches;
 
   return (
     <div className="min-h-screen">
