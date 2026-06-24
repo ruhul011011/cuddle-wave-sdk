@@ -96,28 +96,13 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const queryClient = useQueryClient();
   const { data: feed } = useSuspenseQuery(homeFeedQuery);
-  // Client-only: which fixtures have admin streams
-  const { data: streamedIds = [] } = useQuery(streamedIdsQuery);
+  // Client-only: which fixtures have admin streams. Polled every 20s by
+  // streamedIdsQuery so newly-added live streams appear without a manual
+  // refresh. We intentionally do NOT subscribe to match_streams via Realtime
+  // here — that would broadcast row payloads (including premium stream URLs)
+  // to all authenticated subscribers.
 
-  // Realtime: invalidate streamed-ids whenever match_streams changes so
-  // newly-added live streams appear without a manual refresh.
-  useEffect(() => {
-    const channel = supabase
-      .channel("home-match-streams")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "match_streams" },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ["streamed-fixture-ids"] });
-        },
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [queryClient]);
 
   // Client-only: fetch any streamed fixtures missing from the popular-league feed
   const knownIds = new Set(feed.live.map((m) => Number(m.id)));
