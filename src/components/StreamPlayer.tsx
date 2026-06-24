@@ -285,11 +285,13 @@ function PlyrVideo({
   type,
   poster,
   isLive,
+  onPlaying,
 }: {
   src: string;
   type: "hls" | "mp4";
   poster?: string;
   isLive?: boolean;
+  onPlaying?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const plyrRef = useRef<Plyr | null>(null);
