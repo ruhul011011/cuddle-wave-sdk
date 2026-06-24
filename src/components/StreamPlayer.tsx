@@ -574,15 +574,18 @@ function PlyrVideo({
     }, 8_000);
 
     if (type === "mp4") {
+      emitDiag({ mode: "MP4" });
       video.src = src;
       initPlyr();
       playSafely();
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       // Native HLS (Safari/iOS)
+      emitDiag({ mode: "Native HLS" });
       video.src = src;
       initPlyr();
       playSafely();
     } else if (Hls.isSupported()) {
+      emitDiag({ mode: "HLS.js" });
       const buildHls = () =>
         new Hls({
           enableWorker: true,
@@ -617,8 +620,15 @@ function PlyrVideo({
           }
           playSafely();
         });
+        hls.on(Hls.Events.FRAG_LOADED, () => {
+          emitDiag({ lastSegmentAt: Date.now(), stallState: "ok" });
+        });
         hls.on(Hls.Events.ERROR, (_e, data) => {
           if (!data.fatal) return;
+          emitDiag({
+            retryCount: diagRef.current.retryCount + 1,
+            stallState: "recovering",
+          });
           if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
             recoverCount += 1;
             if (recoverCount > 4) {
@@ -648,6 +658,7 @@ function PlyrVideo({
 
       // Auto-resume on stalls, live "ended", and tab visibility changes
       const onStalled = () => {
+        emitDiag({ stallState: "stalled" });
         recoverLivePlayback();
       };
       const onEnded = () => {
