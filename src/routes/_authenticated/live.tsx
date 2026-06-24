@@ -10,9 +10,11 @@ async function loadLive(): Promise<Fixture[]> {
   const streamedIds = await listStreamedFixtureIds().catch(() => [] as number[]);
   if (!streamedIds.length) return [];
   const streamed = await getFixturesByIds({ data: { ids: streamedIds } }).catch(() => [] as Fixture[]);
-  return streamed
-    .filter((m) => m.status !== "finished")
-    .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  // Source of truth for "available to stream" is match_streams.is_active —
+  // we intentionally do NOT filter by api-football status here (it often
+  // mislabels recent/upcoming fixtures as FT). Admins toggle is_active off
+  // when a stream should no longer appear.
+  return streamed.sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
 
 const liveQuery = queryOptions({
