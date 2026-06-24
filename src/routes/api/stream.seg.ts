@@ -34,8 +34,10 @@ export const Route = createFileRoute("/api/stream/seg")({
         forward.set("referer", `${upHost.protocol}//${upHost.host}/`);
         forward.set("origin", `${upHost.protocol}//${upHost.host}`);
         forward.set("user-agent", request.headers.get("user-agent") ?? "Mozilla/5.0");
+        forward.set("cache-control", "no-cache");
+        forward.set("pragma", "no-cache");
 
-        const upstream = await fetch(upstreamUrl, { headers: forward, redirect: "follow" });
+        const upstream = await fetch(upstreamUrl, { headers: forward, redirect: "follow", cache: "no-store" });
         const headers = passHeaders(upstream.headers);
         const ct = (upstream.headers.get("content-type") || "").toLowerCase();
         const looksHls = ct.includes("mpegurl") || upstreamUrl.toLowerCase().includes(".m3u8");

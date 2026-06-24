@@ -25,7 +25,9 @@ async function fetchUpstream(url: string, request: Request): Promise<Response> {
   forward.set("referer", `${u.protocol}//${u.host}/`);
   forward.set("origin", `${u.protocol}//${u.host}`);
   forward.set("user-agent", request.headers.get("user-agent") ?? "Mozilla/5.0");
-  return fetch(url, { headers: forward, redirect: "follow" });
+  forward.set("cache-control", "no-cache");
+  forward.set("pragma", "no-cache");
+  return fetch(url, { headers: forward, redirect: "follow", cache: "no-store" });
 }
 
 export const Route = createFileRoute("/api/stream/$id")({
