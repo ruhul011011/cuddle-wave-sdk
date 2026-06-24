@@ -9,9 +9,10 @@ import {
   qualifiedTeams,
   groupStandings as defaultGroupStandings,
   tournamentSchedule,
-  keyMatches,
+  keyMatches as fallbackKeyMatches,
   type Group,
 } from "@/lib/world-cup";
+import { getWorldCupFixtures } from "@/lib/world-cup.functions";
 
 export const Route = createFileRoute("/world-cup")({
   head: () => ({
