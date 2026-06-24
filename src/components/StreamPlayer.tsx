@@ -367,30 +367,85 @@ function PlyrVideo({
       initPlyr();
       video.play().catch(() => {});
     } else if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 60,
-      });
-      hlsRef.current = hls;
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        const qualities = hls.levels.map((l) => l.height).filter((h, i, a) => h && a.indexOf(h) === i);
-        initPlyr(qualities.length ? qualities : undefined);
+      const buildHls = () =>
+        new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          backBufferLength: 60,
+          liveDurationInfinity: true,
+          manifestLoadingMaxRetry: 6,
+          levelLoadingMaxRetry: 6,
+          fragLoadingMaxRetry: 6,
+        });
+
+      let recoverCount = 0;
+      const attachHls = (hls: Hls) => {
+        hlsRef.current = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          if (!plyrRef.current) {
+            const qualities = hls.levels
+              .map((l) => l.height)
+              .filter((h, i, a) => h && a.indexOf(h) === i);
+            initPlyr(qualities.length ? qualities : undefined);
+          }
+          video.play().catch(() => {});
+        });
+        hls.on(Hls.Events.ERROR, (_e, data) => {
+          if (!data.fatal) return;
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            recoverCount += 1;
+            if (recoverCount > 2) {
+              try { hls.destroy(); } catch {}
+              attachHls(buildHls());
+            } else {
+              hls.recoverMediaError();
+            }
+          } else {
+            try { hls.destroy(); } catch {}
+            attachHls(buildHls());
+          }
+        });
+      };
+      attachHls(buildHls());
+
+      // Auto-resume on stalls, live "ended", and tab visibility changes
+      const onStalled = () => {
+        if (video.paused) return;
+        try { hlsRef.current?.startLoad(); } catch {}
         video.play().catch(() => {});
-      });
-      hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (!data.fatal) return;
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-        else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-      });
+      };
+      const onEnded = () => {
+        if (isLive) {
+          try { hlsRef.current?.destroy(); } catch {}
+          attachHls(buildHls());
+        }
+      };
+      const onVisibility = () => {
+        if (document.visibilityState === "visible" && isLive && video.paused) {
+          video.play().catch(() => {});
+        }
+      };
+      video.addEventListener("stalled", onStalled);
+      video.addEventListener("waiting", onStalled);
+      video.addEventListener("ended", onEnded);
+      document.addEventListener("visibilitychange", onVisibility);
+      (hlsRef as any).cleanupExtra = () => {
+        video.removeEventListener("stalled", onStalled);
+        video.removeEventListener("waiting", onStalled);
+        video.removeEventListener("ended", onEnded);
+        document.removeEventListener("visibilitychange", onVisibility);
+      };
     } else {
       video.src = src;
       initPlyr();
     }
 
     return () => {
+      try { (hlsRef as any).cleanupExtra?.(); } catch {}
       plyrRef.current?.destroy();
       plyrRef.current = null;
       hlsRef.current?.destroy();
