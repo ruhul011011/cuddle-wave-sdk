@@ -4,7 +4,7 @@ import * as PlyrNS from "plyr";
 const Plyr = (PlyrNS as any).default ?? (PlyrNS as any);
 type Plyr = InstanceType<typeof Plyr>;
 import "plyr/dist/plyr.css";
-import { Play, Radio, Tv } from "lucide-react";
+import { Loader2, Play, Radio, Tv } from "lucide-react";
 
 export type StreamSource = {
   id: string;
