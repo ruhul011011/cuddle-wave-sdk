@@ -80,7 +80,7 @@ function withCacheBust(url: string): string {
   try {
     const u = new URL(url, window.location.origin);
     u.searchParams.set("_r", String(Date.now()));
-    return u.pathname + u.search + u.hash;
+    return u.origin === window.location.origin ? u.pathname + u.search + u.hash : u.toString();
   } catch {
     const joiner = url.includes("?") ? "&" : "?";
     return `${url}${joiner}_r=${Date.now()}`;
@@ -819,7 +819,6 @@ function PlyrVideo({
     video.addEventListener("stalled", onStalled);
     video.addEventListener("waiting", onStalled);
     video.addEventListener("emptied", onStalled);
-    video.addEventListener("suspend", onStalled);
     video.addEventListener("canplay", onCanPlayOrPlaying);
     video.addEventListener("playing", onCanPlayOrPlaying);
     video.addEventListener("ended", onEnded);
@@ -837,7 +836,6 @@ function PlyrVideo({
       video.removeEventListener("stalled", onStalled);
       video.removeEventListener("waiting", onStalled);
       video.removeEventListener("emptied", onStalled);
-      video.removeEventListener("suspend", onStalled);
       video.removeEventListener("canplay", onCanPlayOrPlaying);
       video.removeEventListener("playing", onCanPlayOrPlaying);
       video.removeEventListener("ended", onEnded);
