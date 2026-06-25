@@ -10,6 +10,7 @@ const LIVE_HARD_RESET_COOLDOWN_MS = 8_000;
 const LIVE_STARTUP_GRACE_MS = 18_000;
 const LIVE_STALL_RESET_MS = 14_000;
 const LIVE_SEGMENT_GRACE_MS = 28_000;
+const LIVE_MIN_BUFFER_AHEAD_SECONDS = 2;
 
 export type StreamSource = {
   id: string;
@@ -85,6 +86,16 @@ function withCacheBust(url: string): string {
     const joiner = url.includes("?") ? "&" : "?";
     return `${url}${joiner}_r=${Date.now()}`;
   }
+}
+
+function getBufferedAhead(video: HTMLVideoElement): number {
+  const time = video.currentTime;
+  for (let i = 0; i < video.buffered.length; i += 1) {
+    const start = video.buffered.start(i);
+    const end = video.buffered.end(i);
+    if (time >= start && time <= end) return Math.max(0, end - time);
+  }
+  return 0;
 }
 
 
@@ -549,11 +560,15 @@ function PlyrVideo({
       if (typeof liveSyncPosition === "number" && liveSyncPosition > 0 && liveSyncPosition - video.currentTime > 20) {
         video.currentTime = liveSyncPosition;
       }
+      const bufferedAhead = getBufferedAhead(video);
       const stalledTooLong = Date.now() - lastPlaybackRef.current.checkedAt > LIVE_STALL_RESET_MS;
-      const noRecentSegments =
-        diagRef.current.lastSegmentAt !== null && Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS;
+      const segmentStarved =
+        diagRef.current.lastSegmentAt !== null &&
+        Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS &&
+        bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS &&
+        video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA;
       const neverLoaded = video.readyState < 2 && Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS;
-      if ((stalledTooLong || noRecentSegments || neverLoaded) && hardResetPlayback) {
+      if ((stalledTooLong || segmentStarved || neverLoaded) && hardResetPlayback) {
         hardResetPlayback();
         return;
       }
@@ -606,16 +621,20 @@ function PlyrVideo({
     const watchdog = window.setInterval(() => {
       if (!isLive || userPausedRef.current || document.visibilityState !== "visible") return;
       const previous = lastPlaybackRef.current;
+      const bufferedAhead = getBufferedAhead(video);
       const noDataAfterStartup = video.readyState < 2 && Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS;
-      const noRecentSegments =
-        diagRef.current.lastSegmentAt !== null && Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS;
       const playbackStuck =
         !video.paused &&
         Math.abs(video.currentTime - previous.time) <= 0.25 &&
         Date.now() - previous.checkedAt > LIVE_STALL_RESET_MS;
+      const segmentStarved =
+        diagRef.current.lastSegmentAt !== null &&
+        Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS &&
+        bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS &&
+        (video.paused || video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA || playbackStuck);
 
-      if (video.paused || video.ended || playbackStuck || noDataAfterStartup || noRecentSegments) {
-        if ((playbackStuck || noDataAfterStartup || noRecentSegments) && diagRef.current.stallState === "ok") {
+      if (video.paused || video.ended || playbackStuck || noDataAfterStartup || segmentStarved) {
+        if ((playbackStuck || noDataAfterStartup || segmentStarved) && diagRef.current.stallState === "ok") {
           emitDiag({ stallState: "stalled" });
         }
         recoverLivePlayback();
@@ -713,6 +732,7 @@ function PlyrVideo({
           playSafely();
         });
         hls.on(Hls.Events.FRAG_LOADED, () => {
+          recoverCount = 0;
           emitDiag({ lastSegmentAt: Date.now(), stallState: "ok" });
         });
         hls.on(Hls.Events.ERROR, (_e, data) => {
@@ -795,7 +815,11 @@ function PlyrVideo({
       emitDiag({ stallState: "stalled" });
       recoverLivePlayback();
       if (waitingResetTimer) window.clearTimeout(waitingResetTimer);
-      waitingResetTimer = window.setTimeout(() => hardResetPlayback?.(), 5_000);
+      waitingResetTimer = window.setTimeout(() => {
+        if (getBufferedAhead(video) < LIVE_MIN_BUFFER_AHEAD_SECONDS && video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+          hardResetPlayback?.();
+        }
+      }, 12_000);
     };
     const onCanPlayOrPlaying = () => {
       if (waitingResetTimer) {
