@@ -37,9 +37,37 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+function handleLegacyLovableOAuth(request: Request): Response | undefined {
+  const url = new URL(request.url);
+  if (url.pathname !== "/~oauth/initiate") return undefined;
+
+  const provider = url.searchParams.get("provider") || "google";
+  if (provider !== "google") {
+    return Response.redirect(`${url.origin}/auth`, 302);
+  }
+
+  const backendUrl =
+    process.env.SUPABASE_URL ||
+    process.env.VITE_SUPABASE_URL ||
+    process.env.PUBLIC_SUPABASE_URL;
+
+  if (!backendUrl) {
+    return Response.redirect(`${url.origin}/auth`, 302);
+  }
+
+  const authorizeUrl = new URL("/auth/v1/authorize", backendUrl);
+  authorizeUrl.searchParams.set("provider", "google");
+  authorizeUrl.searchParams.set("redirect_to", `${url.origin}/auth/callback`);
+
+  return Response.redirect(authorizeUrl.toString(), 302);
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const oauthResponse = handleLegacyLovableOAuth(request);
+      if (oauthResponse) return oauthResponse;
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
