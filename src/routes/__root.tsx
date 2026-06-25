@@ -11,8 +11,16 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
+  const router = useRouter();
+  const pathname = router.state.location.pathname;
+
+  if (pathname === "/~oauth/initiate") {
+    return <LegacyOAuthRedirect />;
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
@@ -32,6 +40,57 @@ function NotFoundComponent() {
       </div>
     </div>
   );
+}
+
+function LegacyOAuthRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const search = new URLSearchParams(router.state.location.searchStr);
+    const provider = search.get("provider") || "google";
+    const redirectUri = search.get("redirect_uri");
+
+    if (provider !== "google") {
+      window.location.replace("/auth");
+      return;
+    }
+
+    try {
+      sessionStorage.setItem("postAuthRedirect", sanitizeRedirectPath(redirectUri));
+    } catch {
+      // ignore storage failures
+    }
+
+    supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    }).then(({ error }) => {
+      if (error) window.location.replace("/auth");
+    });
+  }, [router.state.location.searchStr]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 text-center">
+      <p className="text-sm text-muted-foreground">Redirecting to Google…</p>
+    </div>
+  );
+}
+
+function sanitizeRedirectPath(value: string | null) {
+  if (!value) return "/";
+
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.origin === window.location.origin) {
+      return `${url.pathname}${url.search}${url.hash}` || "/";
+    }
+  } catch {
+    // fall through
+  }
+
+  return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
