@@ -4,10 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/auth/callback")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+  }),
   component: AuthCallback,
 });
 
 function AuthCallback() {
+  const search = Route.useSearch();
   const [message, setMessage] = useState("Finishing sign-in…");
 
   useEffect(() => {
@@ -22,6 +26,9 @@ function AuthCallback() {
         if (cancelled) return;
         if (data.session) {
           let target = "/";
+          if (search.redirect && search.redirect.startsWith("/") && !search.redirect.startsWith("//")) {
+            target = search.redirect;
+          }
           try {
             const saved = sessionStorage.getItem("postAuthRedirect");
             if (saved && saved.startsWith("/")) target = saved;

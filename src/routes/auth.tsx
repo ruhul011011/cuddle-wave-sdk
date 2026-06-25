@@ -10,6 +10,7 @@ export const Route = createFileRoute("/auth")({
   ssr: false,
   validateSearch: (search: Record<string, unknown>) => ({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    oauth_error: typeof search.oauth_error === "string" ? search.oauth_error : undefined,
   }),
   head: () => ({
     meta: [
@@ -60,23 +61,12 @@ function AuthPage() {
   async function handleGoogle() {
     setBusy(true);
     try {
-      // Direct Supabase Google OAuth (works on self-hosted VPS without the Lovable proxy).
-      // Requires Google provider to be enabled in the backend Auth settings with your own
-      // Google Cloud OAuth Client ID / Secret, and the Supabase callback URL added to your
-      // Google OAuth "Authorized redirect URIs".
       try {
         sessionStorage.setItem("postAuthRedirect", redirectTo);
       } catch {
         // ignore storage failures
       }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: window.location.origin + "/auth/callback",
-        },
-      });
-      if (error) throw error;
-      // Browser will redirect to Google.
+      window.location.assign(`/api/public/oauth/google?redirect=${encodeURIComponent(redirectTo)}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setBusy(false);
@@ -96,6 +86,12 @@ function AuthPage() {
         </div>
 
         <div className="mt-8 rounded-2xl border border-border/60 bg-card p-6">
+          {search.oauth_error ? (
+            <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              Google sign-in is not configured on the server yet.
+            </div>
+          ) : null}
+
           <button
             onClick={handleGoogle}
             disabled={busy}
