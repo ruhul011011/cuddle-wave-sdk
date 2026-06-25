@@ -4,6 +4,29 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/~oauth/initiate")({
   ssr: false,
+  server: {
+    handlers: {
+      GET: async ({ request }) => {
+        const url = new URL(request.url);
+        const provider = url.searchParams.get("provider") || "google";
+
+        if (provider !== "google") {
+          return Response.redirect(`${url.origin}/auth`, 302);
+        }
+
+        const backendUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+        if (!backendUrl) {
+          return Response.redirect(`${url.origin}/auth`, 302);
+        }
+
+        const authorizeUrl = new URL("/auth/v1/authorize", backendUrl);
+        authorizeUrl.searchParams.set("provider", "google");
+        authorizeUrl.searchParams.set("redirect_to", `${url.origin}/auth/callback`);
+
+        return Response.redirect(authorizeUrl.toString(), 302);
+      },
+    },
+  },
   validateSearch: (search: Record<string, unknown>) => ({
     provider: typeof search.provider === "string" ? search.provider : undefined,
     redirect_uri: typeof search.redirect_uri === "string" ? search.redirect_uri : undefined,
