@@ -452,6 +452,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_active_stream_fixture_ids: {
+        Args: never
+        Returns: {
+          fixture_id: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"
