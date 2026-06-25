@@ -11,7 +11,7 @@ import {
   deleteFixtureStreams,
 } from "@/lib/streams.functions";
 import { setMatchAccess } from "@/lib/payments.functions";
-import { listPopularLeagues, getFixturesByLeagueDate, getFixturesByIds } from "@/lib/api-football.functions";
+import { listPopularLeagues, getFixturesByLeagueDate, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
 import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
 import { toast } from "sonner";
 import { Trash2, Plus, Loader2, Copy, X, Pencil, Search } from "lucide-react";
@@ -100,7 +100,7 @@ function AdminLiveMatchesPage() {
     enabled: typeof leagueId === "number" && !editingFixture,
   });
 
-  const fixtureOptions = useMemo(() => {
+  const fixtureOptions = useMemo<Fixture[]>(() => {
     const rows = fixturesQ.data ?? [];
     if (rows.length) return rows;
     return leagueId === 1 ? getWorldCup2026FallbackFixtures(date) : [];
