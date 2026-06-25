@@ -37,7 +37,15 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
-function handleLegacyLovableOAuth(request: Request): Response | undefined {
+function getRuntimeEnvValue(env: unknown, key: string): string | undefined {
+  if (env && typeof env === "object" && key in env) {
+    const value = (env as Record<string, unknown>)[key];
+    return typeof value === "string" ? value : undefined;
+  }
+  return undefined;
+}
+
+function handleLegacyLovableOAuth(request: Request, env: unknown): Response | undefined {
   const url = new URL(request.url);
   if (url.pathname !== "/~oauth/initiate") return undefined;
 
@@ -47,6 +55,9 @@ function handleLegacyLovableOAuth(request: Request): Response | undefined {
   }
 
   const backendUrl =
+    getRuntimeEnvValue(env, "SUPABASE_URL") ||
+    getRuntimeEnvValue(env, "VITE_SUPABASE_URL") ||
+    getRuntimeEnvValue(env, "PUBLIC_SUPABASE_URL") ||
     process.env.SUPABASE_URL ||
     process.env.VITE_SUPABASE_URL ||
     process.env.PUBLIC_SUPABASE_URL;
@@ -65,7 +76,7 @@ function handleLegacyLovableOAuth(request: Request): Response | undefined {
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const oauthResponse = handleLegacyLovableOAuth(request);
+      const oauthResponse = handleLegacyLovableOAuth(request, env);
       if (oauthResponse) return oauthResponse;
 
       const handler = await getServerEntry();
