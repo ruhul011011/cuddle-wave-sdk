@@ -15,6 +15,8 @@ export const Route = createFileRoute("/api/public/health")({
           env: {
             SUPABASE_URL: hasEnv("SUPABASE_URL"),
             SUPABASE_PUBLISHABLE_KEY: hasEnv("SUPABASE_PUBLISHABLE_KEY"),
+            VITE_SUPABASE_URL: hasEnv("VITE_SUPABASE_URL"),
+            VITE_SUPABASE_PUBLISHABLE_KEY: hasEnv("VITE_SUPABASE_PUBLISHABLE_KEY"),
             SUPABASE_SERVICE_ROLE_KEY: hasEnv("SUPABASE_SERVICE_ROLE_KEY"),
             API_FOOTBALL_KEY: hasEnv("API_FOOTBALL_KEY"),
             STRIPE_SECRET_KEY: hasEnv("STRIPE_SECRET_KEY"),

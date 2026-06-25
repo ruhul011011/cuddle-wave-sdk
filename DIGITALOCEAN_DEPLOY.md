@@ -153,6 +153,8 @@ If `/api/public/health` shows any of these as `false`, add the missing value to 
 ```bash
 SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
 SUPABASE_SERVICE_ROLE_KEY=YOUR_SUPABASE_SERVICE_ROLE_KEY
 API_FOOTBALL_KEY=YOUR_API_FOOTBALL_KEY
 STRIPE_SECRET_KEY=sk_test_or_sk_live_key
@@ -163,7 +165,11 @@ STREAM_SIGNING_SECRET=make-a-long-random-string
 Then:
 
 ```bash
-pm2 restart worldcuptv --update-env
+git pull
+bun run build
+pm2 delete worldcuptv 2>/dev/null || true
+pm2 start ecosystem.config.cjs --env production
+pm2 save
 curl http://127.0.0.1:3000/api/public/health
 ```
 
