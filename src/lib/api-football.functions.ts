@@ -173,7 +173,7 @@ const WORLD_CUP_2026_FALLBACK: Array<{
   { id: "1561329", kickoff: "2026-06-28T19:00:00+00:00", homeTeam: "South Africa", awayTeam: "Canada", venue: "SoFi Stadium" },
 ];
 
-function worldCupFallbackFixtures(date?: string): Fixture[] {
+export function worldCupFallbackFixtures(date?: string): Fixture[] {
   const rows = date
     ? WORLD_CUP_2026_FALLBACK.filter((match) => match.kickoff.slice(0, 10) === date)
     : WORLD_CUP_2026_FALLBACK;
