@@ -449,10 +449,13 @@ function ShakaLivePlayer({
       }, RETRY_INTERVAL_MS);
     };
 
+    let bootCount = 0;
+    const urlFor = () => (bootCount === 0 ? src : withCacheBust(src));
+
     const startNative = async () => {
       engine = "native";
       emitDiag({ mode: "Native HLS" });
-      video.src = withCacheBust(src);
+      video.src = urlFor();
       try {
         await video.play();
       } catch {}
