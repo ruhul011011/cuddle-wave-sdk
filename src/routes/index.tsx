@@ -299,7 +299,7 @@ function FixtureRow({ match: m }: { match: Fixture }) {
           {m.league}
         </span>
         {isLive ? (
-          <span className="live-dot font-display tracking-wider text-live">{m.minute}</span>
+          <span className="live-dot font-display tracking-wider text-live" suppressHydrationWarning>{m.minute}</span>
         ) : (
           <span className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-background/40 px-2 py-1 font-display tracking-wider text-foreground">
             <Clock className="h-3 w-3" /> {formatKickoffTime(m.kickoff)}
