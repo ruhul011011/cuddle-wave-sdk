@@ -7,6 +7,13 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  // Outside Lovable, build a normal Node server so a VPS/DigitalOcean droplet
+  // can run it with `npm start`/PM2. Lovable-hosted builds still force their
+  // own server target automatically.
+  nitro: {
+    preset: "node_server",
+    output: { dir: ".output" },
+  },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this

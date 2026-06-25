@@ -7,6 +7,9 @@
     "dev": "vite dev",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "start": "node .output/server/index.mjs",
+    "pm2:start": "pm2 start ecosystem.config.cjs --env production",
+    "pm2:restart": "pm2 restart worldcuptv --update-env",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
