@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import Hls from "hls.js";
+import videojs from "video.js";
+import "video.js/dist/video-js.css";
 import { Activity, Loader2, Play, Radio, Tv } from "lucide-react";
 
-const LIVE_STARTUP_GRACE_MS = 18_000;
-const LIVE_STALL_RESET_MS = 25_000;
-const LIVE_MIN_BUFFER_AHEAD_SECONDS = 1.5;
+type VideoJsPlayer = ReturnType<typeof videojs>;
+
+const LIVE_STARTUP_GRACE_MS = 24_000;
+const LIVE_STALL_RECOVER_MS = 18_000;
+const LIVE_HARD_RELOAD_MS = 90_000;
+const LIVE_MIN_BUFFER_AHEAD_SECONDS = 1.25;
 
 export type StreamSource = {
   id: string;
@@ -21,7 +25,7 @@ type Props = {
 };
 
 export type StreamDiagnostics = {
-  mode: "HLS.js" | "Native HLS" | "MP4" | "iframe" | "idle";
+  mode: "Video.js VHS" | "Native HLS" | "MP4" | "iframe" | "idle";
   stallState: "ok" | "stalled" | "recovering";
   retryCount: number;
   lastSegmentAt: number | null;
@@ -84,12 +88,12 @@ function withCacheBust(url: string): string {
   }
 }
 
-function getBufferedAhead(video: HTMLVideoElement): number {
-  const time = video.currentTime;
-  for (let i = 0; i < video.buffered.length; i += 1) {
-    const start = video.buffered.start(i);
-    const end = video.buffered.end(i);
-    if (time >= start && time <= end) return Math.max(0, end - time);
+function getBufferedAheadFromRanges(buffered: TimeRanges | undefined, currentTime: number | undefined): number {
+  if (!buffered || typeof currentTime !== "number") return 0;
+  for (let i = 0; i < buffered.length; i += 1) {
+    const start = buffered.start(i);
+    const end = buffered.end(i);
+    if (currentTime >= start && currentTime <= end) return Math.max(0, end - currentTime);
   }
   return 0;
 }
@@ -182,7 +186,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <NativeLiveVideo
+          <VideoJsLivePlayer
             key={`${selected.id}:${selected.url}`}
             src={selected.url}
             type={selected.stream_type}
@@ -344,7 +348,7 @@ function Stat({
   );
 }
 
-function NativeLiveVideo({
+function VideoJsLivePlayer({
   src,
   type,
   poster,
@@ -360,7 +364,7 @@ function NativeLiveVideo({
   onDiagnostics?: (d: StreamDiagnostics) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
+  const playerRef = useRef<VideoJsPlayer | null>(null);
   const diagRef = useRef<StreamDiagnostics>({ ...INITIAL_DIAGNOSTICS });
   const onDiagnosticsRef = useRef(onDiagnostics);
   const onReadyRef = useRef(onReady);
@@ -381,129 +385,63 @@ function NativeLiveVideo({
     if (!video) return;
 
     const mountedAt = Date.now();
-    let resetCount = 0;
-    let lastRebuildAt = 0;
     let watchdog: number | null = null;
     let waitingTimer: number | null = null;
     let destroyed = false;
 
+    const mimeType = type === "hls" ? "application/x-mpegURL" : "video/mp4";
+
     const playSafely = () => {
       if (document.visibilityState !== "visible") return;
-      video.play().catch(() => {});
+      const player = playerRef.current;
+      if (!player || player.isDisposed()) return;
+      const playPromise = player.play();
+      if (playPromise && typeof playPromise.catch === "function") playPromise.catch(() => {});
     };
 
     const bumpRetry = (stallState: StreamDiagnostics["stallState"] = "recovering") => {
       emitDiag({ retryCount: diagRef.current.retryCount + 1, stallState });
     };
 
-    const rebuildHls = () => {
-      if (destroyed || type !== "hls" || !Hls.isSupported()) return;
-      const now = Date.now();
-      if (now - lastRebuildAt < 8_000) {
-        hlsRef.current?.startLoad(-1);
-        playSafely();
-        return;
-      }
-
-      lastRebuildAt = now;
-      bumpRetry();
-
+    const seekToLiveEdge = () => {
+      if (!isLive) return;
+      const player = playerRef.current;
+      if (!player || player.isDisposed()) return;
+      const liveTracker = (player as unknown as { liveTracker?: { seekToLiveEdge?: () => void; liveCurrentTime?: () => number } }).liveTracker;
       try {
-        hlsRef.current?.destroy();
+        if (liveTracker?.seekToLiveEdge) liveTracker.seekToLiveEdge();
+        else if (liveTracker?.liveCurrentTime) player.currentTime(liveTracker.liveCurrentTime());
       } catch {}
+    };
 
-      const hls = createHls();
-      hlsRef.current = hls;
-      attachHls(hls, withCacheBust(src));
+    const hardReload = () => {
+      if (destroyed) return;
+      const player = playerRef.current;
+      if (!player || player.isDisposed()) return;
+      bumpRetry();
+      player.src({ src: withCacheBust(src), type: mimeType });
+      player.load();
+      if (isLive) window.setTimeout(seekToLiveEdge, 900);
+      window.setTimeout(playSafely, 1200);
     };
 
     const recover = () => {
       if (!isLive || userPausedRef.current) return;
+      const player = playerRef.current;
+      if (!player || player.isDisposed()) return;
+
       emitDiag({ stallState: "recovering" });
-
-      if (hlsRef.current) {
-        const liveSyncPosition = hlsRef.current.liveSyncPosition;
-        if (typeof liveSyncPosition === "number" && liveSyncPosition > 0 && liveSyncPosition - video.currentTime > 15) {
-          video.currentTime = liveSyncPosition;
-        }
-        hlsRef.current.startLoad(-1);
-      }
-
+      seekToLiveEdge();
       playSafely();
 
-      const noBuffer = getBufferedAhead(video) < LIVE_MIN_BUFFER_AHEAD_SECONDS;
-      const stalledLong = Date.now() - lastProgressRef.current.at > LIVE_STALL_RESET_MS;
-      const neverStarted = Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS && video.readyState < 2;
+      const bufferedAhead = getBufferedAheadFromRanges(player.buffered(), player.currentTime());
+      const stalledFor = Date.now() - lastProgressRef.current.at;
+      const noBuffer = bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS;
+      const neverStarted = Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS && player.readyState() < 2;
 
-      if ((stalledLong || neverStarted) && noBuffer && video.readyState < video.HAVE_FUTURE_DATA) {
-        if (type === "hls" && Hls.isSupported()) rebuildHls();
-        else {
-          bumpRetry();
-          video.src = withCacheBust(src);
-          video.load();
-          playSafely();
-        }
+      if ((neverStarted || stalledFor > LIVE_HARD_RELOAD_MS) && noBuffer) {
+        hardReload();
       }
-    };
-
-    const createHls = () =>
-      new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        liveDurationInfinity: true,
-        liveSyncDurationCount: 4,
-        liveMaxLatencyDurationCount: 12,
-        maxBufferLength: 60,
-        maxMaxBufferLength: 120,
-        backBufferLength: 30,
-        maxBufferHole: 0.5,
-        nudgeOffset: 0.2,
-        nudgeMaxRetry: 6,
-        manifestLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
-        levelLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
-        fragLoadingMaxRetry: Number.MAX_SAFE_INTEGER,
-        manifestLoadingRetryDelay: 1_000,
-        levelLoadingRetryDelay: 1_000,
-        fragLoadingRetryDelay: 1_000,
-        manifestLoadingMaxRetryTimeout: 8_000,
-        levelLoadingMaxRetryTimeout: 8_000,
-        fragLoadingMaxRetryTimeout: 8_000,
-      });
-
-    const attachHls = (hls: Hls, sourceUrl: string) => {
-      hls.loadSource(sourceUrl);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => hls.startLoad(-1));
-      hls.on(Hls.Events.MANIFEST_PARSED, () => playSafely());
-      hls.on(Hls.Events.FRAG_LOADED, () => {
-        resetCount = 0;
-        emitDiag({ lastSegmentAt: Date.now(), stallState: "ok" });
-      });
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        const isNetwork = data.type === Hls.ErrorTypes.NETWORK_ERROR;
-        const isMedia = data.type === Hls.ErrorTypes.MEDIA_ERROR;
-        const details = String(data.details ?? "").toLowerCase();
-
-        if (!data.fatal) {
-          if (isNetwork || details.includes("timeout") || details.includes("stall")) {
-            bumpRetry();
-            hls.startLoad(-1);
-            playSafely();
-          }
-          return;
-        }
-
-        resetCount += 1;
-        bumpRetry();
-
-        if (isMedia && resetCount <= 2) {
-          hls.recoverMediaError();
-          playSafely();
-          return;
-        }
-
-        rebuildHls();
-      });
     };
 
     const markUserAction = (event: PointerEvent | KeyboardEvent) => {
@@ -521,7 +459,8 @@ function NativeLiveVideo({
 
     const onPlaying = () => {
       userPausedRef.current = false;
-      lastProgressRef.current = { time: video.currentTime, at: Date.now() };
+      const player = playerRef.current;
+      lastProgressRef.current = { time: player?.currentTime() ?? 0, at: Date.now() };
       emitDiag({ stallState: "ok" });
       onReadyRef.current?.();
     };
@@ -531,14 +470,18 @@ function NativeLiveVideo({
     };
 
     const onPause = () => {
-      if (!isLive || video.ended) return;
+      const player = playerRef.current;
+      if (!isLive || !player || player.ended()) return;
       if (Date.now() - lastUserActionAtRef.current < 1500) userPausedRef.current = true;
     };
 
     const onTimeUpdate = () => {
+      const player = playerRef.current;
+      if (!player || player.isDisposed()) return;
       const previous = lastProgressRef.current;
-      if (Math.abs(video.currentTime - previous.time) > 0.25) {
-        lastProgressRef.current = { time: video.currentTime, at: Date.now() };
+      const currentTime = player.currentTime() ?? 0;
+      if (Math.abs(currentTime - previous.time) > 0.25) {
+        lastProgressRef.current = { time: currentTime, at: Date.now() };
         if (diagRef.current.stallState !== "ok") emitDiag({ stallState: "ok" });
       }
     };
@@ -547,68 +490,86 @@ function NativeLiveVideo({
       if (!isLive) return;
       emitDiag({ stallState: "stalled" });
       if (waitingTimer) window.clearTimeout(waitingTimer);
-      waitingTimer = window.setTimeout(recover, 4_000);
+      waitingTimer = window.setTimeout(recover, LIVE_STALL_RECOVER_MS);
     };
 
     const onVisibility = () => {
       if (document.visibilityState === "visible" && isLive && !userPausedRef.current) recover();
     };
 
-    document.addEventListener("pointerdown", markUserAction, true);
-    document.addEventListener("keydown", markUserAction, true);
-    document.addEventListener("visibilitychange", onVisibility);
-    video.addEventListener("playing", onPlaying);
-    video.addEventListener("canplay", onCanPlay);
-    video.addEventListener("pause", onPause);
-    video.addEventListener("timeupdate", onTimeUpdate);
-    video.addEventListener("waiting", onWaiting);
-    video.addEventListener("stalled", onWaiting);
-    video.addEventListener("ended", recover);
-    video.addEventListener("error", recover);
-
     diagRef.current = { ...INITIAL_DIAGNOSTICS };
     lastProgressRef.current = { time: 0, at: Date.now() };
 
-    if (type === "mp4") {
-      emitDiag({ mode: "MP4" });
-      video.src = src;
-      video.load();
+    const player = videojs(video, {
+      controls: true,
+      autoplay: "play",
+      preload: "auto",
+      poster,
+      fill: true,
+      fluid: false,
+      responsive: true,
+      liveui: Boolean(isLive),
+      inactivityTimeout: 1800,
+      html5: {
+        vhs: {
+          overrideNative: false,
+          useDevicePixelRatio: true,
+          limitRenditionByPlayerDimensions: false,
+          smoothQualityChange: true,
+          handleManifestRedirects: true,
+          maxPlaylistRetries: Infinity,
+          bandwidth: 8_000_000,
+        },
+        nativeAudioTracks: false,
+        nativeVideoTracks: false,
+      },
+      sources: [{ src, type: mimeType }],
+    });
+
+    playerRef.current = player;
+    emitDiag({ mode: type === "mp4" ? "MP4" : video.canPlayType("application/vnd.apple.mpegurl") ? "Native HLS" : "Video.js VHS" });
+
+    document.addEventListener("pointerdown", markUserAction, true);
+    document.addEventListener("keydown", markUserAction, true);
+    document.addEventListener("visibilitychange", onVisibility);
+    player.on("playing", onPlaying);
+    player.on("canplay", onCanPlay);
+    player.on("loadeddata", onCanPlay);
+    player.on("pause", onPause);
+    player.on("timeupdate", onTimeUpdate);
+    player.on("progress", () => emitDiag({ lastSegmentAt: Date.now() }));
+    player.on("waiting", onWaiting);
+    player.on("stalled", onWaiting);
+    player.on("seeking", () => emitDiag({ stallState: "recovering" }));
+    player.on("seeked", () => emitDiag({ stallState: "ok" }));
+    player.on("ended", recover);
+    player.on("error", hardReload);
+
+    player.ready(() => {
+      if (isLive) window.setTimeout(seekToLiveEdge, 700);
       playSafely();
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      emitDiag({ mode: "Native HLS" });
-      video.src = src;
-      video.load();
-      playSafely();
-    } else if (Hls.isSupported()) {
-      emitDiag({ mode: "HLS.js" });
-      const hls = createHls();
-      hlsRef.current = hls;
-      attachHls(hls, src);
-    } else {
-      emitDiag({ mode: "MP4" });
-      video.src = src;
-      video.load();
-      playSafely();
-    }
+    });
 
     watchdog = window.setInterval(() => {
       if (!isLive || userPausedRef.current || document.visibilityState !== "visible") return;
+      const currentPlayer = playerRef.current;
+      if (!currentPlayer || currentPlayer.isDisposed()) return;
 
       const previous = lastProgressRef.current;
-      const noBuffer = getBufferedAhead(video) < LIVE_MIN_BUFFER_AHEAD_SECONDS;
+      const currentTime = currentPlayer.currentTime() ?? 0;
+      const bufferedAhead = getBufferedAheadFromRanges(currentPlayer.buffered(), currentTime);
+      const noBuffer = bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS;
       const playbackStuck =
-        !video.paused &&
-        Math.abs(video.currentTime - previous.time) <= 0.25 &&
-        Date.now() - previous.at > LIVE_STALL_RESET_MS;
-      const noDataAfterStartup = Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS && video.readyState < 2;
+        !currentPlayer.paused() &&
+        Math.abs(currentTime - previous.time) <= 0.25 &&
+        Date.now() - previous.at > LIVE_STALL_RECOVER_MS;
+      const noDataAfterStartup = Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS && currentPlayer.readyState() < 2;
 
-      if ((playbackStuck || noDataAfterStartup || video.ended) && noBuffer) {
+      if ((playbackStuck || noDataAfterStartup || currentPlayer.ended()) && noBuffer) {
         emitDiag({ stallState: "stalled" });
         recover();
         return;
       }
-
-      hlsRef.current?.startLoad(-1);
     }, 8_000);
 
     return () => {
@@ -618,35 +579,24 @@ function NativeLiveVideo({
       document.removeEventListener("pointerdown", markUserAction, true);
       document.removeEventListener("keydown", markUserAction, true);
       document.removeEventListener("visibilitychange", onVisibility);
-      video.removeEventListener("playing", onPlaying);
-      video.removeEventListener("canplay", onCanPlay);
-      video.removeEventListener("pause", onPause);
-      video.removeEventListener("timeupdate", onTimeUpdate);
-      video.removeEventListener("waiting", onWaiting);
-      video.removeEventListener("stalled", onWaiting);
-      video.removeEventListener("ended", recover);
-      video.removeEventListener("error", recover);
 
       try {
-        hlsRef.current?.destroy();
-        hlsRef.current = null;
-        video.pause();
-        video.removeAttribute("src");
-        video.load();
+        playerRef.current?.dispose();
+        playerRef.current = null;
       } catch {}
     };
-  }, [src, type, isLive]);
+  }, [src, type, poster, isLive]);
 
   return (
-    <div className="absolute inset-0 h-full w-full bg-black">
+    <div data-vjs-player className="absolute inset-0 h-full w-full bg-black [&_.video-js]:h-full [&_.video-js]:w-full [&_.vjs-control-bar]:bg-black/80 [&_.vjs-live-control]:font-bold [&_.vjs-live-control]:text-primary [&_.vjs-play-progress]:bg-primary [&_.vjs-volume-level]:bg-primary">
       <video
         ref={videoRef}
+        className="video-js vjs-big-play-centered"
         poster={poster}
         playsInline
         controls
         autoPlay
         preload="auto"
-        className="h-full w-full"
       />
     </div>
   );
