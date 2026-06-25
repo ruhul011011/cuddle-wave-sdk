@@ -363,11 +363,13 @@ function NativeLiveVideo({
   const hlsRef = useRef<Hls | null>(null);
   const diagRef = useRef<StreamDiagnostics>({ ...INITIAL_DIAGNOSTICS });
   const onDiagnosticsRef = useRef(onDiagnostics);
+  const onReadyRef = useRef(onReady);
   const userPausedRef = useRef(false);
   const lastUserActionAtRef = useRef(0);
   const lastProgressRef = useRef({ time: 0, at: 0 });
 
   onDiagnosticsRef.current = onDiagnostics;
+  onReadyRef.current = onReady;
 
   const emitDiag = (patch: Partial<StreamDiagnostics>) => {
     diagRef.current = { ...diagRef.current, ...patch };
@@ -521,7 +523,11 @@ function NativeLiveVideo({
       userPausedRef.current = false;
       lastProgressRef.current = { time: video.currentTime, at: Date.now() };
       emitDiag({ stallState: "ok" });
-      onReady?.();
+      onReadyRef.current?.();
+    };
+
+    const onCanPlay = () => {
+      onReadyRef.current?.();
     };
 
     const onPause = () => {
@@ -552,7 +558,7 @@ function NativeLiveVideo({
     document.addEventListener("keydown", markUserAction, true);
     document.addEventListener("visibilitychange", onVisibility);
     video.addEventListener("playing", onPlaying);
-    video.addEventListener("canplay", onReady ?? (() => {}));
+    video.addEventListener("canplay", onCanPlay);
     video.addEventListener("pause", onPause);
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("waiting", onWaiting);
@@ -613,7 +619,7 @@ function NativeLiveVideo({
       document.removeEventListener("keydown", markUserAction, true);
       document.removeEventListener("visibilitychange", onVisibility);
       video.removeEventListener("playing", onPlaying);
-      video.removeEventListener("canplay", onReady ?? (() => {}));
+      video.removeEventListener("canplay", onCanPlay);
       video.removeEventListener("pause", onPause);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("waiting", onWaiting);
@@ -629,7 +635,7 @@ function NativeLiveVideo({
         video.load();
       } catch {}
     };
-  }, [src, type, isLive, onReady]);
+  }, [src, type, isLive]);
 
   return (
     <div className="absolute inset-0 h-full w-full bg-black">
