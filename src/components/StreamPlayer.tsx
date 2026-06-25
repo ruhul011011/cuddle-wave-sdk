@@ -729,6 +729,7 @@ function ShakaLivePlayer({
     return () => {
       destroyed = true;
       if (retryTimer) window.clearTimeout(retryTimer);
+      window.clearTimeout(escalateIfStuck);
       if (watchdog) window.clearInterval(watchdog);
       video.removeEventListener("playing", onPlaying);
       video.removeEventListener("loadeddata", onLoadedData);
