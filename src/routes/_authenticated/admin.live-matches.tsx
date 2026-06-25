@@ -11,7 +11,7 @@ import {
   deleteFixtureStreams,
 } from "@/lib/streams.functions";
 import { setMatchAccess } from "@/lib/payments.functions";
-import { listPopularLeagues, getFixturesByLeagueDate, getFixturesByIds } from "@/lib/api-football.functions";
+import { listPopularLeagues, getFixturesByLeagueDate, getFixturesByIds, worldCupFallbackFixtures } from "@/lib/api-football.functions";
 import { toast } from "sonner";
 import { Trash2, Plus, Loader2, Copy, X, Pencil, Search } from "lucide-react";
 
@@ -99,6 +99,12 @@ function AdminLiveMatchesPage() {
     enabled: typeof leagueId === "number" && !editingFixture,
   });
 
+  const fixtureOptions = useMemo(() => {
+    const rows = fixturesQ.data ?? [];
+    if (rows.length) return rows;
+    return leagueId === 1 ? worldCupFallbackFixtures(date) : [];
+  }, [fixturesQ.data, leagueId, date]);
+
   const [search, setSearch] = useState("");
   const [accessFilter, setAccessFilter] = useState<"all" | AccessType>("all");
   const [statusFilter, setStatusFilter] = useState<"all" | "live" | "upcoming" | "finished">("all");
@@ -136,8 +142,8 @@ function AdminLiveMatchesPage() {
         awayTeam: "",
       };
     }
-    return fixturesQ.data?.find((f) => f.id === fixtureId);
-  }, [editingFixture, fixturesQ.data, fixtureId]);
+    return fixtureOptions.find((f) => f.id === fixtureId);
+  }, [editingFixture, fixtureOptions, fixtureId]);
 
   function resetForm() {
     setLinks([{ ...EMPTY_LINK }]);
@@ -330,11 +336,11 @@ function AdminLiveMatchesPage() {
             </div>
             <Field label="Match">
               <select className="input-base bg-background w-full" value={fixtureId}
-                onChange={(e) => setFixtureId(e.target.value)} disabled={!leagueId || fixturesQ.isLoading} required>
+                onChange={(e) => setFixtureId(e.target.value)} disabled={!leagueId || (fixturesQ.isLoading && !fixtureOptions.length)} required>
                 <option value="">
-                  {!leagueId ? "Pick a league first" : fixturesQ.isLoading ? "Loading…" : !fixturesQ.data?.length ? "No matches" : "Select match…"}
+                  {!leagueId ? "Pick a league first" : fixturesQ.isLoading && !fixtureOptions.length ? "Loading…" : !fixtureOptions.length ? "No matches" : "Select match…"}
                 </option>
-                {fixturesQ.data?.map((f) => {
+                {fixtureOptions.map((f) => {
                   const t = f.kickoff ? new Date(f.kickoff).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
                   return <option key={f.id} value={f.id}>{t} — {f.homeTeam} vs {f.awayTeam}</option>;
                 })}
