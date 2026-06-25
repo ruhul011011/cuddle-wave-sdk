@@ -122,7 +122,34 @@ async function fetchFixturesByIds(ids: number[]): Promise<Fixture[]> {
 async function loadStreamedFixtures(): Promise<Fixture[]> {
   const ids = await listActiveStreamFixtureIds();
   if (!ids.length) return [];
-  return (await fetchFixturesByIds(ids))
+  const fetched = await fetchFixturesByIds(ids).catch(() => [] as Fixture[]);
+  const seen = new Set(fetched.map((f) => f.id));
+  // Fallback: for any active stream whose fixture isn't returned by api-football
+  // (e.g. future WC 2026 IDs the upstream hasn't published yet), build a Fixture
+  // from the local World Cup 2026 dataset so admin-added streams still appear.
+  const wcFallback = getWorldCup2026FallbackFixtures();
+  const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+  const missing: Fixture[] = [];
+  for (const id of ids) {
+    const key = String(id);
+    if (seen.has(key)) continue;
+    const wc = wcById.get(key);
+    if (!wc) continue;
+    missing.push({
+      id: key,
+      league: wc.league,
+      leagueLogo: wc.leagueLogo,
+      leagueCountry: wc.leagueCountry,
+      homeTeam: wc.homeTeam,
+      awayTeam: wc.awayTeam,
+      homeLogo: wc.homeLogo,
+      awayLogo: wc.awayLogo,
+      kickoff: wc.kickoff,
+      status: wc.status,
+      venue: wc.venue,
+    });
+  }
+  return [...fetched, ...missing]
     .filter((match) => streamFixtureIsVisible(match))
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
