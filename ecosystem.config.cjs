@@ -23,6 +23,8 @@ function readEnvFile(filePath) {
         (value.startsWith("'") && value.endsWith("'"))
       ) {
         value = value.slice(1, -1);
+      } else {
+        value = value.replace(/\s+#.*$/, "").trim();
       }
 
       env[key] = value;
@@ -36,6 +38,10 @@ const productionEnv = {
   PORT: "3000",
   HOST: "127.0.0.1",
 };
+
+productionEnv.VITE_SUPABASE_URL ||= productionEnv.SUPABASE_URL;
+productionEnv.VITE_SUPABASE_PUBLISHABLE_KEY ||= productionEnv.SUPABASE_PUBLISHABLE_KEY;
+productionEnv.VITE_SUPABASE_PROJECT_ID ||= productionEnv.SUPABASE_PROJECT_ID;
 
 module.exports = {
   apps: [
