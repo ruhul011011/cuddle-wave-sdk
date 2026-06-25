@@ -720,6 +720,8 @@ function ShakaLivePlayer({
       if (retryTimer) window.clearTimeout(retryTimer);
       if (watchdog) window.clearInterval(watchdog);
       video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("loadeddata", onLoadedData);
+      video.removeEventListener("canplay", onCanPlay);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("waiting", onWaiting);
       video.removeEventListener("stalled", onWaiting);
