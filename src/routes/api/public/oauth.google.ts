@@ -21,27 +21,30 @@ function sanitizeRedirectPath(value: string | null, origin: string) {
   return value.startsWith("/") && !value.startsWith("//") ? value : "/";
 }
 
+function buildGoogleOAuthRedirect(request: Request) {
+  const url = new URL(request.url);
+  const backendUrl = getBackendUrl();
+
+  if (!backendUrl) {
+    return Response.redirect(`${url.origin}/auth?oauth_error=missing_backend_url`, 302);
+  }
+
+  const redirectPath = sanitizeRedirectPath(url.searchParams.get("redirect"), url.origin);
+  const callbackUrl = new URL(`${url.origin}/auth/callback`);
+  callbackUrl.searchParams.set("redirect", redirectPath);
+
+  const authorizeUrl = new URL("/auth/v1/authorize", backendUrl);
+  authorizeUrl.searchParams.set("provider", "google");
+  authorizeUrl.searchParams.set("redirect_to", callbackUrl.toString());
+
+  return Response.redirect(authorizeUrl.toString(), 302);
+}
+
 export const Route = createFileRoute("/api/public/oauth/google")({
   server: {
     handlers: {
-      GET: async ({ request }) => {
-        const url = new URL(request.url);
-        const backendUrl = getBackendUrl();
-
-        if (!backendUrl) {
-          return Response.redirect(`${url.origin}/auth?oauth_error=missing_backend_url`, 302);
-        }
-
-        const redirectPath = sanitizeRedirectPath(url.searchParams.get("redirect"), url.origin);
-        const callbackUrl = new URL(`${url.origin}/auth/callback`);
-        callbackUrl.searchParams.set("redirect", redirectPath);
-
-        const authorizeUrl = new URL("/auth/v1/authorize", backendUrl);
-        authorizeUrl.searchParams.set("provider", "google");
-        authorizeUrl.searchParams.set("redirect_to", callbackUrl.toString());
-
-        return Response.redirect(authorizeUrl.toString(), 302);
-      },
+      GET: async ({ request }) => buildGoogleOAuthRedirect(request),
+      HEAD: async ({ request }) => buildGoogleOAuthRedirect(request),
     },
   },
 });
