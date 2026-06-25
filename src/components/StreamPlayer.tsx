@@ -588,7 +588,7 @@ function ShakaLivePlayer({
           }
         });
 
-        await shakaPlayer.load(withCacheBust(src));
+        await shakaPlayer.load(urlFor());
         try {
           await video.play();
         } catch {}
