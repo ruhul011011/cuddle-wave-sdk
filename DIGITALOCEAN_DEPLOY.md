@@ -36,6 +36,7 @@ Fill the values on the server only. Never paste private keys into chat or commit
 cd /var/www/worldcuptv
 bun install
 bun run build
+pm2 delete worldcuptv 2>/dev/null || true
 pm2 start ecosystem.config.cjs --env production
 pm2 save
 pm2 startup
@@ -88,8 +89,33 @@ cd /var/www/worldcuptv
 git pull
 bun install
 bun run build
-pm2 restart worldcuptv --update-env
+pm2 restart worldcuptv --update-env || pm2 start ecosystem.config.cjs --env production
 pm2 save
+```
+
+## Fix a 502 Bad Gateway immediately
+
+`502 Bad Gateway` means nginx is online but the app server behind it is not listening on port `3000`.
+
+Run this on the droplet:
+
+```bash
+cd /var/www/worldcuptv
+git pull
+bun install
+bun run build
+pm2 delete worldcuptv 2>/dev/null || true
+pm2 start ecosystem.config.cjs --env production
+pm2 save
+pm2 status
+curl -I http://127.0.0.1:3000
+sudo systemctl reload nginx
+```
+
+If `curl -I http://127.0.0.1:3000` still fails, check the real crash reason:
+
+```bash
+pm2 logs worldcuptv --lines 100 --nostream
 ```
 
 ## Useful checks
