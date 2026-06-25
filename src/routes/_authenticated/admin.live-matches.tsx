@@ -336,9 +336,9 @@ function AdminLiveMatchesPage() {
             </div>
             <Field label="Match">
               <select className="input-base bg-background w-full" value={fixtureId}
-                onChange={(e) => setFixtureId(e.target.value)} disabled={!leagueId || fixturesQ.isLoading} required>
+                onChange={(e) => setFixtureId(e.target.value)} disabled={!leagueId || (fixturesQ.isLoading && !fixtureOptions.length)} required>
                 <option value="">
-                  {!leagueId ? "Pick a league first" : fixturesQ.isLoading ? "Loading…" : !fixtureOptions.length ? "No matches" : "Select match…"}
+                  {!leagueId ? "Pick a league first" : fixturesQ.isLoading && !fixtureOptions.length ? "Loading…" : !fixtureOptions.length ? "No matches" : "Select match…"}
                 </option>
                 {fixtureOptions.map((f) => {
                   const t = f.kickoff ? new Date(f.kickoff).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
