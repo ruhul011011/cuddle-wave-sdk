@@ -1,11 +1,44 @@
+const fs = require("node:fs");
+const path = require("node:path");
+
+const appDir = "/var/www/worldcuptv";
+
+function readEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return {};
+
+  return fs
+    .readFileSync(filePath, "utf8")
+    .split(/\r?\n/)
+    .reduce((env, line) => {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith("#")) return env;
+
+      const separatorIndex = trimmed.indexOf("=");
+      if (separatorIndex === -1) return env;
+
+      const key = trimmed.slice(0, separatorIndex).trim();
+      let value = trimmed.slice(separatorIndex + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      env[key] = value;
+      return env;
+    }, {});
+}
+
 module.exports = {
   apps: [
     {
       name: "worldcuptv",
       script: ".output/server/index.mjs",
-      cwd: "/var/www/worldcuptv",
+      cwd: appDir,
       interpreter: "node",
       env: {
+        ...readEnvFile(path.join(appDir, ".env")),
         NODE_ENV: "production",
         PORT: "3000",
         HOST: "127.0.0.1",
