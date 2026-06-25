@@ -715,6 +715,17 @@ function ShakaLivePlayer({
 
     boot("shaka").catch(() => scheduleRetry("boot_failed"));
 
+    // Fallback escalation: if Shaka doesn't deliver data quickly, try hls.js then native
+    const escalateIfStuck = window.setTimeout(() => {
+      if (destroyed) return;
+      if (video.readyState >= 2) return;
+      if (engine === "shaka") {
+        cleanupEngines().then(() => startHlsJs().catch(() => startNative()));
+      } else if (engine === "hlsjs") {
+        cleanupEngines().then(() => startNative());
+      }
+    }, 6_000);
+
     return () => {
       destroyed = true;
       if (retryTimer) window.clearTimeout(retryTimer);
