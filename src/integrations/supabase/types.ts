@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_stream_fixtures: {
+        Row: {
+          fixture_id: number
+          updated_at: string
+        }
+        Insert: {
+          fixture_id: number
+          updated_at?: string
+        }
+        Update: {
+          fixture_id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_queries: {
         Row: {
           created_at: string
@@ -451,6 +466,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      refresh_active_stream_fixture: {
+        Args: { _fixture_id: number }
+        Returns: undefined
       }
     }
     Enums: {
