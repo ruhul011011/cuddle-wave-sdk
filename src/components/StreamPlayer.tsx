@@ -738,8 +738,6 @@ function ShakaLivePlayer({
         controls
         autoPlay
         preload="auto"
-        // @ts-expect-error – non-standard but widely supported attributes for live TV UX
-        disableRemotePlayback={false}
         controlsList="nodownload"
       />
     </div>
