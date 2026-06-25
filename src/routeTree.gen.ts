@@ -18,6 +18,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as Char126oauthInitiateRouteImport } from './routes/~oauth.initiate'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -89,6 +90,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Char126oauthInitiateRoute = Char126oauthInitiateRouteImport.update({
+  id: '/~oauth/initiate',
+  path: '/~oauth/initiate',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MatchIdRoute = MatchIdRouteImport.update({
@@ -263,6 +269,7 @@ export interface FileRoutesByFullPath {
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
+  '/~oauth/initiate': typeof Char126oauthInitiateRoute
   '/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -300,6 +307,7 @@ export interface FileRoutesByTo {
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
+  '/~oauth/initiate': typeof Char126oauthInitiateRoute
   '/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -340,6 +348,7 @@ export interface FileRoutesById {
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
+  '/~oauth/initiate': typeof Char126oauthInitiateRoute
   '/_authenticated/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -380,6 +389,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/auth/callback'
     | '/match/$id'
+    | '/~oauth/initiate'
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/client-query'
@@ -417,6 +427,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/auth/callback'
     | '/match/$id'
+    | '/~oauth/initiate'
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/client-query'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/admin/login'
     | '/auth/callback'
     | '/match/$id'
+    | '/~oauth/initiate'
     | '/_authenticated/admin/admins'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/client-query'
@@ -493,6 +505,7 @@ export interface RootRouteChildren {
   WorldCupRoute: typeof WorldCupRoute
   AdminLoginRoute: typeof AdminLoginRoute
   MatchIdRoute: typeof MatchIdRoute
+  Char126oauthInitiateRoute: typeof Char126oauthInitiateRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiStreamIdRoute: typeof ApiStreamIdRoute
@@ -562,6 +575,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/~oauth/initiate': {
+      id: '/~oauth/initiate'
+      path: '/~oauth/initiate'
+      fullPath: '/~oauth/initiate'
+      preLoaderRoute: typeof Char126oauthInitiateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/match/$id': {
@@ -845,6 +865,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorldCupRoute: WorldCupRoute,
   AdminLoginRoute: AdminLoginRoute,
   MatchIdRoute: MatchIdRoute,
+  Char126oauthInitiateRoute: Char126oauthInitiateRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiStreamIdRoute: ApiStreamIdRoute,
