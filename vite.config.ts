@@ -11,7 +11,7 @@ export default defineConfig({
   // can run it with `npm start`/PM2. Lovable-hosted builds still force their
   // own server target automatically.
   nitro: {
-    preset: "node_server",
+    preset: "node-server",
     output: { dir: ".output" },
   },
   tanstackStart: {
