@@ -480,7 +480,7 @@ function ShakaLivePlayer({
         levelLoadingMaxRetry: Infinity,
         fragLoadingMaxRetry: Infinity,
       });
-      hlsInstance.loadSource(withCacheBust(src));
+      hlsInstance.loadSource(urlFor());
       hlsInstance.attachMedia(video);
       hlsInstance.on(Hls.Events.ERROR, (_e: unknown, data: any) => {
         if (data?.fatal) {
