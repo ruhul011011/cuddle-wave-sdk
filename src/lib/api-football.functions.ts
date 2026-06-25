@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
 
 const BASE = "https://v3.football.api-sports.io";
@@ -99,13 +100,36 @@ function streamFixtureIsVisible(match: Fixture, now = Date.now()) {
 }
 
 async function listActiveStreamFixtureIds(): Promise<number[]> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("match_streams")
-    .select("fixture_id")
-    .eq("is_active", true);
+  const supabaseUrl = process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
+  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY?.trim() || process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+  if (!supabaseUrl || !supabaseKey) return [];
+
+  // Public-safe summary table: exposes only active fixture IDs, never stream URLs.
+  // This works on self-hosted VPS installs where the private service-role key is unavailable.
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await supabase
+    .from("active_stream_fixtures")
+    .select("fixture_id");
   if (error) throw new Error(error.message);
   return Array.from(new Set((data ?? []).map((row) => Number(row.fixture_id)).filter(Number.isFinite)));
+}
+
+function syntheticStreamFixture(id: number): Fixture {
+  return {
+    id: String(id),
+    league: "Live Stream",
+    leagueLogo: "",
+    leagueCountry: "World",
+    homeTeam: "Live Match",
+    awayTeam: `Fixture #${id}`,
+    homeLogo: "",
+    awayLogo: "",
+    kickoff: new Date().toISOString(),
+    status: "live",
+    minute: "LIVE",
+  };
 }
 
 async function fetchFixturesByIds(ids: number[]): Promise<Fixture[]> {
@@ -134,20 +158,23 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
     const key = String(id);
     if (seen.has(key)) continue;
     const wc = wcById.get(key);
-    if (!wc) continue;
-    missing.push({
-      id: key,
-      league: wc.league,
-      leagueLogo: wc.leagueLogo,
-      leagueCountry: wc.leagueCountry,
-      homeTeam: wc.homeTeam,
-      awayTeam: wc.awayTeam,
-      homeLogo: wc.homeLogo,
-      awayLogo: wc.awayLogo,
-      kickoff: wc.kickoff,
-      status: wc.status,
-      venue: wc.venue,
-    });
+    missing.push(
+      wc
+        ? {
+            id: key,
+            league: wc.league,
+            leagueLogo: wc.leagueLogo,
+            leagueCountry: wc.leagueCountry,
+            homeTeam: wc.homeTeam,
+            awayTeam: wc.awayTeam,
+            homeLogo: wc.homeLogo,
+            awayLogo: wc.awayLogo,
+            kickoff: wc.kickoff,
+            status: wc.status,
+            venue: wc.venue,
+          }
+        : syntheticStreamFixture(id),
+    );
   }
   return [...fetched, ...missing]
     .filter((match) => streamFixtureIsVisible(match))
