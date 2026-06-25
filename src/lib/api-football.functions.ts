@@ -273,13 +273,30 @@ export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
     for (const season of seasons) {
       const list = await af<any[]>(
         `/fixtures?league=${data.leagueId}&season=${season}&date=${data.date}`,
-      ).catch(() => []);
+      ).catch((e) => { console.error("[getFixturesByLeagueDate] season fetch failed", season, e); return []; });
       if (list.length) { raw = list; break; }
     }
-    // Fallback: any fixture that day filtered by league id
+    // Fallback 1: any fixture that day filtered by league id (catches season mismatches)
     if (!raw.length) {
       const all = await af<any[]>(`/fixtures?date=${data.date}`).catch(() => []);
       raw = all.filter((r) => r.league?.id === data.leagueId);
+    }
+    // Fallback 2: pull entire league/season and filter to a ±3 day window so
+    // the admin always has something to pick from even if the exact-date
+    // upstream query is empty (common for cup competitions).
+    if (!raw.length) {
+      const target = Date.parse(data.date + "T12:00:00Z");
+      const windowMs = 3 * 24 * 60 * 60 * 1000;
+      for (const season of seasons) {
+        const list = await af<any[]>(
+          `/fixtures?league=${data.leagueId}&season=${season}`,
+        ).catch(() => []);
+        const near = list.filter((r) => {
+          const t = Date.parse(r.fixture?.date ?? "");
+          return Number.isFinite(t) && Math.abs(t - target) <= windowMs;
+        });
+        if (near.length) { raw = near; break; }
+      }
     }
     return raw.map(normalize).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   });
