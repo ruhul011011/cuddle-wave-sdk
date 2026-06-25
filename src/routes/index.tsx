@@ -20,9 +20,22 @@ import {
 
 // Critical path: only the home feed blocks SSR. Streamed-ids + missing-fixtures
 // hydrate client-side after first paint.
+const emptyHomeFeed: { live: Fixture[]; upcoming: Fixture[]; streamed: Fixture[] } = {
+  live: [],
+  upcoming: [],
+  streamed: [],
+};
+
 const homeFeedQuery = queryOptions({
   queryKey: ["home-feed"],
-  queryFn: () => getHomeFeed(),
+  queryFn: async () => {
+    try {
+      return await getHomeFeed();
+    } catch (error) {
+      console.error("Home feed failed", error);
+      return emptyHomeFeed;
+    }
+  },
   staleTime: 30_000,
   refetchOnWindowFocus: true,
   refetchOnReconnect: true,
@@ -318,17 +331,24 @@ function TelegramJoinCard() {
   const { data } = useQuery({
     queryKey: ["site_settings", "telegram_join_url"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("site_settings")
-        .select("key, value")
-        .in("key", ["telegram_join_url", "telegram_username"]);
-      if (error) throw error;
-      const map = new Map((data ?? []).map((r: any) => [r.key, r.value as string]));
-      const url = (map.get("telegram_join_url") || "").trim();
-      const username = (map.get("telegram_username") || "").trim();
-      return url || (username ? `https://t.me/${username.replace(/^@/, "")}` : "");
+      try {
+        const { data, error } = await supabase
+          .from("site_settings")
+          .select("key, value")
+          .in("key", ["telegram_join_url", "telegram_username"]);
+        if (error) throw error;
+        const map = new Map((data ?? []).map((r: any) => [r.key, r.value as string]));
+        const url = (map.get("telegram_join_url") || "").trim();
+        const username = (map.get("telegram_username") || "").trim();
+        return url || (username ? `https://t.me/${username.replace(/^@/, "")}` : "");
+      } catch (error) {
+        console.error("Telegram settings failed", error);
+        return "";
+      }
     },
+    enabled: typeof window !== "undefined",
     staleTime: 60_000,
+    retry: false,
   });
   const href = data || "";
   return (
