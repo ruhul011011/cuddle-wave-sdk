@@ -566,7 +566,7 @@ function PlyrVideo({
         diagRef.current.lastSegmentAt !== null &&
         Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS &&
         bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS &&
-        video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA;
+        video.readyState < video.HAVE_FUTURE_DATA;
       const neverLoaded = video.readyState < 2 && Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS;
       if ((stalledTooLong || segmentStarved || neverLoaded) && hardResetPlayback) {
         hardResetPlayback();
@@ -631,7 +631,7 @@ function PlyrVideo({
         diagRef.current.lastSegmentAt !== null &&
         Date.now() - diagRef.current.lastSegmentAt > LIVE_SEGMENT_GRACE_MS &&
         bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS &&
-        (video.paused || video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA || playbackStuck);
+        (video.paused || video.readyState < video.HAVE_FUTURE_DATA || playbackStuck);
 
       if (video.paused || video.ended || playbackStuck || noDataAfterStartup || segmentStarved) {
         if ((playbackStuck || noDataAfterStartup || segmentStarved) && diagRef.current.stallState === "ok") {
@@ -816,7 +816,7 @@ function PlyrVideo({
       recoverLivePlayback();
       if (waitingResetTimer) window.clearTimeout(waitingResetTimer);
       waitingResetTimer = window.setTimeout(() => {
-        if (getBufferedAhead(video) < LIVE_MIN_BUFFER_AHEAD_SECONDS && video.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) {
+        if (getBufferedAhead(video) < LIVE_MIN_BUFFER_AHEAD_SECONDS && video.readyState < video.HAVE_FUTURE_DATA) {
           hardResetPlayback?.();
         }
       }, 12_000);
