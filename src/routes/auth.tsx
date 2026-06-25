@@ -60,12 +60,23 @@ function AuthPage() {
   async function handleGoogle() {
     setBusy(true);
     try {
-      const result = await lovable.auth.signInWithOAuth("google", {
-        redirect_uri: window.location.origin,
+      // Direct Supabase Google OAuth (works on self-hosted VPS without the Lovable proxy).
+      // Requires Google provider to be enabled in the backend Auth settings with your own
+      // Google Cloud OAuth Client ID / Secret, and the Supabase callback URL added to your
+      // Google OAuth "Authorized redirect URIs".
+      try {
+        sessionStorage.setItem("postAuthRedirect", redirectTo);
+      } catch {
+        // ignore storage failures
+      }
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.origin + "/auth/callback",
+        },
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
-      goBack();
+      if (error) throw error;
+      // Browser will redirect to Google.
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setBusy(false);
