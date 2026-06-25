@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const appDir = "/var/www/worldcuptv";
+const appDir = process.env.PWD || "/var/www/worldcuptv";
 
 function readEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
@@ -30,6 +30,13 @@ function readEnvFile(filePath) {
     }, {});
 }
 
+const productionEnv = {
+  ...readEnvFile(path.join(appDir, ".env")),
+  NODE_ENV: "production",
+  PORT: "3000",
+  HOST: "127.0.0.1",
+};
+
 module.exports = {
   apps: [
     {
@@ -37,12 +44,8 @@ module.exports = {
       script: ".output/server/index.mjs",
       cwd: appDir,
       interpreter: "node",
-      env: {
-        ...readEnvFile(path.join(appDir, ".env")),
-        NODE_ENV: "production",
-        PORT: "3000",
-        HOST: "127.0.0.1",
-      },
+      env: productionEnv,
+      env_production: productionEnv,
       max_memory_restart: "512M",
       exp_backoff_restart_delay: 1000,
     },
