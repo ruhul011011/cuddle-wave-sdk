@@ -1,14 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import { Activity, Loader2, Play, Radio, Tv } from "lucide-react";
-
-type VideoJsPlayer = ReturnType<typeof videojs>;
-
-const LIVE_STARTUP_GRACE_MS = 24_000;
-const LIVE_STALL_RECOVER_MS = 18_000;
-const LIVE_HARD_RELOAD_MS = 90_000;
-const LIVE_MIN_BUFFER_AHEAD_SECONDS = 1.25;
+import { Activity, Loader2, Play, Radio, Tv, AlertTriangle } from "lucide-react";
 
 export type StreamSource = {
   id: string;
@@ -25,10 +16,12 @@ type Props = {
 };
 
 export type StreamDiagnostics = {
-  mode: "Video.js VHS" | "Native HLS" | "MP4" | "iframe" | "idle";
-  stallState: "ok" | "stalled" | "recovering";
+  mode: "Shaka" | "hls.js" | "Native HLS" | "MP4" | "iframe" | "idle";
+  stallState: "ok" | "stalled" | "recovering" | "offline";
   retryCount: number;
   lastSegmentAt: number | null;
+  bitrate?: number;
+  resolution?: string;
 };
 
 const INITIAL_DIAGNOSTICS: StreamDiagnostics = {
@@ -37,6 +30,9 @@ const INITIAL_DIAGNOSTICS: StreamDiagnostics = {
   retryCount: 0,
   lastSegmentAt: null,
 };
+
+const RETRY_INTERVAL_MS = 3_000;
+const STALL_RECOVER_MS = 8_000;
 
 type QualityInfo = { resolution?: string; bitrate?: string };
 
@@ -49,17 +45,15 @@ async function probeStreamQuality(source: StreamSource): Promise<QualityInfo> {
     const lines = text.split(/\r?\n/);
     let bestHeight = 0;
     let bestBandwidth = 0;
-
     for (const line of lines) {
       if (!line.startsWith("#EXT-X-STREAM-INF")) continue;
-      const resMatch = line.match(/RESOLUTION=(\d+)x(\d+)/i);
-      const bwMatch = line.match(/BANDWIDTH=(\d+)/i);
-      const h = resMatch ? parseInt(resMatch[2], 10) : 0;
-      const bw = bwMatch ? parseInt(bwMatch[1], 10) : 0;
+      const r = line.match(/RESOLUTION=(\d+)x(\d+)/i);
+      const bw = line.match(/BANDWIDTH=(\d+)/i);
+      const h = r ? parseInt(r[2], 10) : 0;
+      const b = bw ? parseInt(bw[1], 10) : 0;
       if (h > bestHeight) bestHeight = h;
-      if (bw > bestBandwidth) bestBandwidth = bw;
+      if (b > bestBandwidth) bestBandwidth = b;
     }
-
     const info: QualityInfo = {};
     if (bestHeight) info.resolution = `${bestHeight}p`;
     if (bestBandwidth) info.bitrate = `${(bestBandwidth / 1_000_000).toFixed(1)} Mbps`;
@@ -83,19 +77,9 @@ function withCacheBust(url: string): string {
     u.searchParams.set("_r", String(Date.now()));
     return u.origin === window.location.origin ? u.pathname + u.search + u.hash : u.toString();
   } catch {
-    const joiner = url.includes("?") ? "&" : "?";
-    return `${url}${joiner}_r=${Date.now()}`;
+    const j = url.includes("?") ? "&" : "?";
+    return `${url}${j}_r=${Date.now()}`;
   }
-}
-
-function getBufferedAheadFromRanges(buffered: TimeRanges | undefined, currentTime: number | undefined): number {
-  if (!buffered || typeof currentTime !== "number") return 0;
-  for (let i = 0; i < buffered.length; i += 1) {
-    const start = buffered.start(i);
-    const end = buffered.end(i);
-    if (currentTime >= start && currentTime <= end) return Math.max(0, end - currentTime);
-  }
-  return 0;
 }
 
 export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
@@ -115,14 +99,12 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
 
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
       const entries = await Promise.all(
         sources.map(async (s) => [s.id, await probeStreamQuality(s)] as const),
       );
       if (!cancelled) setQualities(Object.fromEntries(entries));
     })();
-
     return () => {
       cancelled = true;
     };
@@ -186,7 +168,7 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
             referrerPolicy="no-referrer"
           />
         ) : (
-          <VideoJsLivePlayer
+          <ShakaLivePlayer
             key={`${selected.id}:${selected.url}`}
             src={selected.url}
             type={selected.stream_type}
@@ -197,11 +179,25 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
           />
         )}
 
-        {started && loading && (
+        {started && loading && diagnostics.stallState !== "offline" && (
           <div className="pointer-events-none absolute inset-0 z-20 grid place-items-center bg-black/60 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-3 text-white">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <div className="text-sm font-medium uppercase tracking-wide text-white/80">Loading stream…</div>
+              <div className="text-sm font-medium uppercase tracking-wide text-white/80">
+                {diagnostics.stallState === "recovering" ? "Reconnecting…" : "Loading stream…"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {started && diagnostics.stallState === "offline" && (
+          <div className="absolute inset-0 z-20 grid place-items-center bg-black/85 text-center">
+            <div className="flex max-w-sm flex-col items-center gap-3 px-6 text-white">
+              <AlertTriangle className="h-10 w-10 text-amber-400" />
+              <div className="font-display text-xl tracking-wide">Channel Temporarily Unavailable</div>
+              <div className="text-sm text-white/70">
+                We're retrying automatically. You can also pick another server below.
+              </div>
             </div>
           </div>
         )}
@@ -209,6 +205,13 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
         {selectedLooksLive && (
           <div className="pointer-events-none absolute left-4 top-4 z-10 flex items-center gap-2 rounded-md bg-live px-3 py-1 text-xs font-bold uppercase tracking-wider text-primary-foreground">
             <Radio className="h-3 w-3" /> Live
+          </div>
+        )}
+
+        {started && diagnostics.bitrate && (
+          <div className="pointer-events-none absolute right-4 top-4 z-10 rounded-md bg-black/60 px-2.5 py-1 font-mono text-[11px] text-white/90">
+            {diagnostics.resolution ? `${diagnostics.resolution} · ` : ""}
+            {(diagnostics.bitrate / 1_000_000).toFixed(1)} Mbps
           </div>
         )}
       </div>
@@ -278,7 +281,6 @@ function DiagnosticsPanel({
   onToggle: () => void;
 }) {
   const [now, setNow] = useState(Date.now());
-
   useEffect(() => {
     if (!open) return;
     const id = window.setInterval(() => setNow(Date.now()), 1000);
@@ -288,7 +290,7 @@ function DiagnosticsPanel({
   const stallColor =
     diagnostics.stallState === "ok"
       ? "text-green-500"
-      : diagnostics.stallState === "stalled"
+      : diagnostics.stallState === "stalled" || diagnostics.stallState === "offline"
         ? "text-destructive"
         : "text-amber-400";
 
@@ -319,8 +321,13 @@ function DiagnosticsPanel({
       {open && (
         <div className="grid grid-cols-2 gap-3 border-t border-border/60 p-4 font-mono text-xs sm:grid-cols-4">
           <Stat label="Mode" value={diagnostics.mode} />
-          <Stat label="Stall State" value={diagnostics.stallState} valueClass={stallColor} />
+          <Stat label="State" value={diagnostics.stallState} valueClass={stallColor} />
           <Stat label="Retries" value={String(diagnostics.retryCount)} />
+          <Stat
+            label="Bitrate"
+            value={diagnostics.bitrate ? `${(diagnostics.bitrate / 1_000_000).toFixed(2)} Mbps` : "—"}
+            subValue={diagnostics.resolution}
+          />
           <Stat label="Last Segment" value={lastSegAgo} subValue={lastSegAbs ?? (isLive ? "waiting…" : "n/a")} />
         </div>
       )}
@@ -348,7 +355,13 @@ function Stat({
   );
 }
 
-function VideoJsLivePlayer({
+// ===========================================================================
+// Shaka Player + hls.js + native <video> live engine with auto-recovery
+// ===========================================================================
+
+type EngineKind = "shaka" | "hlsjs" | "native";
+
+function ShakaLivePlayer({
   src,
   type,
   poster,
@@ -364,14 +377,9 @@ function VideoJsLivePlayer({
   onDiagnostics?: (d: StreamDiagnostics) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const playerRef = useRef<VideoJsPlayer | null>(null);
   const diagRef = useRef<StreamDiagnostics>({ ...INITIAL_DIAGNOSTICS });
   const onDiagnosticsRef = useRef(onDiagnostics);
   const onReadyRef = useRef(onReady);
-  const userPausedRef = useRef(false);
-  const lastUserActionAtRef = useRef(0);
-  const lastProgressRef = useRef({ time: 0, at: 0 });
-
   onDiagnosticsRef.current = onDiagnostics;
   onReadyRef.current = onReady;
 
@@ -383,220 +391,354 @@ function VideoJsLivePlayer({
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
+    if (typeof window === "undefined") return;
 
-    const mountedAt = Date.now();
-    let watchdog: number | null = null;
-    let waitingTimer: number | null = null;
     let destroyed = false;
+    let shakaPlayer: any = null;
+    let hlsInstance: any = null;
+    let retryTimer: number | null = null;
+    let watchdog: number | null = null;
+    let lastProgress = { t: 0, at: Date.now() };
+    let bufferingStartedAt: number | null = null;
+    let watchStartAt = Date.now();
+    let bufferingEvents = 0;
+    let totalWatchMs = 0;
+    let engine: EngineKind = "shaka";
 
-    const mimeType = type === "hls" ? "application/x-mpegURL" : "video/mp4";
+    diagRef.current = { ...INITIAL_DIAGNOSTICS };
 
-    const playSafely = () => {
-      if (document.visibilityState !== "visible") return;
-      const player = playerRef.current;
-      if (!player || player.isDisposed()) return;
-      const playPromise = player.play();
-      if (playPromise && typeof playPromise.catch === "function") playPromise.catch(() => {});
-    };
-
-    const bumpRetry = (stallState: StreamDiagnostics["stallState"] = "recovering") => {
-      emitDiag({ retryCount: diagRef.current.retryCount + 1, stallState });
-    };
-
-    const seekToLiveEdge = () => {
-      if (!isLive) return;
-      const player = playerRef.current;
-      if (!player || player.isDisposed()) return;
-      const liveTracker = (player as unknown as { liveTracker?: { seekToLiveEdge?: () => void; liveCurrentTime?: () => number } }).liveTracker;
+    const track = (event: string, payload?: Record<string, unknown>) => {
       try {
-        if (liveTracker?.seekToLiveEdge) liveTracker.seekToLiveEdge();
-        else if (liveTracker?.liveCurrentTime) player.currentTime(liveTracker.liveCurrentTime());
+        const w = window as any;
+        if (typeof w.gtag === "function") w.gtag("event", event, payload ?? {});
+        if (w.dataLayer && typeof w.dataLayer.push === "function")
+          w.dataLayer.push({ event, ...(payload ?? {}) });
       } catch {}
     };
 
-    const hardReload = () => {
+    const bumpRetry = () => emitDiag({ retryCount: diagRef.current.retryCount + 1, stallState: "recovering" });
+
+    const cleanupEngines = async () => {
+      try {
+        if (shakaPlayer) {
+          await shakaPlayer.destroy();
+          shakaPlayer = null;
+        }
+      } catch {}
+      try {
+        if (hlsInstance) {
+          hlsInstance.destroy();
+          hlsInstance = null;
+        }
+      } catch {}
+      try {
+        video.removeAttribute("src");
+        video.load();
+      } catch {}
+    };
+
+    const scheduleRetry = (reason: string) => {
       if (destroyed) return;
-      const player = playerRef.current;
-      if (!player || player.isDisposed()) return;
-      bumpRetry();
-      player.src({ src: withCacheBust(src), type: mimeType });
-      player.load();
-      if (isLive) window.setTimeout(seekToLiveEdge, 900);
-      window.setTimeout(playSafely, 1200);
+      if (retryTimer) window.clearTimeout(retryTimer);
+      emitDiag({ stallState: "offline" });
+      track("stream_failure", { reason, engine });
+      retryTimer = window.setTimeout(() => {
+        bumpRetry();
+        emitDiag({ stallState: "recovering" });
+        boot(engine).catch(() => scheduleRetry("retry_failed"));
+      }, RETRY_INTERVAL_MS);
     };
 
-    const recover = () => {
-      if (!isLive || userPausedRef.current) return;
-      const player = playerRef.current;
-      if (!player || player.isDisposed()) return;
+    const startNative = async () => {
+      engine = "native";
+      emitDiag({ mode: "Native HLS" });
+      video.src = withCacheBust(src);
+      try {
+        await video.play();
+      } catch {}
+    };
 
-      emitDiag({ stallState: "recovering" });
-      seekToLiveEdge();
-      playSafely();
+    const startHlsJs = async () => {
+      const mod = await import("hls.js");
+      const Hls = mod.default;
+      if (!Hls.isSupported()) {
+        await startNative();
+        return;
+      }
+      engine = "hlsjs";
+      emitDiag({ mode: "hls.js" });
+      hlsInstance = new Hls({
+        liveDurationInfinity: true,
+        lowLatencyMode: true,
+        backBufferLength: 30,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        manifestLoadingMaxRetry: Infinity,
+        levelLoadingMaxRetry: Infinity,
+        fragLoadingMaxRetry: Infinity,
+      });
+      hlsInstance.loadSource(withCacheBust(src));
+      hlsInstance.attachMedia(video);
+      hlsInstance.on(Hls.Events.ERROR, (_e: unknown, data: any) => {
+        if (data?.fatal) {
+          try {
+            hlsInstance.destroy();
+          } catch {}
+          hlsInstance = null;
+          scheduleRetry(`hlsjs_${data.type ?? "fatal"}`);
+        }
+      });
+      hlsInstance.on(Hls.Events.LEVEL_SWITCHED, (_e: unknown, data: any) => {
+        const lvl = hlsInstance.levels?.[data.level];
+        if (lvl)
+          emitDiag({
+            bitrate: lvl.bitrate,
+            resolution: lvl.height ? `${lvl.height}p` : undefined,
+          });
+      });
+      hlsInstance.on(Hls.Events.FRAG_LOADED, () => emitDiag({ lastSegmentAt: Date.now() }));
+      try {
+        await video.play();
+      } catch {}
+    };
 
-      const bufferedAhead = getBufferedAheadFromRanges(player.buffered(), player.currentTime());
-      const stalledFor = Date.now() - lastProgressRef.current.at;
-      const noBuffer = bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS;
-      const neverStarted = Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS && player.readyState() < 2;
+    const startShaka = async () => {
+      try {
+        const shaka = (await import("shaka-player/dist/shaka-player.compiled.js")).default;
+        shaka.polyfill.installAll();
+        if (!shaka.Player.isBrowserSupported()) {
+          await startHlsJs();
+          return;
+        }
+        engine = "shaka";
+        emitDiag({ mode: "Shaka" });
+        shakaPlayer = new shaka.Player();
+        await shakaPlayer.attach(video);
 
-      if ((neverStarted || stalledFor > LIVE_HARD_RELOAD_MS) && noBuffer) {
-        hardReload();
+        shakaPlayer.configure({
+          streaming: {
+            bufferingGoal: 30,
+            rebufferingGoal: 15,
+            bufferBehind: 30,
+            lowLatencyMode: true,
+            retryParameters: {
+              maxAttempts: Infinity,
+              baseDelay: 1000,
+              backoffFactor: 1.5,
+              timeout: 20000,
+              stallTimeout: 5000,
+              connectionTimeout: 10000,
+              fuzzFactor: 0.5,
+            },
+          },
+          manifest: {
+            retryParameters: {
+              maxAttempts: Infinity,
+              baseDelay: 1000,
+              backoffFactor: 1.5,
+              timeout: 20000,
+              fuzzFactor: 0.5,
+            },
+          },
+        });
+
+        shakaPlayer.addEventListener("error", (event: any) => {
+          const code = event?.detail?.code ?? event?.code;
+          const recoverable = code && code >= 1000 && code < 5000;
+          if (recoverable) {
+            bumpRetry();
+            shakaPlayer
+              .load(withCacheBust(src))
+              .catch(() => scheduleRetry(`shaka_${code}`));
+          } else {
+            // Fall back chain
+            (async () => {
+              await cleanupEngines();
+              try {
+                await startHlsJs();
+              } catch {
+                scheduleRetry(`shaka_fatal_${code ?? "?"}`);
+              }
+            })();
+          }
+        });
+
+        shakaPlayer.addEventListener("buffering", (e: any) => {
+          if (e.buffering) {
+            bufferingStartedAt = Date.now();
+            bufferingEvents += 1;
+            emitDiag({ stallState: "stalled" });
+            track("stream_buffering", { engine });
+          } else {
+            bufferingStartedAt = null;
+            emitDiag({ stallState: "ok" });
+          }
+        });
+
+        shakaPlayer.addEventListener("adaptation", () => {
+          const stats = shakaPlayer.getStats?.();
+          if (stats) {
+            emitDiag({
+              bitrate: stats.streamBandwidth,
+              resolution: stats.height ? `${stats.height}p` : undefined,
+            });
+          }
+        });
+
+        await shakaPlayer.load(withCacheBust(src));
+        try {
+          await video.play();
+        } catch {}
+      } catch (err) {
+        await cleanupEngines();
+        try {
+          await startHlsJs();
+        } catch {
+          scheduleRetry("shaka_init_failed");
+        }
       }
     };
 
-    const markUserAction = (event: PointerEvent | KeyboardEvent) => {
-      if (typeof PointerEvent !== "undefined" && event instanceof PointerEvent) {
-        const rect = video.getBoundingClientRect();
-        const insidePlayer =
-          event.clientX >= rect.left &&
-          event.clientX <= rect.right &&
-          event.clientY >= rect.top &&
-          event.clientY <= rect.bottom;
-        if (!insidePlayer) return;
+    const boot = async (preferred: EngineKind = "shaka") => {
+      if (destroyed) return;
+      await cleanupEngines();
+      if (type === "mp4") {
+        engine = "native";
+        emitDiag({ mode: "MP4" });
+        video.src = withCacheBust(src);
+        try {
+          await video.play();
+        } catch {}
+        return;
       }
-      lastUserActionAtRef.current = Date.now();
+      if (preferred === "shaka") return startShaka();
+      if (preferred === "hlsjs") return startHlsJs();
+      return startNative();
     };
 
+    // Video element listeners
     const onPlaying = () => {
-      userPausedRef.current = false;
-      const player = playerRef.current;
-      lastProgressRef.current = { time: player?.currentTime() ?? 0, at: Date.now() };
       emitDiag({ stallState: "ok" });
       onReadyRef.current?.();
+      lastProgress = { t: video.currentTime, at: Date.now() };
+      watchStartAt = Date.now();
     };
-
-    const onCanPlay = () => {
-      onReadyRef.current?.();
-    };
-
-    const onPause = () => {
-      const player = playerRef.current;
-      if (!isLive || !player || player.ended()) return;
-      if (Date.now() - lastUserActionAtRef.current < 1500) userPausedRef.current = true;
-    };
-
     const onTimeUpdate = () => {
-      const player = playerRef.current;
-      if (!player || player.isDisposed()) return;
-      const previous = lastProgressRef.current;
-      const currentTime = player.currentTime() ?? 0;
-      if (Math.abs(currentTime - previous.time) > 0.25) {
-        lastProgressRef.current = { time: currentTime, at: Date.now() };
+      if (Math.abs(video.currentTime - lastProgress.t) > 0.25) {
+        lastProgress = { t: video.currentTime, at: Date.now() };
         if (diagRef.current.stallState !== "ok") emitDiag({ stallState: "ok" });
       }
     };
-
     const onWaiting = () => {
-      if (!isLive) return;
       emitDiag({ stallState: "stalled" });
-      if (waitingTimer) window.clearTimeout(waitingTimer);
-      waitingTimer = window.setTimeout(recover, LIVE_STALL_RECOVER_MS);
+      bufferingEvents += 1;
+      track("stream_buffering", { engine });
     };
+    const onPause = () => {
+      if (!video.ended) totalWatchMs += Date.now() - watchStartAt;
+    };
+    const onError = () => scheduleRetry("video_error");
+    const onPiP = () => {};
 
+    video.addEventListener("playing", onPlaying);
+    video.addEventListener("timeupdate", onTimeUpdate);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("stalled", onWaiting);
+    video.addEventListener("pause", onPause);
+    video.addEventListener("error", onError);
+    video.addEventListener("enterpictureinpicture", onPiP);
+
+    const onOnline = () => {
+      if (destroyed) return;
+      bumpRetry();
+      boot(engine).catch(() => scheduleRetry("network_online_retry"));
+    };
+    const onOffline = () => emitDiag({ stallState: "offline" });
+    const onNetChange = () => {
+      if (destroyed) return;
+      bumpRetry();
+      boot(engine).catch(() => scheduleRetry("network_change_retry"));
+    };
     const onVisibility = () => {
-      if (document.visibilityState === "visible" && isLive && !userPausedRef.current) recover();
+      if (document.visibilityState === "visible" && isLive && video.paused) {
+        video.play().catch(() => {});
+      }
     };
 
-    diagRef.current = { ...INITIAL_DIAGNOSTICS };
-    lastProgressRef.current = { time: 0, at: Date.now() };
-
-    const player = videojs(video, {
-      controls: true,
-      autoplay: "play",
-      preload: "auto",
-      poster,
-      fill: true,
-      fluid: false,
-      responsive: true,
-      liveui: Boolean(isLive),
-      inactivityTimeout: 1800,
-      html5: {
-        vhs: {
-          overrideNative: false,
-          useDevicePixelRatio: true,
-          limitRenditionByPlayerDimensions: false,
-          smoothQualityChange: true,
-          handleManifestRedirects: true,
-          maxPlaylistRetries: Infinity,
-          bandwidth: 8_000_000,
-        },
-        nativeAudioTracks: false,
-        nativeVideoTracks: false,
-      },
-      sources: [{ src, type: mimeType }],
-    });
-
-    playerRef.current = player;
-    emitDiag({ mode: type === "mp4" ? "MP4" : video.canPlayType("application/vnd.apple.mpegurl") ? "Native HLS" : "Video.js VHS" });
-
-    document.addEventListener("pointerdown", markUserAction, true);
-    document.addEventListener("keydown", markUserAction, true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    const conn = (navigator as any).connection;
+    if (conn && typeof conn.addEventListener === "function")
+      conn.addEventListener("change", onNetChange);
     document.addEventListener("visibilitychange", onVisibility);
-    player.on("playing", onPlaying);
-    player.on("canplay", onCanPlay);
-    player.on("loadeddata", onCanPlay);
-    player.on("pause", onPause);
-    player.on("timeupdate", onTimeUpdate);
-    player.on("progress", () => emitDiag({ lastSegmentAt: Date.now() }));
-    player.on("waiting", onWaiting);
-    player.on("stalled", onWaiting);
-    player.on("seeking", () => emitDiag({ stallState: "recovering" }));
-    player.on("seeked", () => emitDiag({ stallState: "ok" }));
-    player.on("ended", recover);
-    player.on("error", hardReload);
 
-    player.ready(() => {
-      if (isLive) window.setTimeout(seekToLiveEdge, 700);
-      playSafely();
-    });
-
+    // Watchdog: detect frozen playback and trigger recovery
     watchdog = window.setInterval(() => {
-      if (!isLive || userPausedRef.current || document.visibilityState !== "visible") return;
-      const currentPlayer = playerRef.current;
-      if (!currentPlayer || currentPlayer.isDisposed()) return;
-
-      const previous = lastProgressRef.current;
-      const currentTime = currentPlayer.currentTime() ?? 0;
-      const bufferedAhead = getBufferedAheadFromRanges(currentPlayer.buffered(), currentTime);
-      const noBuffer = bufferedAhead < LIVE_MIN_BUFFER_AHEAD_SECONDS;
-      const playbackStuck =
-        !currentPlayer.paused() &&
-        Math.abs(currentTime - previous.time) <= 0.25 &&
-        Date.now() - previous.at > LIVE_STALL_RECOVER_MS;
-      const noDataAfterStartup = Date.now() - mountedAt > LIVE_STARTUP_GRACE_MS && currentPlayer.readyState() < 2;
-
-      if ((playbackStuck || noDataAfterStartup || currentPlayer.ended()) && noBuffer) {
-        emitDiag({ stallState: "stalled" });
-        recover();
-        return;
+      if (destroyed || video.paused || document.visibilityState !== "visible") return;
+      const stuckFor = Date.now() - lastProgress.at;
+      if (stuckFor > STALL_RECOVER_MS && video.readyState < 3) {
+        bumpRetry();
+        if (engine === "shaka" && shakaPlayer) {
+          shakaPlayer
+            .load(withCacheBust(src))
+            .then(() => video.play().catch(() => {}))
+            .catch(() => scheduleRetry("watchdog_shaka"));
+        } else if (engine === "hlsjs" && hlsInstance) {
+          try {
+            hlsInstance.recoverMediaError();
+          } catch {
+            scheduleRetry("watchdog_hlsjs");
+          }
+        } else {
+          video.src = withCacheBust(src);
+          video.play().catch(() => {});
+        }
+        if (bufferingStartedAt) {
+          bufferingEvents += 1;
+          bufferingStartedAt = null;
+        }
       }
-    }, 8_000);
+    }, 4_000);
+
+    boot("shaka").catch(() => scheduleRetry("boot_failed"));
 
     return () => {
       destroyed = true;
+      if (retryTimer) window.clearTimeout(retryTimer);
       if (watchdog) window.clearInterval(watchdog);
-      if (waitingTimer) window.clearTimeout(waitingTimer);
-      document.removeEventListener("pointerdown", markUserAction, true);
-      document.removeEventListener("keydown", markUserAction, true);
+      video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("timeupdate", onTimeUpdate);
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("stalled", onWaiting);
+      video.removeEventListener("pause", onPause);
+      video.removeEventListener("error", onError);
+      video.removeEventListener("enterpictureinpicture", onPiP);
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+      if (conn && typeof conn.removeEventListener === "function")
+        conn.removeEventListener("change", onNetChange);
       document.removeEventListener("visibilitychange", onVisibility);
-
-      try {
-        playerRef.current?.dispose();
-        playerRef.current = null;
-      } catch {}
+      if (!video.paused) totalWatchMs += Date.now() - watchStartAt;
+      track("stream_session_end", {
+        engine,
+        buffering_events: bufferingEvents,
+        watch_ms: totalWatchMs,
+      });
+      cleanupEngines();
     };
-  }, [src, type, poster, isLive]);
+  }, [src, type, isLive]);
 
   return (
-    <div data-vjs-player className="absolute inset-0 h-full w-full bg-black [&_.video-js]:h-full [&_.video-js]:w-full [&_.vjs-control-bar]:bg-black/80 [&_.vjs-live-control]:font-bold [&_.vjs-live-control]:text-primary [&_.vjs-play-progress]:bg-primary [&_.vjs-volume-level]:bg-primary">
+    <div className="absolute inset-0 h-full w-full bg-black">
       <video
         ref={videoRef}
-        className="video-js vjs-big-play-centered"
+        className="h-full w-full bg-black"
         poster={poster}
         playsInline
         controls
         autoPlay
         preload="auto"
+        controlsList="nodownload"
       />
     </div>
   );
