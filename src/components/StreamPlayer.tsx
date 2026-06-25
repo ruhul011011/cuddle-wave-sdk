@@ -625,12 +625,15 @@ function ShakaLivePlayer({
     };
 
     // Video element listeners
+    const clearLoading = () => onReadyRef.current?.();
     const onPlaying = () => {
       emitDiag({ stallState: "ok" });
-      onReadyRef.current?.();
+      clearLoading();
       lastProgress = { t: video.currentTime, at: Date.now() };
       watchStartAt = Date.now();
     };
+    const onLoadedData = () => clearLoading();
+    const onCanPlay = () => clearLoading();
     const onTimeUpdate = () => {
       if (Math.abs(video.currentTime - lastProgress.t) > 0.25) {
         lastProgress = { t: video.currentTime, at: Date.now() };
