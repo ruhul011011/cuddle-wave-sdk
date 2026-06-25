@@ -652,6 +652,8 @@ function ShakaLivePlayer({
     const onPiP = () => {};
 
     video.addEventListener("playing", onPlaying);
+    video.addEventListener("loadeddata", onLoadedData);
+    video.addEventListener("canplay", onCanPlay);
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("waiting", onWaiting);
     video.addEventListener("stalled", onWaiting);
