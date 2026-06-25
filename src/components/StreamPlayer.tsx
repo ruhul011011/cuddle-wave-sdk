@@ -449,10 +449,13 @@ function ShakaLivePlayer({
       }, RETRY_INTERVAL_MS);
     };
 
+    let bootCount = 0;
+    const urlFor = () => (bootCount === 0 ? src : withCacheBust(src));
+
     const startNative = async () => {
       engine = "native";
       emitDiag({ mode: "Native HLS" });
-      video.src = withCacheBust(src);
+      video.src = urlFor();
       try {
         await video.play();
       } catch {}
@@ -477,7 +480,7 @@ function ShakaLivePlayer({
         levelLoadingMaxRetry: Infinity,
         fragLoadingMaxRetry: Infinity,
       });
-      hlsInstance.loadSource(withCacheBust(src));
+      hlsInstance.loadSource(urlFor());
       hlsInstance.attachMedia(video);
       hlsInstance.on(Hls.Events.ERROR, (_e: unknown, data: any) => {
         if (data?.fatal) {
@@ -585,7 +588,7 @@ function ShakaLivePlayer({
           }
         });
 
-        await shakaPlayer.load(withCacheBust(src));
+        await shakaPlayer.load(urlFor());
         try {
           await video.play();
         } catch {}
@@ -605,24 +608,32 @@ function ShakaLivePlayer({
       if (type === "mp4") {
         engine = "native";
         emitDiag({ mode: "MP4" });
-        video.src = withCacheBust(src);
+        video.src = urlFor();
         try {
           await video.play();
         } catch {}
+        bootCount += 1;
         return;
       }
-      if (preferred === "shaka") return startShaka();
-      if (preferred === "hlsjs") return startHlsJs();
-      return startNative();
+      try {
+        if (preferred === "shaka") await startShaka();
+        else if (preferred === "hlsjs") await startHlsJs();
+        else await startNative();
+      } finally {
+        bootCount += 1;
+      }
     };
 
     // Video element listeners
+    const clearLoading = () => onReadyRef.current?.();
     const onPlaying = () => {
       emitDiag({ stallState: "ok" });
-      onReadyRef.current?.();
+      clearLoading();
       lastProgress = { t: video.currentTime, at: Date.now() };
       watchStartAt = Date.now();
     };
+    const onLoadedData = () => clearLoading();
+    const onCanPlay = () => clearLoading();
     const onTimeUpdate = () => {
       if (Math.abs(video.currentTime - lastProgress.t) > 0.25) {
         lastProgress = { t: video.currentTime, at: Date.now() };
@@ -641,6 +652,8 @@ function ShakaLivePlayer({
     const onPiP = () => {};
 
     video.addEventListener("playing", onPlaying);
+    video.addEventListener("loadeddata", onLoadedData);
+    video.addEventListener("canplay", onCanPlay);
     video.addEventListener("timeupdate", onTimeUpdate);
     video.addEventListener("waiting", onWaiting);
     video.addEventListener("stalled", onWaiting);
@@ -702,11 +715,25 @@ function ShakaLivePlayer({
 
     boot("shaka").catch(() => scheduleRetry("boot_failed"));
 
+    // Fallback escalation: if Shaka doesn't deliver data quickly, try hls.js then native
+    const escalateIfStuck = window.setTimeout(() => {
+      if (destroyed) return;
+      if (video.readyState >= 2) return;
+      if (engine === "shaka") {
+        cleanupEngines().then(() => startHlsJs().catch(() => startNative()));
+      } else if (engine === "hlsjs") {
+        cleanupEngines().then(() => startNative());
+      }
+    }, 6_000);
+
     return () => {
       destroyed = true;
       if (retryTimer) window.clearTimeout(retryTimer);
+      window.clearTimeout(escalateIfStuck);
       if (watchdog) window.clearInterval(watchdog);
       video.removeEventListener("playing", onPlaying);
+      video.removeEventListener("loadeddata", onLoadedData);
+      video.removeEventListener("canplay", onCanPlay);
       video.removeEventListener("timeupdate", onTimeUpdate);
       video.removeEventListener("waiting", onWaiting);
       video.removeEventListener("stalled", onWaiting);
