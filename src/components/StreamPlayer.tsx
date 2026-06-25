@@ -608,15 +608,20 @@ function ShakaLivePlayer({
       if (type === "mp4") {
         engine = "native";
         emitDiag({ mode: "MP4" });
-        video.src = withCacheBust(src);
+        video.src = urlFor();
         try {
           await video.play();
         } catch {}
+        bootCount += 1;
         return;
       }
-      if (preferred === "shaka") return startShaka();
-      if (preferred === "hlsjs") return startHlsJs();
-      return startNative();
+      try {
+        if (preferred === "shaka") await startShaka();
+        else if (preferred === "hlsjs") await startHlsJs();
+        else await startNative();
+      } finally {
+        bootCount += 1;
+      }
     };
 
     // Video element listeners
