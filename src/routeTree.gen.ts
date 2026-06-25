@@ -26,6 +26,7 @@ import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authentic
 import { Route as ApiStreamSegRouteImport } from './routes/api/stream.seg'
 import { Route as ApiStreamIdRouteImport } from './routes/api/stream.$id'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
+import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
 import { Route as AuthenticatedAdminWorldCupRouteImport } from './routes/_authenticated/admin.world-cup'
 import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
@@ -127,6 +128,11 @@ const ApiStreamIdRoute = ApiStreamIdRouteImport.update({
 const ApiPublicStripeWebhookRoute = ApiPublicStripeWebhookRouteImport.update({
   id: '/api/public/stripe-webhook',
   path: '/api/public/stripe-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
+  id: '/api/public/health',
+  path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminWorldCupRoute =
@@ -268,6 +274,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
@@ -303,6 +310,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
   '/_authenticated/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
+  '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/watch-live'
     | '/admin/world-cup'
+    | '/api/public/health'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
     | '/api/stream/seg'
@@ -414,6 +424,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/watch-live'
     | '/admin/world-cup'
+    | '/api/public/health'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
     | '/api/stream/seg'
@@ -451,6 +462,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/watch-live'
     | '/_authenticated/admin/world-cup'
+    | '/api/public/health'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
     | '/api/stream/seg'
@@ -469,6 +481,7 @@ export interface RootRouteChildren {
   WorldCupRoute: typeof WorldCupRoute
   AdminLoginRoute: typeof AdminLoginRoute
   MatchIdRoute: typeof MatchIdRoute
+  ApiPublicHealthRoute: typeof ApiPublicHealthRoute
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiStreamIdRoute: typeof ApiStreamIdRoute
   ApiStreamSegRoute: typeof ApiStreamSegRoute
@@ -593,6 +606,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/stripe-webhook'
       fullPath: '/api/public/stripe-webhook'
       preLoaderRoute: typeof ApiPublicStripeWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/health': {
+      id: '/api/public/health'
+      path: '/api/public/health'
+      fullPath: '/api/public/health'
+      preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/world-cup': {
@@ -796,6 +816,7 @@ const rootRouteChildren: RootRouteChildren = {
   WorldCupRoute: WorldCupRoute,
   AdminLoginRoute: AdminLoginRoute,
   MatchIdRoute: MatchIdRoute,
+  ApiPublicHealthRoute: ApiPublicHealthRoute,
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiStreamIdRoute: ApiStreamIdRoute,
   ApiStreamSegRoute: ApiStreamSegRoute,

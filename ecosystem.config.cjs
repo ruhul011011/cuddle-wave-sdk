@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const appDir = process.env.PWD || "/var/www/worldcuptv";
+const appDir = __dirname;
 
 function readEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return {};
