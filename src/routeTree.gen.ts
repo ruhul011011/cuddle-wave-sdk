@@ -48,6 +48,7 @@ import { Route as AuthenticatedAdminHotMatchesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminClientQueryRouteImport } from './routes/_authenticated/admin.client-query'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedAdminAdminsRouteImport } from './routes/_authenticated/admin.admins'
+import { Route as ApiPublicOauthGoogleRouteImport } from './routes/api/public/oauth.google'
 
 const WorldCupRoute = WorldCupRouteImport.update({
   id: '/world-cup',
@@ -260,6 +261,11 @@ const AuthenticatedAdminAdminsRoute =
     path: '/admins',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const ApiPublicOauthGoogleRoute = ApiPublicOauthGoogleRouteImport.update({
+  id: '/api/public/oauth/google',
+  path: '/api/public/oauth/google',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -300,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -339,6 +346,7 @@ export interface FileRoutesByTo {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -381,6 +389,7 @@ export interface FileRoutesById {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -423,6 +432,7 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/admin/'
+    | '/api/public/oauth/google'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -462,6 +472,7 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/admin'
+    | '/api/public/oauth/google'
   id:
     | '__root__'
     | '/'
@@ -503,6 +514,7 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/_authenticated/admin/'
+    | '/api/public/oauth/google'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -523,6 +535,7 @@ export interface RootRouteChildren {
   ApiPublicStripeWebhookRoute: typeof ApiPublicStripeWebhookRoute
   ApiStreamIdRoute: typeof ApiStreamIdRoute
   ApiStreamSegRoute: typeof ApiStreamSegRoute
+  ApiPublicOauthGoogleRoute: typeof ApiPublicOauthGoogleRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -800,6 +813,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAdminsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/api/public/oauth/google': {
+      id: '/api/public/oauth/google'
+      path: '/api/public/oauth/google'
+      fullPath: '/api/public/oauth/google'
+      preLoaderRoute: typeof ApiPublicOauthGoogleRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -891,6 +911,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicStripeWebhookRoute: ApiPublicStripeWebhookRoute,
   ApiStreamIdRoute: ApiStreamIdRoute,
   ApiStreamSegRoute: ApiStreamSegRoute,
+  ApiPublicOauthGoogleRoute: ApiPublicOauthGoogleRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
