@@ -107,15 +107,11 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     // include the user's Authorization header and many VPS installs do not
     // have a service-role key for a second DB lookup inside /api/stream/*.
     const { signUpstream } = await import("@/lib/stream-sign.server");
-    result = result.map((r) => {
-      if (r.stream_type === "iframe") return r;
-      try {
-        return { ...r, url: `/api/stream/seg?${signUpstream(r.url)}` };
-      } catch (error) {
-        console.warn("Stream signing unavailable; using direct stream URL", error);
-        return r;
-      }
-    });
+    result = result.map((r) => (
+      r.stream_type === "iframe"
+        ? r
+        : { ...r, url: `/api/stream/seg?${signUpstream(r.url)}` }
+    ));
 
     return result;
   });
