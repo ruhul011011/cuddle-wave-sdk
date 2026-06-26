@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { Database } from "@/integrations/supabase/types";
 
 const HOP_BY_HOP = new Set([
   "connection", "keep-alive", "transfer-encoding", "upgrade",
@@ -52,15 +53,20 @@ export const Route = createFileRoute("/api/stream/$id")({
           return new Response("Forbidden", { status: 403 });
         }
 
+        const { getServerEnv } = await import("@/lib/env.server");
         let db;
-        if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        if (getServerEnv("SUPABASE_SERVICE_ROLE_KEY")) {
           const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
           db = supabaseAdmin;
         } else {
           const { createClient } = await import("@supabase/supabase-js");
-          db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+          db = createClient<Database>(
+            getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL")!,
+            getServerEnv("SUPABASE_PUBLISHABLE_KEY") ?? getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY")!,
+            {
             auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-          });
+            },
+          );
         }
         const { data: row, error } = await db
           .from("match_streams")
