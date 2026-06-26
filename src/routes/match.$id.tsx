@@ -146,7 +146,26 @@ function MatchPage() {
         </div>
 
         <div className="mt-8">
-          {isScheduledLocked ? (
+          {!authLoading && !isAuthed ? (
+            <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+                <LogIn className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-2xl">Sign in to watch</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Live streams are available to signed-in viewers only. It's free — sign in to start watching.
+              </p>
+              <Link
+                to="/auth"
+                search={{ redirect: `/match/${id}` } as never}
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign in to watch live
+              </Link>
+            </div>
+          ) : isScheduledLocked ? (
+
             <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
                 <Calendar className="h-7 w-7" />
