@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
-import { getServerEnv } from "./env.server";
 
 // Resolve a server-side Supabase client for public reads.
 // Prefers service role (bypasses RLS) when available, otherwise falls back
@@ -11,6 +10,7 @@ import { getServerEnv } from "./env.server";
 // SUPABASE_SERVICE_ROLE_KEY rely on the public RLS policies to read
 // free/ads/mix streams.
 async function getReadClient() {
+  const { getServerEnv } = await import("@/lib/env.server");
   if (getServerEnv("SUPABASE_SERVICE_ROLE_KEY")) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     return supabaseAdmin;
