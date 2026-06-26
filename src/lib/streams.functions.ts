@@ -43,63 +43,15 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data, context }) => {
-    // Use the authenticated Supabase client from the request context.
-    // On the VPS there is often no SUPABASE_SERVICE_ROLE_KEY, so a fresh
-    // server-side anon client cannot read auth-only RLS policies even after
-    // the user signs in. context.supabase carries the user's bearer token.
+    // match_streams SELECT is admin-only via RLS. Regular users read through
+    // the SECURITY DEFINER RPC, which enforces access type + purchase rules
+    // and returns only the rows the caller is allowed to see.
     const supabase = context.supabase;
-    const callerUserId = context.userId;
-
-
-
-    const { data: acc } = await supabase
-      .from("match_access")
-      .select("access, available_from")
-      .eq("fixture_id", data.fixtureId)
-      .maybeSingle();
-
-    // Normalize access (legacy 'paid' === 'premium').
-    const rawAccess = (acc?.access ?? "free") as string;
-    const access: "free" | "premium" | "ads" | "mix" =
-      rawAccess === "paid" ? "premium"
-      : (rawAccess === "premium" || rawAccess === "ads" || rawAccess === "mix") ? rawAccess
-      : "free";
-
-    // Scheduled go-live: hide everything until available_from has passed.
-    if (acc?.available_from && new Date(acc.available_from as string).getTime() > Date.now()) {
-      return [] as StreamRow[];
-    }
-
-    // Resolve caller purchase status (all callers are authenticated here).
-    let hasPurchase = false;
-    if (access === "premium" || access === "mix") {
-      const { data: purchase } = await supabase
-        .from("match_purchases")
-        .select("id")
-        .eq("user_id", callerUserId)
-        .eq("fixture_id", data.fixtureId)
-        .eq("status", "paid")
-        .maybeSingle();
-      hasPurchase = Boolean(purchase);
-    }
-
-
-    // Premium fixture: zero links until purchase.
-    if (access === "premium" && !hasPurchase) return [] as StreamRow[];
-
-    const { data: rows, error } = await supabase
-      .from("match_streams")
-      .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
-      .eq("fixture_id", data.fixtureId)
-      .eq("is_active", true)
-      .order("created_at", { ascending: true });
+    const { data: rows, error } = await supabase.rpc("get_visible_streams", {
+      _fixture_id: data.fixtureId,
+    });
     if (error) throw new Error(error.message);
     let result = (rows ?? []) as StreamRow[];
-
-    // Mix fixture: hide premium-tagged links from non-purchasers.
-    if (access === "mix" && !hasPurchase) {
-      result = result.filter((r) => r.link_mode !== "premium");
-    }
 
     // Replace raw upstream URLs with short-lived encrypted proxy URLs so the
     // real source never reaches the browser. We sign the upstream URL here

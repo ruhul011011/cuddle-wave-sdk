@@ -81,18 +81,9 @@ export const Route = createFileRoute("/api/stream/$id")({
           return new Response("Unsupported", { status: 400 });
         }
 
-        // Do not proxy MP4/progressive streams through the serverless route: those
-        // requests can stay open for minutes and get terminated by the runtime.
-        // Redirecting keeps long-running media playback in the browser instead.
-        if (row.stream_type === "mp4") {
-          return new Response(null, {
-            status: 302,
-            headers: {
-              Location: row.url,
-              "Cache-Control": "no-store",
-            },
-          });
-        }
+        // MP4/progressive streams are proxied (not 302-redirected) so the raw
+        // upstream CDN URL never reaches the browser. A leaked Location header
+        // would let any paying user redistribute the stream indefinitely.
 
         let upstream: Response;
         try {
