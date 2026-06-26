@@ -52,12 +52,22 @@ export const Route = createFileRoute("/api/stream/$id")({
           return new Response("Forbidden", { status: 403 });
         }
 
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: row, error } = await supabaseAdmin
+        let db;
+        if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          db = supabaseAdmin;
+        } else {
+          const { createClient } = await import("@supabase/supabase-js");
+          db = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+            auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+          });
+        }
+        const { data: row, error } = await db
           .from("match_streams")
           .select("url, stream_type, is_active")
           .eq("id", params.id)
           .maybeSingle();
+
         if (error || !row || !row.is_active) {
           return new Response("Not found", { status: 404 });
         }

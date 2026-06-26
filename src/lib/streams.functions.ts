@@ -4,6 +4,24 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
+// Resolve a server-side Supabase client for public reads.
+// Prefers service role (bypasses RLS) when available, otherwise falls back
+// to the publishable key (anon role). Self-hosted deployments without
+// SUPABASE_SERVICE_ROLE_KEY rely on the public RLS policies to read
+// free/ads/mix streams.
+async function getReadClient() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return supabaseAdmin;
+  }
+  const url = process.env.SUPABASE_URL!;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
+
 export type StreamRow = {
   id: string;
   fixture_id: number;
@@ -23,7 +41,8 @@ export type StreamRow = {
 export const getStreamsForFixture = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getReadClient();
+
 
     const { data: acc } = await supabaseAdmin
       .from("match_access")
@@ -101,7 +120,8 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
 // Uses the admin client server-side to bypass auth-only RLS on match_streams
 // (only fixture_ids are returned — no URLs).
 export const listStreamedFixtureIds = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const supabaseAdmin = await getReadClient();
+
   const { data, error } = await supabaseAdmin
     .from("match_streams")
     .select("fixture_id")
