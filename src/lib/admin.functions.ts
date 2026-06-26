@@ -289,8 +289,23 @@ export const submitClientQuery = createServerFn({ method: "POST" })
     message: z.string().trim().min(5).max(2000),
   }).parse(d))
   .handler(async ({ data }) => {
+    const { getRequestHeader } = await import("@tanstack/react-start/server");
+    const { createClient } = await import("@supabase/supabase-js");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("client_queries").insert(data);
+
+    let userId: string | null = null;
+    const authHeader = getRequestHeader("authorization") ?? getRequestHeader("Authorization");
+    const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    if (token && process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) {
+      const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: u } = await client.auth.getUser();
+      userId = u.user?.id ?? null;
+    }
+
+    const { error } = await supabaseAdmin.from("client_queries").insert({ ...data, user_id: userId });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
