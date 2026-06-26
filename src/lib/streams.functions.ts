@@ -41,7 +41,8 @@ export type StreamRow = {
 export const getStreamsForFixture = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const supabaseAdmin = await getReadClient();
+
 
     const { data: acc } = await supabaseAdmin
       .from("match_access")
