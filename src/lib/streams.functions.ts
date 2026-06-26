@@ -66,27 +66,19 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
       return [] as StreamRow[];
     }
 
-    // Resolve caller purchase status (best-effort; anonymous callers count as not-purchased).
+    // Resolve caller purchase status (all callers are authenticated here).
     let hasPurchase = false;
     if (access === "premium" || access === "mix") {
-      const { getRequestHeader } = await import("@tanstack/react-start/server");
-      const auth = getRequestHeader("authorization") ?? "";
-      const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
-      if (token) {
-        const { data: userRes } = await supabaseAdmin.auth.getUser(token);
-        const uid = userRes?.user?.id;
-        if (uid) {
-          const { data: purchase } = await supabaseAdmin
-            .from("match_purchases")
-            .select("id")
-            .eq("user_id", uid)
-            .eq("fixture_id", data.fixtureId)
-            .eq("status", "paid")
-            .maybeSingle();
-          hasPurchase = Boolean(purchase);
-        }
-      }
+      const { data: purchase } = await supabaseAdmin
+        .from("match_purchases")
+        .select("id")
+        .eq("user_id", callerUserId)
+        .eq("fixture_id", data.fixtureId)
+        .eq("status", "paid")
+        .maybeSingle();
+      hasPurchase = Boolean(purchase);
     }
+
 
     // Premium fixture: zero links until purchase.
     if (access === "premium" && !hasPurchase) return [] as StreamRow[];
