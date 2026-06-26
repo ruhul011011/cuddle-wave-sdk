@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/public/health")({
         return Response.json({
           ok: true,
           service: "worldcuptv",
-          authFlow: "direct-google-oauth-v5-no-legacy-client-oauth",
+          authFlow: "direct-google-oauth-v6-callback-route-unnested",
           checkedAt: new Date().toISOString(),
           env: {
             SUPABASE_URL: hasEnv("SUPABASE_URL"),
