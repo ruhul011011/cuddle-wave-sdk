@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/public/health")({
         return Response.json({
           ok: true,
           service: "worldcuptv",
-          authFlow: "v11-env-file-stream-fix",
+          authFlow: "v12-client-stream-fallback",
           checkedAt: new Date().toISOString(),
           env: {
             SUPABASE_URL: hasServerEnv("SUPABASE_URL"),
