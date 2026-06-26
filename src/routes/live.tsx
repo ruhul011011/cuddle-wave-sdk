@@ -16,7 +16,7 @@ const liveQuery = queryOptions({
   refetchInterval: 15_000,
 });
 
-export const Route = createFileRoute("/_authenticated/live")({
+export const Route = createFileRoute("/live")({
   head: () => ({
     meta: [
       { title: "Live Football Streams — Football Streaming" },

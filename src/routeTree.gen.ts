@@ -13,6 +13,7 @@ import { Route as WorldCupRouteImport } from './routes/world-cup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as LiveRouteImport } from './routes/live'
 import { Route as LeaguesRouteImport } from './routes/leagues'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -23,7 +24,6 @@ import { Route as Char126oauthInitiateRouteImport } from './routes/~oauth.initia
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiStreamSegRouteImport } from './routes/api/stream.seg'
@@ -68,6 +68,11 @@ const ScheduleRoute = ScheduleRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LiveRoute = LiveRouteImport.update({
+  id: '/live',
+  path: '/live',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LeaguesRoute = LeaguesRouteImport.update({
@@ -118,11 +123,6 @@ const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
   path: '/admin/login',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedLiveRoute = AuthenticatedLiveRouteImport.update({
-  id: '/live',
-  path: '/live',
-  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
   id: '/admin',
@@ -273,12 +273,12 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
+  '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/live': typeof AuthenticatedLiveRoute
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
@@ -314,11 +314,11 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
+  '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
-  '/live': typeof AuthenticatedLiveRoute
   '/admin/login': typeof AdminLoginRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
@@ -356,12 +356,12 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
+  '/live': typeof LiveRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
-  '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/admin/login': typeof AdminLoginRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
@@ -399,12 +399,12 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leagues'
+    | '/live'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
     | '/world-cup'
     | '/admin'
-    | '/live'
     | '/admin/login'
     | '/auth/callback'
     | '/match/$id'
@@ -440,11 +440,11 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leagues'
+    | '/live'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
     | '/world-cup'
-    | '/live'
     | '/admin/login'
     | '/auth/callback'
     | '/match/$id'
@@ -481,12 +481,12 @@ export interface FileRouteTypes {
     | '/auth'
     | '/contact'
     | '/leagues'
+    | '/live'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
     | '/world-cup'
     | '/_authenticated/admin'
-    | '/_authenticated/live'
     | '/admin/login'
     | '/auth_/callback'
     | '/match/$id'
@@ -524,6 +524,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
+  LiveRoute: typeof LiveRoute
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -567,6 +568,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/live': {
+      id: '/live'
+      path: '/live'
+      fullPath: '/live'
+      preLoaderRoute: typeof LiveRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/leagues': {
@@ -638,13 +646,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/login'
       preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/live': {
-      id: '/_authenticated/live'
-      path: '/live'
-      fullPath: '/live'
-      preLoaderRoute: typeof AuthenticatedLiveRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin': {
       id: '/_authenticated/admin'
@@ -873,12 +874,10 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
-  AuthenticatedLiveRoute: typeof AuthenticatedLiveRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
-  AuthenticatedLiveRoute: AuthenticatedLiveRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
@@ -891,6 +890,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
+  LiveRoute: LiveRoute,
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
