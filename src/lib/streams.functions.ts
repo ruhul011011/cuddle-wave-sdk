@@ -74,15 +74,14 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
 // Uses the admin client server-side to bypass auth-only RLS on match_streams
 // (only fixture_ids are returned — no URLs).
 export const listStreamedFixtureIds = createServerFn({ method: "GET" }).handler(async () => {
+  // Read from the public mirror table (populated by trigger). match_streams
+  // itself is admin-only now; this table only holds fixture_ids — no URLs.
   const supabaseAdmin = await getReadClient();
-
   const { data, error } = await supabaseAdmin
-    .from("match_streams")
-    .select("fixture_id")
-    .eq("is_active", true);
+    .from("active_stream_fixtures")
+    .select("fixture_id");
   if (error) throw new Error(error.message);
-  const ids = Array.from(new Set((data ?? []).map((r) => r.fixture_id)));
-  return ids;
+  return Array.from(new Set((data ?? []).map((r) => r.fixture_id)));
 });
 
 // Admin: list all streams (any fixture)
