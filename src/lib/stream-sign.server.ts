@@ -4,7 +4,7 @@ import { getServerEnv } from "./env.server";
 // HMAC-signed short-lived tokens for stream URLs.
 // Real upstream URLs never reach the browser.
 
-const TOKEN_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
+const TOKEN_TTL_MS = 1000 * 60 * 60 * 4; // 4 hours
 
 function getSecret(): string {
   const s = getServerEnv("STREAM_SIGNING_SECRET");
