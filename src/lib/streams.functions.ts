@@ -120,7 +120,8 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
 // Uses the admin client server-side to bypass auth-only RLS on match_streams
 // (only fixture_ids are returned — no URLs).
 export const listStreamedFixtureIds = createServerFn({ method: "GET" }).handler(async () => {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const supabaseAdmin = await getReadClient();
+
   const { data, error } = await supabaseAdmin
     .from("match_streams")
     .select("fixture_id")
