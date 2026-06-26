@@ -299,7 +299,7 @@ function FixtureRow({ match: m }: { match: Fixture }) {
     <Link
       to="/match/$id"
       params={{ id: m.id }}
-      className="block px-4 py-4 hover:bg-secondary/40 transition-colors"
+        className="group block px-4 py-4 hover:bg-secondary/40 transition-colors"
     >
       <div className="mb-3 flex items-center justify-between text-xs">
         <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-muted-foreground">
