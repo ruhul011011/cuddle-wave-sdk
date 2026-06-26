@@ -24,14 +24,19 @@ function normalizeAccess(v: string | null | undefined): AccessType {
 }
 
 async function getReadClient() {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const { getServerEnv } = await import("@/lib/env.server");
+  if (getServerEnv("SUPABASE_SERVICE_ROLE_KEY")) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     return supabaseAdmin;
   }
 
-  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+  return createClient<Database>(
+    getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL")!,
+    getServerEnv("SUPABASE_PUBLISHABLE_KEY") ?? getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY")!,
+    {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
-  });
+    },
+  );
 }
 
 // Public: read access info + whether current user has purchased.
