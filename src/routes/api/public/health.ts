@@ -11,7 +11,7 @@ export const Route = createFileRoute("/api/public/health")({
         return Response.json({
           ok: true,
           service: "worldcuptv",
-          authFlow: "v8-streams-and-access-publishable-fallback",
+          authFlow: "v9-public-live-and-stream-trigger-fix",
           checkedAt: new Date().toISOString(),
           env: {
             SUPABASE_URL: hasEnv("SUPABASE_URL"),
@@ -22,6 +22,7 @@ export const Route = createFileRoute("/api/public/health")({
             API_FOOTBALL_KEY: hasEnv("API_FOOTBALL_KEY"),
             STRIPE_SECRET_KEY: hasEnv("STRIPE_SECRET_KEY"),
             STRIPE_WEBHOOK_SECRET: hasEnv("STRIPE_WEBHOOK_SECRET"),
+            STREAM_SIGNING_SECRET: hasEnv("STREAM_SIGNING_SECRET"),
           },
         });
       },

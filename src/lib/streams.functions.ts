@@ -102,13 +102,19 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     }
 
     // Replace raw upstream URLs with short-lived signed proxy URLs so the
-    // real source never reaches the browser. iframe sources are loaded by
-    // the browser directly and cannot be hidden — leave as-is.
+    // real source never reaches the browser. On self-hosted installs where
+    // STREAM_SIGNING_SECRET has not been added yet, keep the free stream URL
+    // instead of failing the whole query — otherwise the watch button disappears.
     const { signStreamId } = await import("@/lib/stream-sign.server");
     result = result.map((r) => {
       if (r.stream_type === "iframe") return r;
-      const { exp, sig } = signStreamId(r.id);
-      return { ...r, url: `/api/stream/${r.id}?exp=${exp}&sig=${encodeURIComponent(sig)}` };
+      try {
+        const { exp, sig } = signStreamId(r.id);
+        return { ...r, url: `/api/stream/${r.id}?exp=${exp}&sig=${encodeURIComponent(sig)}` };
+      } catch (error) {
+        console.warn("Stream signing unavailable; using direct stream URL", error);
+        return r;
+      }
     });
 
     return result;
