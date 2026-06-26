@@ -299,7 +299,7 @@ function FixtureRow({ match: m }: { match: Fixture }) {
     <Link
       to="/match/$id"
       params={{ id: m.id }}
-      className="block px-4 py-4 hover:bg-secondary/40 transition-colors"
+        className="group block px-4 py-4 hover:bg-secondary/40 transition-colors"
     >
       <div className="mb-3 flex items-center justify-between text-xs">
         <span className="inline-flex items-center gap-1.5 rounded-md border border-border/60 bg-background/40 px-2 py-1 text-muted-foreground">
@@ -331,6 +331,13 @@ function FixtureRow({ match: m }: { match: Fixture }) {
           <img src={m.awayLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
         </div>
       </div>
+      {isLive && (
+        <div className="mt-4 flex justify-end">
+          <span className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground group-hover:bg-primary/90">
+            <Play className="h-3.5 w-3.5 fill-current" /> Watch Live
+          </span>
+        </div>
+      )}
     </Link>
   );
 }
