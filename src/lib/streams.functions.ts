@@ -10,12 +10,13 @@ import type { Database } from "@/integrations/supabase/types";
 // SUPABASE_SERVICE_ROLE_KEY rely on the public RLS policies to read
 // free/ads/mix streams.
 async function getReadClient() {
-  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  const { getServerEnv } = await import("@/lib/env.server");
+  if (getServerEnv("SUPABASE_SERVICE_ROLE_KEY")) {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     return supabaseAdmin;
   }
-  const url = process.env.SUPABASE_URL!;
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  const url = getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL")!;
+  const key = getServerEnv("SUPABASE_PUBLISHABLE_KEY") ?? getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY")!;
   return createClient<Database>(url, key, {
     auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
   });
@@ -141,11 +142,13 @@ export const listStreamedFixtureIds = createServerFn({ method: "GET" }).handler(
 export const listAllStreams = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
     const { data, error } = await context.supabase
       .from("match_streams")
       .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
@@ -169,11 +172,13 @@ export const createStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => streamInputSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
     const { data: row, error } = await context.supabase
       .from("match_streams")
       .insert({ ...data, created_by: context.userId })
@@ -201,11 +206,13 @@ export const bulkCreateStreams = createServerFn({ method: "POST" })
     }).parse(input),
   )
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
     const rows = data.streams.map((s) => ({
       ...s,
       fixture_id: data.fixture_id,
@@ -225,11 +232,13 @@ export const getStreamsByFixture = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number().int().positive() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
     const { data: rows, error } = await context.supabase
       .from("match_streams")
       .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
@@ -256,11 +265,13 @@ export type AdminMatchGroup = {
 export const listAdminMatchGroups = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AdminMatchGroup[]> => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
 
     const { data: streams, error } = await context.supabase
       .from("match_streams")
@@ -318,11 +329,13 @@ export const deleteFixtureStreams = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number().int().positive() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
     const { error } = await context.supabase
       .from("match_streams")
       .delete()
@@ -337,11 +350,13 @@ export const deleteStream = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
     const { error } = await context.supabase.from("match_streams").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -351,9 +366,11 @@ export const deleteStream = createServerFn({ method: "POST" })
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
+    const { data } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
     return { isAdmin: Boolean(data) };
   });

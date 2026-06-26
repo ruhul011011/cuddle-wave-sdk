@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "crypto";
+import { getServerEnv } from "./env.server";
 
 // HMAC-signed short-lived tokens for stream URLs.
 // Real upstream URLs never reach the browser.
@@ -6,7 +7,7 @@ import { createHmac, timingSafeEqual } from "crypto";
 const TOKEN_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 
 function getSecret(): string {
-  const s = process.env.STREAM_SIGNING_SECRET;
+  const s = getServerEnv("STREAM_SIGNING_SECRET");
   if (!s) throw new Error("STREAM_SIGNING_SECRET is not configured");
   return s;
 }

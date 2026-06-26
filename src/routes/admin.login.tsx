@@ -35,12 +35,14 @@ function AdminLoginPage() {
       const userId = data.user?.id;
       if (!userId) throw new Error("No user");
 
-      const { data: isAdmin, error: roleErr } = await supabase.rpc("has_role", {
-        _user_id: userId,
-        _role: "admin",
-      });
+      const { data: role, error: roleErr } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("role", "admin")
+        .maybeSingle();
       if (roleErr) throw roleErr;
-      if (!isAdmin) {
+      if (!role) {
         await supabase.auth.signOut();
         throw new Error("This account is not an administrator.");
       }

@@ -22,11 +22,13 @@ export const listStripeWebhookLogs = createServerFn({ method: "GET" })
     z.object({ limit: z.number().int().min(1).max(200).default(100) }).parse(input ?? {}),
   )
   .handler(async ({ data, context }): Promise<StripeWebhookLog[]> => {
-    const { data: isAdmin } = await context.supabase.rpc("has_role", {
-      _user_id: context.userId,
-      _role: "admin",
-    });
-    if (!isAdmin) throw new Error("Forbidden");
+    const { data: adminRole } = await context.supabase
+      .from("user_roles")
+      .select("id")
+      .eq("user_id", context.userId)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!adminRole) throw new Error("Forbidden");
 
     const { data: rows, error } = await context.supabase
       .from("stripe_webhook_logs")
