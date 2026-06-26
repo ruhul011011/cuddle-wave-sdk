@@ -34,9 +34,9 @@ export type StreamRow = {
   link_mode: "free" | "premium" | "ads";
 };
 
-// Public: get active streams for a fixture, gated by Access Type:
-//  - free  → all links visible to anyone
-//  - ads   → all links visible to anyone (ad-supported)
+// Authenticated: get active streams for a fixture, gated by Access Type:
+//  - free  → all links visible to signed-in users
+//  - ads   → all links visible to signed-in users (ad-supported)
 //  - premium → all links hidden unless the caller purchased
 //  - mix   → free/ads links visible; premium links hidden unless purchased
 export const getStreamsForFixture = createServerFn({ method: "GET" })
