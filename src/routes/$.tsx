@@ -1,6 +1,5 @@
 import { useEffect } from "react";
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/$")({
   ssr: false,
@@ -29,16 +28,7 @@ function CatchAllPage() {
       // ignore storage failures
     }
 
-    supabase.auth
-      .signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-      .then(({ error }) => {
-        if (error) window.location.replace("/auth");
-      });
+    window.location.replace(`/api/public/oauth/google?redirect=${encodeURIComponent(sanitizeRedirectPath(redirectUri))}`);
   }, [pathname, router.state.location.searchStr]);
 
   if (pathname === "/~oauth/initiate") {

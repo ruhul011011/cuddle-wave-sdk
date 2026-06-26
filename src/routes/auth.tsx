@@ -66,7 +66,7 @@ function AuthPage() {
       } catch {
         // ignore storage failures
       }
-      window.location.assign(`/api/public/oauth/google?redirect=${encodeURIComponent(redirectTo)}`);
+      window.location.assign(`/api/public/oauth/google?redirect=${encodeURIComponent(redirectTo)}&flow=direct-v5`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Google sign-in failed");
       setBusy(false);

@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { queryOptions, useSuspenseQuery, useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
@@ -99,7 +100,14 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { data: feed } = useSuspenseQuery(homeFeedQuery);
+  const initialFeed = Route.useLoaderData();
+  const [hasMounted, setHasMounted] = useState(false);
+  const { data: freshFeed } = useQuery({ ...homeFeedQuery, initialData: initialFeed });
+  const feed = hasMounted ? (freshFeed ?? initialFeed) : initialFeed;
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
   const live = [...(feed.streamed ?? [])]
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   const upcoming = feed.upcoming;
