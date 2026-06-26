@@ -3,6 +3,24 @@ import path from "node:path";
 
 let cachedFileEnv: Record<string, string> | undefined;
 
+function candidateEnvDirs(): string[] {
+  const dirs = new Set<string>();
+  const addWithParents = (start?: string) => {
+    if (!start) return;
+    let dir = path.resolve(start);
+    for (let i = 0; i < 5; i += 1) {
+      dirs.add(dir);
+      const parent = path.dirname(dir);
+      if (parent === dir) break;
+      dir = parent;
+    }
+  };
+
+  addWithParents(process.cwd());
+  addWithParents(process.argv[1] ? path.dirname(process.argv[1]) : undefined);
+  return [...dirs];
+}
+
 function parseEnvFile(filePath: string): Record<string, string> {
   if (!fs.existsSync(filePath)) return {};
 
@@ -35,10 +53,11 @@ function parseEnvFile(filePath: string): Record<string, string> {
 
 function getFileEnv(): Record<string, string> {
   if (!cachedFileEnv) {
-    cachedFileEnv = {
-      ...parseEnvFile(path.join(process.cwd(), ".env")),
-      ...parseEnvFile(path.join(process.cwd(), ".env.local")),
-    };
+    cachedFileEnv = candidateEnvDirs().reduce<Record<string, string>>((env, dir) => ({
+      ...env,
+      ...parseEnvFile(path.join(dir, ".env")),
+      ...parseEnvFile(path.join(dir, ".env.local")),
+    }), {});
   }
   return cachedFileEnv;
 }
