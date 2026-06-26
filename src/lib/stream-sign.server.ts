@@ -1,10 +1,10 @@
-import { createHmac, timingSafeEqual } from "crypto";
+import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { getServerEnv } from "./env.server";
 
 // HMAC-signed short-lived tokens for stream URLs.
 // Real upstream URLs never reach the browser.
 
-const TOKEN_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
+const TOKEN_TTL_MS = 1000 * 60 * 60 * 4; // 4 hours
 
 function getSecret(): string {
   const s = getServerEnv("STREAM_SIGNING_SECRET");
@@ -26,6 +26,35 @@ function hmac(payload: string): string {
   return b64url(createHmac("sha256", getSecret()).update(payload).digest());
 }
 
+function encryptionKey(): Buffer {
+  return createHash("sha256").update(getSecret()).digest();
+}
+
+function encryptUrl(url: string, exp: number): string {
+  const iv = randomBytes(12);
+  const cipher = createCipheriv("aes-256-gcm", encryptionKey(), iv);
+  cipher.setAAD(Buffer.from(`stream-url:${exp}`, "utf8"));
+  const encrypted = Buffer.concat([cipher.update(url, "utf8"), cipher.final()]);
+  const tag = cipher.getAuthTag();
+  return b64url(Buffer.concat([iv, tag, encrypted]));
+}
+
+function decryptUrl(token: string, exp: number): string | null {
+  try {
+    const packed = b64urlDecode(token);
+    if (packed.length <= 28) return null;
+    const iv = packed.subarray(0, 12);
+    const tag = packed.subarray(12, 28);
+    const encrypted = packed.subarray(28);
+    const decipher = createDecipheriv("aes-256-gcm", encryptionKey(), iv);
+    decipher.setAAD(Buffer.from(`stream-url:${exp}`, "utf8"));
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8");
+  } catch {
+    return null;
+  }
+}
+
 // Sign a stream id (entry point — protects DB lookup)
 export function signStreamId(id: string, ttlMs = TOKEN_TTL_MS): { exp: number; sig: string } {
   const exp = Date.now() + ttlMs;
@@ -45,7 +74,7 @@ export function verifyStreamId(id: string, exp: number, sig: string): boolean {
 // Sign an arbitrary upstream URL (used for HLS segments / nested playlists)
 export function signUpstream(url: string, ttlMs = TOKEN_TTL_MS): string {
   const exp = Date.now() + ttlMs;
-  const u = b64url(url);
+  const u = encryptUrl(url, exp);
   const sig = hmac(`u:${u}:${exp}`);
   return `u=${u}&exp=${exp}&sig=${sig}`;
 }
@@ -62,7 +91,7 @@ export function verifyUpstream(uEncoded: string, exp: number, sig: string): stri
     return null;
   }
   try {
-    return b64urlDecode(uEncoded).toString("utf8");
+    return decryptUrl(uEncoded, exp);
   } catch {
     return null;
   }
