@@ -21,7 +21,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as Char126oauthInitiateRouteImport } from './routes/~oauth.initiate'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedLiveRouteImport } from './routes/_authenticated/live'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
@@ -110,9 +110,9 @@ const MatchIdRoute = MatchIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/callback',
-  path: '/callback',
-  getParentRoute: () => AuthRoute,
+  id: '/auth_/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
   id: '/admin/login',
@@ -270,7 +270,7 @@ const ApiPublicOauthGoogleRoute = ApiPublicOauthGoogleRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/pricing': typeof PricingRoute
@@ -311,7 +311,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/pricing': typeof PricingRoute
@@ -353,7 +353,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/$': typeof SplatRoute
-  '/auth': typeof AuthRouteWithChildren
+  '/auth': typeof AuthRoute
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/pricing': typeof PricingRoute
@@ -363,7 +363,7 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/live': typeof AuthenticatedLiveRoute
   '/admin/login': typeof AdminLoginRoute
-  '/auth/callback': typeof AuthCallbackRoute
+  '/auth_/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
   '/_authenticated/admin/admins': typeof AuthenticatedAdminAdminsRoute
@@ -488,7 +488,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/live'
     | '/admin/login'
-    | '/auth/callback'
+    | '/auth_/callback'
     | '/match/$id'
     | '/~oauth/initiate'
     | '/_authenticated/admin/admins'
@@ -521,7 +521,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   SplatRoute: typeof SplatRoute
-  AuthRoute: typeof AuthRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
   PricingRoute: typeof PricingRoute
@@ -529,6 +529,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WorldCupRoute: typeof WorldCupRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   MatchIdRoute: typeof MatchIdRoute
   Char126oauthInitiateRoute: typeof Char126oauthInitiateRoute
   ApiPublicHealthRoute: typeof ApiPublicHealthRoute
@@ -624,12 +625,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MatchIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/callback'
+    '/auth_/callback': {
+      id: '/auth_/callback'
+      path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof AuthRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
       id: '/admin/login'
@@ -883,21 +884,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface AuthRouteChildren {
-  AuthCallbackRoute: typeof AuthCallbackRoute
-}
-
-const AuthRouteChildren: AuthRouteChildren = {
-  AuthCallbackRoute: AuthCallbackRoute,
-}
-
-const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   SplatRoute: SplatRoute,
-  AuthRoute: AuthRouteWithChildren,
+  AuthRoute: AuthRoute,
   ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
   PricingRoute: PricingRoute,
@@ -905,6 +896,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WorldCupRoute: WorldCupRoute,
   AdminLoginRoute: AdminLoginRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   MatchIdRoute: MatchIdRoute,
   Char126oauthInitiateRoute: Char126oauthInitiateRoute,
   ApiPublicHealthRoute: ApiPublicHealthRoute,
