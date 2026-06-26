@@ -4,6 +4,24 @@ import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 
+// Resolve a server-side Supabase client for public reads.
+// Prefers service role (bypasses RLS) when available, otherwise falls back
+// to the publishable key (anon role). Self-hosted deployments without
+// SUPABASE_SERVICE_ROLE_KEY rely on the public RLS policies to read
+// free/ads/mix streams.
+async function getReadClient() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return supabaseAdmin;
+  }
+  const url = process.env.SUPABASE_URL!;
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+  return createClient<Database>(url, key, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
+
 export type StreamRow = {
   id: string;
   fixture_id: number;
