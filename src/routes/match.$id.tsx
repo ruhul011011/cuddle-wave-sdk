@@ -4,11 +4,12 @@ import { useMemo } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
-import { getStreamsForFixture, type StreamRow } from "@/lib/streams.functions";
+import { getStreamsForFixture } from "@/lib/streams.functions";
 import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
-import { supabase } from "@/integrations/supabase/client";
-import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock, LogIn } from "lucide-react";
+
 
 const fixtureQuery = (id: string) =>
   queryOptions({
@@ -64,12 +65,17 @@ function MatchPage() {
   // we still render the player using stream rows from our DB so users can watch.
   const { data: fixtureData } = useQuery(fixtureQuery(id));
   const { data: access } = useQuery(accessQuery(id));
+  const { session, loading: authLoading } = useAuth();
+  const isAuthed = Boolean(session);
   const streamsResult = useQuery({
     ...streamsQuery(id),
-    // Streams must load even when fixture metadata fails (rate limit, etc.).
-    enabled: !access || !(access.access === "premium" && !access.hasAccess),
+    // Streams require authentication; wait for session restore to avoid 401s.
+    enabled:
+      !authLoading &&
+      isAuthed &&
+      (!access || !(access.access === "premium" && !access.hasAccess)),
   });
-  const serverStreams = streamsResult.data ?? [];
+  const streams = streamsResult.data ?? [];
   const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
     id,
     league: "",
@@ -95,31 +101,11 @@ function MatchPage() {
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
   const isMixLocked = access?.access === "mix" && !access.hasAccess;
   const showAdsNotice = access?.access === "ads";
-  const { data: fallbackStreams = [] } = useQuery({
-    queryKey: ["streams-client-fallback", id],
-    queryFn: async (): Promise<StreamRow[]> => {
-      const { data, error } = await supabase
-        .from("match_streams")
-        .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
-        .eq("fixture_id", Number(id))
-        .eq("is_active", true)
-        .order("created_at", { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as StreamRow[];
-    },
-    enabled:
-      !isPaidLocked &&
-      !isScheduledLocked &&
-      streamsResult.isFetched &&
-      serverStreams.length === 0,
-    staleTime: 30_000,
-    refetchOnWindowFocus: false,
-  });
-  const streams = serverStreams.length > 0 ? serverStreams : fallbackStreams;
   const playerSources = useMemo(
     () => streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url })),
     [streams],
   );
+
 
 
   return (
@@ -160,7 +146,26 @@ function MatchPage() {
         </div>
 
         <div className="mt-8">
-          {isScheduledLocked ? (
+          {!authLoading && !isAuthed ? (
+            <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+                <LogIn className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-2xl">Sign in to watch</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Live streams are available to signed-in viewers only. It's free — sign in to start watching.
+              </p>
+              <Link
+                to="/auth"
+                search={{ redirect: `/match/${id}` } as never}
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <LogIn className="h-4 w-4" />
+                Sign in to watch live
+              </Link>
+            </div>
+          ) : isScheduledLocked ? (
+
             <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
                 <Calendar className="h-7 w-7" />
