@@ -756,6 +756,14 @@ function ShakaLivePlayer({
 
     return () => {
       destroyed = true;
+      // Stop playback synchronously BEFORE async engine teardown, otherwise
+      // audio keeps playing after switching servers or navigating away.
+      try {
+        video.pause();
+        video.muted = true;
+        video.removeAttribute("src");
+        video.load();
+      } catch {}
       if (retryTimer) window.clearTimeout(retryTimer);
       window.clearTimeout(escalateIfStuck);
       if (watchdog) window.clearInterval(watchdog);
@@ -779,7 +787,8 @@ function ShakaLivePlayer({
         buffering_events: bufferingEvents,
         watch_ms: totalWatchMs,
       });
-      cleanupEngines();
+      // Fire-and-forget async engine teardown; video is already silenced.
+      void cleanupEngines();
     };
   }, [src, type, isLive]);
 
