@@ -4,11 +4,12 @@ import { useMemo } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
-import { getStreamsForFixture, type StreamRow } from "@/lib/streams.functions";
+import { getStreamsForFixture } from "@/lib/streams.functions";
 import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
-import { supabase } from "@/integrations/supabase/client";
-import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Radio, MapPin, Calendar, Flag, Goal, Square, ArrowLeftRight, User, Lock, LogIn } from "lucide-react";
+
 
 const fixtureQuery = (id: string) =>
   queryOptions({
