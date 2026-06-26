@@ -89,8 +89,17 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
   const [qualities, setQualities] = useState<Record<string, QualityInfo>>({});
   const [diagnostics, setDiagnostics] = useState<StreamDiagnostics>(INITIAL_DIAGNOSTICS);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const failedSourceIdsRef = useRef<Set<string>>(new Set());
+  const sourcesKey = sources.map((s) => s.id).join("|");
   const selected = sources.find((s) => s.id === selectedId) ?? sources[0];
   const selectedLooksLive = Boolean(isLive || selected?.stream_type === "hls");
+
+  useEffect(() => {
+    failedSourceIdsRef.current = new Set();
+    if (!sources.some((s) => s.id === selectedId)) {
+      setSelectedId(sources[0]?.id ?? null);
+    }
+  }, [sourcesKey, selectedId, sources]);
 
   useEffect(() => {
     if (started) setLoading(true);
@@ -109,6 +118,25 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
       cancelled = true;
     };
   }, [sources]);
+
+  useEffect(() => {
+    if (!started || !selected || sources.length < 2) return;
+    const shouldSwitch = diagnostics.stallState === "offline" || diagnostics.retryCount >= 2;
+    if (!shouldSwitch) return;
+
+    failedSourceIdsRef.current.add(selected.id);
+    const next =
+      sources.find((s) => s.id !== selected.id && !failedSourceIdsRef.current.has(s.id)) ??
+      sources.find((s) => s.id !== selected.id);
+    if (!next) return;
+
+    const timer = window.setTimeout(() => {
+      setSelectedId(next.id);
+      setLoading(true);
+      setDiagnostics(INITIAL_DIAGNOSTICS);
+    }, 800);
+    return () => window.clearTimeout(timer);
+  }, [diagnostics.retryCount, diagnostics.stallState, selected, sources, started]);
 
   if (!selected) {
     return (
