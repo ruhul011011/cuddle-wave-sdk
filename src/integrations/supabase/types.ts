@@ -463,6 +463,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_visible_streams: {
+        Args: { _fixture_id: number }
+        Returns: {
+          fixture_id: number
+          id: string
+          is_active: boolean
+          label: string
+          link_mode: string
+          quality: string
+          stream_type: string
+          url: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
