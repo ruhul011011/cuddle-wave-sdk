@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { supabase } from "@/integrations/supabase/client";
 
 function NotFoundComponent() {
   const router = useRouter();
@@ -61,14 +60,7 @@ function LegacyOAuthRedirect() {
       // ignore storage failures
     }
 
-    supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    }).then(({ error }) => {
-      if (error) window.location.replace("/auth");
-    });
+    window.location.replace(`/api/public/oauth/google?redirect=${encodeURIComponent(sanitizeRedirectPath(redirectUri))}`);
   }, [router.state.location.searchStr]);
 
   return (

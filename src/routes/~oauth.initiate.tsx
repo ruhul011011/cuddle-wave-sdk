@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/~oauth/initiate")({
   ssr: false,
@@ -53,15 +52,8 @@ function OAuthInitiateCompatibility() {
         // ignore storage failures
       }
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (!cancelled && error) {
-        setMessage(error.message || "Google sign-in failed. Please try again.");
+      if (!cancelled) {
+        window.location.replace(`/api/public/oauth/google?redirect=${encodeURIComponent(sanitizeRedirectPath(search.redirect_uri))}`);
       }
     }
 
