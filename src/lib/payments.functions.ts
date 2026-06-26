@@ -1,7 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
+import type { Database } from "@/integrations/supabase/types";
 
 export type AccessType = "free" | "premium" | "ads" | "mix";
 
@@ -21,16 +23,28 @@ function normalizeAccess(v: string | null | undefined): AccessType {
   return "free";
 }
 
+async function getReadClient() {
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    return supabaseAdmin;
+  }
+
+  return createClient<Database>(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+  });
+}
+
 // Public: read access info + whether current user has purchased.
 export const getMatchAccess = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data }): Promise<MatchAccess> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: row } = await supabaseAdmin
+    const readClient = await getReadClient();
+    const { data: row, error } = await readClient
       .from("match_access")
       .select("fixture_id, access, price_cents, currency, available_from")
       .eq("fixture_id", data.fixtureId)
       .maybeSingle();
+    if (error) throw new Error(error.message);
 
     const access = normalizeAccess(row?.access as string | null | undefined);
     const price_cents = row?.price_cents ?? 0;
@@ -45,10 +59,10 @@ export const getMatchAccess = createServerFn({ method: "GET" })
       const auth = getRequestHeader("authorization") ?? "";
       const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
       if (token) {
-        const { data: userRes } = await supabaseAdmin.auth.getUser(token);
+        const { data: userRes } = await readClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          const { data: purchase } = await supabaseAdmin
+          const { data: purchase } = await readClient
             .from("match_purchases")
             .select("id")
             .eq("user_id", uid)
