@@ -40,9 +40,12 @@ export type StreamRow = {
 //  - premium → all links hidden unless the caller purchased
 //  - mix   → free/ads links visible; premium links hidden unless purchased
 export const getStreamsForFixture = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
-  .handler(async ({ data }) => {
+  .handler(async ({ data, context }) => {
     const supabaseAdmin = await getReadClient();
+    const callerUserId = context.userId;
+
 
 
     const { data: acc } = await supabaseAdmin
