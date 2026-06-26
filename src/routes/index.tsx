@@ -197,14 +197,6 @@ function Index() {
                     <p className="mt-3 max-w-md text-sm text-muted-foreground">
                       Real-time fixtures, live scores and HD streams powered by API-Football.
                     </p>
-                    <div className="mt-5 flex flex-wrap gap-3">
-                      <Link to="/live" className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors">
-                        <Play className="h-4 w-4 fill-current" /> Watch Live ({live.length})
-                      </Link>
-                      <Link to="/schedule" className="inline-flex items-center gap-2 rounded-lg border border-border/80 bg-card/60 px-5 py-2.5 text-sm font-semibold hover:bg-secondary transition-colors">
-                        <Calendar className="h-4 w-4" /> Fixtures
-                      </Link>
-                    </div>
                   </div>
                   <div className="hidden sm:block font-display text-7xl lg:text-8xl text-primary/90 leading-none">
                     {live.length}
