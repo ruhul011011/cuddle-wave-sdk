@@ -43,12 +43,16 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
   .handler(async ({ data, context }) => {
-    const supabaseAdmin = await getReadClient();
+    // Use the authenticated Supabase client from the request context.
+    // On the VPS there is often no SUPABASE_SERVICE_ROLE_KEY, so a fresh
+    // server-side anon client cannot read auth-only RLS policies even after
+    // the user signs in. context.supabase carries the user's bearer token.
+    const supabase = context.supabase;
     const callerUserId = context.userId;
 
 
 
-    const { data: acc } = await supabaseAdmin
+    const { data: acc } = await supabase
       .from("match_access")
       .select("access, available_from")
       .eq("fixture_id", data.fixtureId)
@@ -69,7 +73,7 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     // Resolve caller purchase status (all callers are authenticated here).
     let hasPurchase = false;
     if (access === "premium" || access === "mix") {
-      const { data: purchase } = await supabaseAdmin
+      const { data: purchase } = await supabase
         .from("match_purchases")
         .select("id")
         .eq("user_id", callerUserId)
@@ -83,7 +87,7 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
     // Premium fixture: zero links until purchase.
     if (access === "premium" && !hasPurchase) return [] as StreamRow[];
 
-    const { data: rows, error } = await supabaseAdmin
+    const { data: rows, error } = await supabase
       .from("match_streams")
       .select("id, fixture_id, label, stream_type, quality, url, is_active, link_mode")
       .eq("fixture_id", data.fixtureId)
@@ -97,16 +101,16 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
       result = result.filter((r) => r.link_mode !== "premium");
     }
 
-    // Replace raw upstream URLs with short-lived signed proxy URLs so the
-    // real source never reaches the browser. On self-hosted installs where
-    // STREAM_SIGNING_SECRET has not been added yet, keep the free stream URL
-    // instead of failing the whole query — otherwise the watch button disappears.
-    const { signStreamId } = await import("@/lib/stream-sign.server");
+    // Replace raw upstream URLs with short-lived encrypted proxy URLs so the
+    // real source never reaches the browser. We sign the upstream URL here
+    // instead of only signing the stream row ID because media requests do not
+    // include the user's Authorization header and many VPS installs do not
+    // have a service-role key for a second DB lookup inside /api/stream/*.
+    const { signUpstream } = await import("@/lib/stream-sign.server");
     result = result.map((r) => {
       if (r.stream_type === "iframe") return r;
       try {
-        const { exp, sig } = signStreamId(r.id);
-        return { ...r, url: `/api/stream/${r.id}?exp=${exp}&sig=${encodeURIComponent(sig)}` };
+        return { ...r, url: `/api/stream/seg?${signUpstream(r.url)}` };
       } catch (error) {
         console.warn("Stream signing unavailable; using direct stream URL", error);
         return r;
