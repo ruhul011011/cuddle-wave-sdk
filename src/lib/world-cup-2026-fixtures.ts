@@ -88,6 +88,28 @@ const RAW_WORLD_CUP_2026 = `
 1561329|2026-06-28T19:00:00+00:00|South Africa|Canada|SoFi Stadium
 `.trim();
 
+// ISO 3166-1 alpha-2 codes powering flagcdn.com fallback logos.
+// Used when api-football is unavailable (e.g. self-hosted VPS without API key).
+const TEAM_FLAG_CODES: Record<string, string> = {
+  "Mexico": "mx", "South Africa": "za", "South Korea": "kr", "Czechia": "cz",
+  "Canada": "ca", "Bosnia & Herzegovina": "ba", "USA": "us", "Paraguay": "py",
+  "Qatar": "qa", "Switzerland": "ch", "Brazil": "br", "Morocco": "ma",
+  "Haiti": "ht", "Scotland": "gb-sct", "Australia": "au", "Türkiye": "tr",
+  "Germany": "de", "Curaçao": "cw", "Netherlands": "nl", "Japan": "jp",
+  "Ivory Coast": "ci", "Ecuador": "ec", "Sweden": "se", "Tunisia": "tn",
+  "Spain": "es", "Cape Verde Islands": "cv", "Belgium": "be", "Egypt": "eg",
+  "Saudi Arabia": "sa", "Uruguay": "uy", "Iran": "ir", "New Zealand": "nz",
+  "France": "fr", "Senegal": "sn", "Iraq": "iq", "Norway": "no",
+  "Argentina": "ar", "Algeria": "dz", "Austria": "at", "Jordan": "jo",
+  "Portugal": "pt", "Congo DR": "cd", "England": "gb-eng", "Croatia": "hr",
+  "Ghana": "gh", "Panama": "pa", "Uzbekistan": "uz", "Colombia": "co",
+};
+
+function flagUrl(team: string): string {
+  const code = TEAM_FLAG_CODES[team];
+  return code ? `https://flagcdn.com/w80/${code}.png` : "";
+}
+
 const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.split("\n")
   .map((line) => {
     const [id, kickoff, homeTeam, awayTeam, venue] = line.split("|");
@@ -98,8 +120,8 @@ const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.sp
       leagueCountry: "World",
       homeTeam,
       awayTeam,
-      homeLogo: "",
-      awayLogo: "",
+      homeLogo: flagUrl(homeTeam),
+      awayLogo: flagUrl(awayTeam),
       kickoff,
       status: "upcoming" as const,
       venue,
