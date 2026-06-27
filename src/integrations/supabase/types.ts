@@ -463,6 +463,36 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_grant_premium: {
+        Args: { _months: number; _plan?: string; _user_id: string }
+        Returns: {
+          created_at: string
+          current_period_end: string | null
+          id: string
+          plan: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscriptions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_subscriptions: {
+        Args: never
+        Returns: {
+          current_period_end: string
+          email: string
+          plan: string
+          status: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      admin_revoke_premium: { Args: { _user_id: string }; Returns: undefined }
       get_visible_streams: {
         Args: { _fixture_id: number }
         Returns: {
@@ -476,6 +506,7 @@ export type Database = {
           url: string
         }[]
       }
+      has_active_subscription: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
