@@ -128,6 +128,18 @@ function AuthPage() {
             </div>
           ) : null}
 
+          {notice ? (
+            <div
+              className={
+                notice.kind === "success"
+                  ? "mb-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400"
+                  : "mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              }
+            >
+              {notice.text}
+            </div>
+          ) : null}
+
           <button
             onClick={handleGoogle}
             disabled={busy}
@@ -151,10 +163,17 @@ function AuthPage() {
             <div>
               <label className="text-xs uppercase tracking-wider text-muted-foreground">Password</label>
               <input
-                type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
+                type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 w-full input-base bg-background"
+                placeholder="At least 8 characters"
               />
+              {mode === "signup" ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use 8+ characters. Avoid common passwords like "123456" or "password".
+                </p>
+              ) : null}
             </div>
+
             <button
               type="submit" disabled={busy}
               className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
