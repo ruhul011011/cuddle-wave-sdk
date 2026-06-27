@@ -41,6 +41,7 @@ import { Route as AuthenticatedAdminSupportRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminSubscriptionsRouteImport } from './routes/_authenticated/admin.subscriptions'
 import { Route as AuthenticatedAdminStripeWebhooksRouteImport } from './routes/_authenticated/admin.stripe-webhooks'
 import { Route as AuthenticatedAdminRatingsRouteImport } from './routes/_authenticated/admin.ratings'
+import { Route as AuthenticatedAdminPremiumUsersRouteImport } from './routes/_authenticated/admin.premium-users'
 import { Route as AuthenticatedAdminNotificationRouteImport } from './routes/_authenticated/admin.notification'
 import { Route as AuthenticatedAdminLiveMatchesRouteImport } from './routes/_authenticated/admin.live-matches'
 import { Route as AuthenticatedAdminInsightsRouteImport } from './routes/_authenticated/admin.insights'
@@ -219,6 +220,12 @@ const AuthenticatedAdminRatingsRoute =
     path: '/ratings',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminPremiumUsersRoute =
+  AuthenticatedAdminPremiumUsersRouteImport.update({
+    id: '/premium-users',
+    path: '/premium-users',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminNotificationRoute =
   AuthenticatedAdminNotificationRouteImport.update({
     id: '/notification',
@@ -290,6 +297,7 @@ export interface FileRoutesByFullPath {
   '/admin/insights': typeof AuthenticatedAdminInsightsRoute
   '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/admin/notification': typeof AuthenticatedAdminNotificationRoute
+  '/admin/premium-users': typeof AuthenticatedAdminPremiumUsersRoute
   '/admin/ratings': typeof AuthenticatedAdminRatingsRoute
   '/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
@@ -330,6 +338,7 @@ export interface FileRoutesByTo {
   '/admin/insights': typeof AuthenticatedAdminInsightsRoute
   '/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/admin/notification': typeof AuthenticatedAdminNotificationRoute
+  '/admin/premium-users': typeof AuthenticatedAdminPremiumUsersRoute
   '/admin/ratings': typeof AuthenticatedAdminRatingsRoute
   '/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
@@ -373,6 +382,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/insights': typeof AuthenticatedAdminInsightsRoute
   '/_authenticated/admin/live-matches': typeof AuthenticatedAdminLiveMatchesRoute
   '/_authenticated/admin/notification': typeof AuthenticatedAdminNotificationRoute
+  '/_authenticated/admin/premium-users': typeof AuthenticatedAdminPremiumUsersRoute
   '/_authenticated/admin/ratings': typeof AuthenticatedAdminRatingsRoute
   '/_authenticated/admin/stripe-webhooks': typeof AuthenticatedAdminStripeWebhooksRoute
   '/_authenticated/admin/subscriptions': typeof AuthenticatedAdminSubscriptionsRoute
@@ -416,6 +426,7 @@ export interface FileRouteTypes {
     | '/admin/insights'
     | '/admin/live-matches'
     | '/admin/notification'
+    | '/admin/premium-users'
     | '/admin/ratings'
     | '/admin/stripe-webhooks'
     | '/admin/subscriptions'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/admin/insights'
     | '/admin/live-matches'
     | '/admin/notification'
+    | '/admin/premium-users'
     | '/admin/ratings'
     | '/admin/stripe-webhooks'
     | '/admin/subscriptions'
@@ -498,6 +510,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/insights'
     | '/_authenticated/admin/live-matches'
     | '/_authenticated/admin/notification'
+    | '/_authenticated/admin/premium-users'
     | '/_authenticated/admin/ratings'
     | '/_authenticated/admin/stripe-webhooks'
     | '/_authenticated/admin/subscriptions'
@@ -766,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminRatingsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/premium-users': {
+      id: '/_authenticated/admin/premium-users'
+      path: '/premium-users'
+      fullPath: '/admin/premium-users'
+      preLoaderRoute: typeof AuthenticatedAdminPremiumUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/notification': {
       id: '/_authenticated/admin/notification'
       path: '/notification'
@@ -833,6 +853,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminInsightsRoute: typeof AuthenticatedAdminInsightsRoute
   AuthenticatedAdminLiveMatchesRoute: typeof AuthenticatedAdminLiveMatchesRoute
   AuthenticatedAdminNotificationRoute: typeof AuthenticatedAdminNotificationRoute
+  AuthenticatedAdminPremiumUsersRoute: typeof AuthenticatedAdminPremiumUsersRoute
   AuthenticatedAdminRatingsRoute: typeof AuthenticatedAdminRatingsRoute
   AuthenticatedAdminStripeWebhooksRoute: typeof AuthenticatedAdminStripeWebhooksRoute
   AuthenticatedAdminSubscriptionsRoute: typeof AuthenticatedAdminSubscriptionsRoute
@@ -855,6 +876,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminInsightsRoute: AuthenticatedAdminInsightsRoute,
   AuthenticatedAdminLiveMatchesRoute: AuthenticatedAdminLiveMatchesRoute,
   AuthenticatedAdminNotificationRoute: AuthenticatedAdminNotificationRoute,
+  AuthenticatedAdminPremiumUsersRoute: AuthenticatedAdminPremiumUsersRoute,
   AuthenticatedAdminRatingsRoute: AuthenticatedAdminRatingsRoute,
   AuthenticatedAdminStripeWebhooksRoute: AuthenticatedAdminStripeWebhooksRoute,
   AuthenticatedAdminSubscriptionsRoute: AuthenticatedAdminSubscriptionsRoute,
