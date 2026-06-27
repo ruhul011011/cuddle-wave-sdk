@@ -39,6 +39,18 @@ async function getReadClient() {
   );
 }
 
+async function getUserClient(token: string) {
+  const { getServerEnv } = await import("@/lib/env.server");
+  return createClient<Database>(
+    getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL")!,
+    getServerEnv("SUPABASE_PUBLISHABLE_KEY") ?? getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY")!,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    },
+  );
+}
+
 // Public: read access info + whether current user has purchased.
 export const getMatchAccess = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
@@ -64,14 +76,25 @@ export const getMatchAccess = createServerFn({ method: "GET" })
       const auth = getRequestHeader("authorization") ?? "";
       const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
       if (token) {
-        const { data: userRes } = await readClient.auth.getUser(token);
+        const userClient = await getUserClient(token);
+        const { data: userRes } = await userClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          const { data: sub } = await readClient.rpc("has_active_subscription", { _user_id: uid });
-          if (sub === true) {
+          const { data: subscription } = await userClient
+            .from("subscriptions")
+            .select("id, current_period_end")
+            .eq("user_id", uid)
+            .eq("status", "active")
+            .neq("plan", "free")
+            .maybeSingle();
+
+          if (
+            subscription &&
+            (!subscription.current_period_end || new Date(subscription.current_period_end).getTime() > Date.now())
+          ) {
             hasAccess = true;
           } else {
-            const { data: purchase } = await readClient
+            const { data: purchase } = await userClient
               .from("match_purchases")
               .select("id")
               .eq("user_id", uid)
@@ -129,7 +152,8 @@ export const createMatchCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number().int().positive() }).parse(input))
   .handler(async ({ data, context }) => {
-    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+    const { getServerEnv } = await import("@/lib/env.server");
+    const stripeKey = getServerEnv("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe is not configured");
     if (!/^sk_(test|live)_/.test(stripeKey) && !/^rk_(test|live)_/.test(stripeKey)) {
       throw new Error(
@@ -201,7 +225,8 @@ export const createPlanCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ planId: z.enum(["1m", "3m", "6m", "12m"]) }).parse(input))
   .handler(async ({ data, context }) => {
-    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+    const { getServerEnv } = await import("@/lib/env.server");
+    const stripeKey = getServerEnv("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe is not configured");
     if (!/^sk_(test|live)_/.test(stripeKey) && !/^rk_(test|live)_/.test(stripeKey)) {
       throw new Error(
