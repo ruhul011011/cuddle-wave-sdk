@@ -310,24 +310,33 @@ export const submitClientQuery = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { getRequestHeader } = await import("@tanstack/react-start/server");
     const { createClient } = await import("@supabase/supabase-js");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    let userId: string | null = null;
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    if (!url || !anonKey) {
+      throw new Error("Server is not configured. Please try again later.");
+    }
+
+    // If the visitor is signed in, forward their bearer token so user_id is recorded.
     const authHeader = getRequestHeader("authorization") ?? getRequestHeader("Authorization");
     const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
-    if (token && process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) {
-      const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_PUBLISHABLE_KEY, {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
+
+    const client = createClient(url, anonKey, {
+      global: token ? { headers: { Authorization: `Bearer ${token}` } } : undefined,
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    let userId: string | null = null;
+    if (token) {
       const { data: u } = await client.auth.getUser();
       userId = u.user?.id ?? null;
     }
 
-    const { error } = await supabaseAdmin.from("client_queries").insert({ ...data, user_id: userId });
+    const { error } = await client.from("client_queries").insert({ ...data, user_id: userId });
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 export const listClientQueries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
