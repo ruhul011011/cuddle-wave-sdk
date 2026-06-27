@@ -67,16 +67,22 @@ export const getMatchAccess = createServerFn({ method: "GET" })
         const { data: userRes } = await readClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          const { data: purchase } = await readClient
-            .from("match_purchases")
-            .select("id")
-            .eq("user_id", uid)
-            .eq("fixture_id", data.fixtureId)
-            .eq("status", "paid")
-            .maybeSingle();
-          hasAccess = Boolean(purchase);
+          const { data: sub } = await readClient.rpc("has_active_subscription", { _user_id: uid });
+          if (sub === true) {
+            hasAccess = true;
+          } else {
+            const { data: purchase } = await readClient
+              .from("match_purchases")
+              .select("id")
+              .eq("user_id", uid)
+              .eq("fixture_id", data.fixtureId)
+              .eq("status", "paid")
+              .maybeSingle();
+            hasAccess = Boolean(purchase);
+          }
         }
       }
+
     }
 
     return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess, available_from, isAvailable };
