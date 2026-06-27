@@ -28,32 +28,53 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<{ kind: "success" | "error"; text: string } | null>(null);
 
   function goBack() {
-    // Use window.location for arbitrary paths (incl. dynamic ones) returned from the gate
     window.location.assign(redirectTo);
+  }
+
+  function friendlyError(msg: string): string {
+    const m = msg.toLowerCase();
+    if (m.includes("pwned") || m.includes("leaked") || m.includes("compromise")) {
+      return "This password has appeared in known data breaches. Please choose a stronger, unique password.";
+    }
+    if (m.includes("weak") || m.includes("password should") || m.includes("password is too")) {
+      return "Password is too weak. Use at least 8 characters with letters and numbers.";
+    }
+    if (m.includes("already registered") || m.includes("already exists") || m.includes("user already")) {
+      return "An account with this email already exists. Try signing in instead.";
+    }
+    return msg;
   }
 
   async function handleEmail(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
+    setNotice(null);
     try {
       if (mode === "signup") {
+        if (password.length < 8) {
+          throw new Error("Password must be at least 8 characters long.");
+        }
         const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: window.location.origin + redirectTo },
         });
         if (error) throw error;
         if (data.session) {
+          setNotice({ kind: "success", text: "Account Created — welcome to FootyStream!" });
           toast.success("Account Created", { description: "Welcome to FootyStream!" });
-          setTimeout(goBack, 1200);
+          setTimeout(goBack, 1400);
         } else {
           const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
           if (signInErr) {
+            setNotice({ kind: "success", text: "Account Created — check your email to confirm your account." });
             toast.success("Account Created", { description: "Check your email to confirm your account." });
           } else {
+            setNotice({ kind: "success", text: "Account Created — welcome to FootyStream!" });
             toast.success("Account Created", { description: "Welcome to FootyStream!" });
-            setTimeout(goBack, 1200);
+            setTimeout(goBack, 1400);
           }
         }
       } else {
@@ -63,11 +84,15 @@ function AuthPage() {
         goBack();
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Authentication failed");
+      const raw = err instanceof Error ? err.message : "Authentication failed";
+      const friendly = friendlyError(raw);
+      setNotice({ kind: "error", text: friendly });
+      toast.error(friendly);
     } finally {
       setBusy(false);
     }
   }
+
 
   async function handleGoogle() {
     setBusy(true);
@@ -103,6 +128,18 @@ function AuthPage() {
             </div>
           ) : null}
 
+          {notice ? (
+            <div
+              className={
+                notice.kind === "success"
+                  ? "mb-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-400"
+                  : "mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+              }
+            >
+              {notice.text}
+            </div>
+          ) : null}
+
           <button
             onClick={handleGoogle}
             disabled={busy}
@@ -126,10 +163,17 @@ function AuthPage() {
             <div>
               <label className="text-xs uppercase tracking-wider text-muted-foreground">Password</label>
               <input
-                type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)}
+                type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)}
                 className="mt-1 w-full input-base bg-background"
+                placeholder="At least 8 characters"
               />
+              {mode === "signup" ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Use 8+ characters. Avoid common passwords like "123456" or "password".
+                </p>
+              ) : null}
             </div>
+
             <button
               type="submit" disabled={busy}
               className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
