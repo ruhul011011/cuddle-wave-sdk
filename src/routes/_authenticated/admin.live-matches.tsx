@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin/live-matches")({
 });
 
 type LinkMode = "free" | "premium" | "ads";
-type AccessType = "free" | "premium" | "ads" | "mix";
+type AccessType = "free" | "premium" | "ads" | "mix" | "preview";
 
 type LinkRow = {
   url: string;
@@ -39,12 +39,13 @@ const todayISO = () => {
 const ACCESS_LABEL: Record<AccessType, string> = {
   free: "Free",
   premium: "Premium (paywall only)",
+  preview: "Premium (2 minute Preview)",
   ads: "With ads",
   mix: "Mix (per-link gating)",
 };
 
 function defaultLinkModeFor(access: AccessType): LinkMode {
-  if (access === "premium") return "premium";
+  if (access === "premium" || access === "preview") return "premium";
   if (access === "ads") return "ads";
   return "free"; // free or mix → start as free
 }
@@ -373,6 +374,7 @@ function AdminLiveMatchesPage() {
           >
             <option value="free">{ACCESS_LABEL.free}</option>
             <option value="premium">{ACCESS_LABEL.premium}</option>
+            <option value="preview">{ACCESS_LABEL.preview}</option>
             <option value="ads">{ACCESS_LABEL.ads}</option>
             <option value="mix">{ACCESS_LABEL.mix}</option>
           </select>

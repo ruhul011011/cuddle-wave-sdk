@@ -202,7 +202,7 @@ export type AdminMatchGroup = {
   premium_count: number;
   ads_count: number;
   free_count: number;
-  access: "free" | "premium" | "ads" | "mix";
+  access: "free" | "premium" | "ads" | "mix" | "preview";
   price_cents: number;
   currency: string;
   available_from: string | null;
@@ -260,7 +260,7 @@ export const listAdminMatchGroups = createServerFn({ method: "GET" })
         const raw = (a.access ?? "free") as string;
         g.access =
           raw === "paid" ? "premium"
-          : raw === "premium" || raw === "ads" || raw === "mix" ? raw
+          : raw === "premium" || raw === "ads" || raw === "mix" || raw === "preview" ? raw
           : "free";
         g.price_cents = a.price_cents ?? 0;
         g.currency = a.currency ?? "usd";

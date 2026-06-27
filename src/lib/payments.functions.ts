@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
 import type { Database } from "@/integrations/supabase/types";
 
-export type AccessType = "free" | "premium" | "ads" | "mix";
+export type AccessType = "free" | "premium" | "ads" | "mix" | "preview";
 
 export type MatchAccess = {
   fixture_id: number;
@@ -15,11 +15,12 @@ export type MatchAccess = {
   hasAccess: boolean;
   available_from: string | null;
   isAvailable: boolean;
+  previewSeconds?: number;
 };
 
 function normalizeAccess(v: string | null | undefined): AccessType {
   if (v === "paid") return "premium";
-  if (v === "premium" || v === "ads" || v === "mix") return v;
+  if (v === "premium" || v === "ads" || v === "mix" || v === "preview") return v;
   return "free";
 }
 
@@ -70,7 +71,7 @@ export const getMatchAccess = createServerFn({ method: "GET" })
     const isAvailable = !available_from || new Date(available_from).getTime() <= Date.now();
 
     // Determine signed-in user from bearer token (optional).
-    const gated = access === "premium";
+    const gated = access === "premium" || access === "preview";
     let hasAccess = !gated;
     if (gated) {
       const auth = getRequestHeader("authorization") ?? "";
@@ -108,7 +109,8 @@ export const getMatchAccess = createServerFn({ method: "GET" })
 
     }
 
-    return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess, available_from, isAvailable };
+    const previewSeconds = access === "preview" ? 120 : undefined;
+    return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess, available_from, isAvailable, previewSeconds };
   });
 
 // Admin: upsert access for a fixture.
@@ -117,7 +119,7 @@ export const setMatchAccess = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
       fixture_id: z.number().int().positive(),
-      access: z.enum(["free", "premium", "ads", "mix"]),
+      access: z.enum(["free", "premium", "ads", "mix", "preview"]),
       price_cents: z.number().int().min(0).default(0),
       currency: z.string().min(3).max(3).default("usd"),
       available_from: z.string().datetime().nullable().optional(),

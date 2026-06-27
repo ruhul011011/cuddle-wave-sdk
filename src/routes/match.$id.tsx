@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
@@ -73,6 +73,7 @@ function MatchPage() {
   });
   const access = accessResult.data;
   const isAuthed = Boolean(session);
+  const isPreviewMode = access?.access === "preview" && !access.hasAccess;
   const streamsResult = useQuery({
     ...streamsQuery(id),
     // Streams require authentication; wait for session restore to avoid 401s.
@@ -111,6 +112,25 @@ function MatchPage() {
     () => streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url })),
     [streams],
   );
+
+  // 2-minute preview countdown for "preview" access type users without a sub.
+  const previewSeconds = isPreviewMode ? (access?.previewSeconds ?? 120) : 0;
+  const [previewLeft, setPreviewLeft] = useState<number>(previewSeconds);
+  useEffect(() => {
+    if (!isPreviewMode) return;
+    setPreviewLeft(previewSeconds);
+    if (playerSources.length === 0) return;
+    const startedAt = Date.now();
+    const t = setInterval(() => {
+      const remaining = Math.max(0, previewSeconds - Math.floor((Date.now() - startedAt) / 1000));
+      setPreviewLeft(remaining);
+      if (remaining <= 0) clearInterval(t);
+    }, 500);
+    return () => clearInterval(t);
+  }, [isPreviewMode, previewSeconds, playerSources.length]);
+  const previewExpired = isPreviewMode && previewLeft <= 0 && playerSources.length > 0;
+
+
 
 
 
@@ -207,11 +227,42 @@ function MatchPage() {
                 View plans to unlock
               </Link>
             </div>
+          ) : previewExpired ? (
+            <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+                <Lock className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-2xl">Preview ended</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Your free 2-minute preview is over. Choose a plan to keep watching the full match.
+              </p>
+              <Link
+                to="/pricing"
+                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+              >
+                <Lock className="h-4 w-4" />
+                View plans to continue
+              </Link>
+            </div>
           ) : (
             <div className="space-y-3">
               {showAdsNotice && (
                 <div className="rounded-lg border border-border/60 bg-card/60 px-4 py-2 text-xs uppercase tracking-wider text-muted-foreground">
                   Ad-supported stream — playback may include ads.
+                </div>
+              )}
+              {isPreviewMode && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3 text-sm">
+                  <span className="text-muted-foreground">
+                    Free preview — <span className="font-display text-foreground">{Math.floor(previewLeft / 60)}:{String(previewLeft % 60).padStart(2, "0")}</span> remaining. Subscribe to keep watching.
+                  </span>
+                  <Link
+                    to="/pricing"
+                    className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                  >
+                    <Lock className="h-3.5 w-3.5" />
+                    View plans
+                  </Link>
                 </div>
               )}
               {isMixLocked && (
