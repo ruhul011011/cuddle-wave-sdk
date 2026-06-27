@@ -135,7 +135,7 @@ export const listAuthUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const { users } = await adminListUsers(1000);
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
     const roleMap = new Map<string, string[]>();
     for (const r of roles ?? []) {
@@ -143,7 +143,7 @@ export const listAuthUsers = createServerFn({ method: "GET" })
       arr.push(r.role);
       roleMap.set(r.user_id, arr);
     }
-    return ((data as any)?.users ?? []).map((u: any) => ({
+    return users.map((u) => ({
       id: u.id,
       email: u.email,
       created_at: u.created_at,
