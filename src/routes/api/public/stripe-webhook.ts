@@ -63,6 +63,15 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           return new Response(`Invalid signature: ${msg}`, { status: 400 });
         }
 
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: alreadyProcessed } = await supabaseAdmin
+          .from("stripe_webhook_logs")
+          .select("id")
+          .eq("event_id", event.id)
+          .eq("status", "processed")
+          .maybeSingle();
+        if (alreadyProcessed) return new Response("ok", { status: 200 });
+
         if (event.type === "checkout.session.completed") {
           const session = event.data.object as Stripe.Checkout.Session;
           const fixtureIdRaw = session.metadata?.fixture_id;
@@ -72,7 +81,6 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           const fixtureId = fixtureIdRaw ? Number(fixtureIdRaw) : NaN;
 
           if (userId && planId && Number.isFinite(planMonths) && planMonths > 0 && session.payment_status === "paid") {
-            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             const { data: existing } = await supabaseAdmin
               .from("subscriptions")
               .select("current_period_end")
@@ -119,7 +127,6 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
               });
             }
           } else if (userId && Number.isFinite(fixtureId) && session.payment_status === "paid") {
-            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             const { error } = await supabaseAdmin.from("match_purchases").upsert(
               {
                 user_id: userId,
