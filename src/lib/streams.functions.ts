@@ -260,7 +260,7 @@ export const listAdminMatchGroups = createServerFn({ method: "GET" })
         const raw = (a.access ?? "free") as string;
         g.access =
           raw === "paid" ? "premium"
-          : raw === "premium" || raw === "ads" || raw === "mix" ? raw
+          : raw === "premium" || raw === "ads" || raw === "mix" || raw === "preview" ? raw
           : "free";
         g.price_cents = a.price_cents ?? 0;
         g.currency = a.currency ?? "usd";
