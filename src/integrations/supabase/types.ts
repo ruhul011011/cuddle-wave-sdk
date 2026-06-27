@@ -483,6 +483,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_app_users: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          last_sign_in_at: string
+        }[]
+      }
       refresh_active_stream_fixture: {
         Args: { _fixture_id: number }
         Returns: undefined
