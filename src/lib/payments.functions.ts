@@ -151,7 +151,8 @@ export const createMatchCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ fixtureId: z.number().int().positive() }).parse(input))
   .handler(async ({ data, context }) => {
-    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+    const { getServerEnv } = await import("@/lib/env.server");
+    const stripeKey = getServerEnv("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe is not configured");
     if (!/^sk_(test|live)_/.test(stripeKey) && !/^rk_(test|live)_/.test(stripeKey)) {
       throw new Error(
@@ -223,7 +224,8 @@ export const createPlanCheckout = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input) => z.object({ planId: z.enum(["1m", "3m", "6m", "12m"]) }).parse(input))
   .handler(async ({ data, context }) => {
-    const stripeKey = process.env.STRIPE_SECRET_KEY?.trim();
+    const { getServerEnv } = await import("@/lib/env.server");
+    const stripeKey = getServerEnv("STRIPE_SECRET_KEY");
     if (!stripeKey) throw new Error("Stripe is not configured");
     if (!/^sk_(test|live)_/.test(stripeKey) && !/^rk_(test|live)_/.test(stripeKey)) {
       throw new Error(

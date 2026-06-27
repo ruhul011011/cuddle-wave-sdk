@@ -5,8 +5,9 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const secret = process.env.STRIPE_SECRET_KEY;
-        const whSecret = process.env.STRIPE_WEBHOOK_SECRET;
+        const { getServerEnv } = await import("@/lib/env.server");
+        const secret = getServerEnv("STRIPE_SECRET_KEY");
+        const whSecret = getServerEnv("STRIPE_WEBHOOK_SECRET");
 
         const logEntry = async (entry: {
           status: string;
