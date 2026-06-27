@@ -45,16 +45,15 @@ function AuthPage() {
         });
         if (error) throw error;
         if (data.session) {
-          toast.success("Account created!");
-          goBack();
+          toast.success("Account Created", { description: "Welcome to FootyStream!" });
+          setTimeout(goBack, 1200);
         } else {
-          // Auto-confirm may be on but session not returned — try signing in directly
           const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
           if (signInErr) {
-            toast.success("Check your email to confirm your account.");
+            toast.success("Account Created", { description: "Check your email to confirm your account." });
           } else {
-            toast.success("Account created!");
-            goBack();
+            toast.success("Account Created", { description: "Welcome to FootyStream!" });
+            setTimeout(goBack, 1200);
           }
         }
       } else {
