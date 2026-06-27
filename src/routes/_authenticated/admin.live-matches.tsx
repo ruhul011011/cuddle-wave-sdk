@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_authenticated/admin/live-matches")({
 });
 
 type LinkMode = "free" | "premium" | "ads";
-type AccessType = "free" | "premium" | "ads" | "mix";
+type AccessType = "free" | "premium" | "ads" | "mix" | "preview";
 
 type LinkRow = {
   url: string;
