@@ -55,7 +55,7 @@ export const getAdminStats = createServerFn({ method: "GET" })
         supabaseAdmin.from("notifications").select("id", { count: "exact", head: true }),
       ]);
 
-    const { total: totalUsers } = await adminListUsers(1000);
+    const { total: totalUsers } = await adminListUsers(context);
 
     const { count: adminCount } = await supabaseAdmin
       .from("user_roles")
@@ -111,7 +111,7 @@ export const getSignupSeries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { users } = await adminListUsers(1000);
+    const { users } = await adminListUsers(context);
     const buckets: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(Date.now() - i * 86400000);
@@ -130,7 +130,7 @@ export const listAuthUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { users } = await adminListUsers(1000);
+    const { users } = await adminListUsers(context);
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
     const roleMap = new Map<string, string[]>();
     for (const r of roles ?? []) {
