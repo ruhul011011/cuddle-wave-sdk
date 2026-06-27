@@ -6,6 +6,7 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
+import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
@@ -234,6 +235,8 @@ function Index() {
                 </div>
               ))}
             </FixturesBlock>
+
+            <WorldCup2026Schedule />
           </div>
         </div>
       </main>
@@ -331,6 +334,58 @@ function FixtureRow({ match: m }: { match: Fixture }) {
         </div>
       )}
     </Link>
+  );
+}
+
+function WorldCup2026Schedule() {
+  const nowIso = new Date().toISOString();
+  const all = getWorldCup2026FallbackFixtures();
+  const upcoming = all.filter((m) => m.kickoff >= nowIso).slice(0, 24);
+  if (upcoming.length === 0) return null;
+
+  const grouped = new Map<string, typeof upcoming>();
+  for (const m of upcoming) {
+    const date = new Date(m.kickoff).toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    if (!grouped.has(date)) grouped.set(date, [] as typeof upcoming);
+    grouped.get(date)!.push(m);
+  }
+
+  return (
+    <FixturesBlock
+      icon={<Trophy className="h-5 w-5 text-primary" />}
+      title="World Cup 2026 Schedule"
+      allHref="/world-cup"
+    >
+      {[...grouped.entries()].map(([date, list]) => (
+        <div key={date}>
+          <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
+            <Calendar className="h-4 w-4 text-primary" /> {date}
+          </div>
+          {list.map((m) => (
+            <FixtureRow
+              key={m.id}
+              match={{
+                id: m.id,
+                league: m.league,
+                leagueLogo: m.leagueLogo,
+                leagueCountry: m.leagueCountry,
+                homeTeam: m.homeTeam,
+                awayTeam: m.awayTeam,
+                homeLogo: m.homeLogo,
+                awayLogo: m.awayLogo,
+                kickoff: m.kickoff,
+                status: m.status,
+                venue: m.venue,
+              }}
+            />
+          ))}
+        </div>
+      ))}
+    </FixturesBlock>
   );
 }
 
