@@ -119,7 +119,7 @@ export const setMatchAccess = createServerFn({ method: "POST" })
   .inputValidator((input) =>
     z.object({
       fixture_id: z.number().int().positive(),
-      access: z.enum(["free", "premium", "ads", "mix"]),
+      access: z.enum(["free", "premium", "ads", "mix", "preview"]),
       price_cents: z.number().int().min(0).default(0),
       currency: z.string().min(3).max(3).default("usd"),
       available_from: z.string().datetime().nullable().optional(),
