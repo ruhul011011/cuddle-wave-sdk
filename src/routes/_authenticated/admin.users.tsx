@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_authenticated/admin/users")({
 function UsersPage() {
   const listFn = useServerFn(listAuthUsers);
   const toggleFn = useServerFn(toggleUserAdmin);
-  const q = useQuery({ queryKey: ["admin", "users"], queryFn: () => listFn() });
+  const q = useQuery({ queryKey: ["admin", "users"], queryFn: () => listFn(), retry: false });
   const m = useMutation({
     mutationFn: (v: { user_id: string; make_admin: boolean }) => toggleFn({ data: v }),
     onSuccess: () => { toast.success("Updated"); q.refetch(); },
@@ -23,6 +23,17 @@ function UsersPage() {
     <div className="space-y-6">
       <h1 className="font-display text-3xl">All Users ({q.data?.length ?? 0})</h1>
       <div className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+        {q.isLoading ? (
+          <div className="p-8 text-center text-sm text-muted-foreground">Loading users…</div>
+        ) : q.isError ? (
+          <div className="p-8 text-center text-sm text-destructive">
+            {q.error instanceof Error && q.error.message.toLowerCase().includes("forbidden")
+              ? "Only admin accounts can view users. Sign in with the admin account or grant this Google account admin access."
+              : q.error instanceof Error
+                ? q.error.message
+                : "Could not load users."}
+          </div>
+        ) : (
         <table className="w-full text-sm">
           <thead className="bg-secondary/40 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
@@ -59,7 +70,8 @@ function UsersPage() {
             })}
           </tbody>
         </table>
-        {!q.data?.length && <div className="p-8 text-center text-sm text-muted-foreground">No users.</div>}
+        )}
+        {!q.isLoading && !q.isError && !q.data?.length && <div className="p-8 text-center text-sm text-muted-foreground">No users.</div>}
       </div>
     </div>
   );
