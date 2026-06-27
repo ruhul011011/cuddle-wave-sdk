@@ -119,24 +119,9 @@ export function StreamPlayer({ sources, poster, isLive, placeholder }: Props) {
     };
   }, [sources]);
 
-  useEffect(() => {
-    if (!started || !selected || sources.length < 2) return;
-    const shouldSwitch = diagnostics.stallState === "offline" || diagnostics.retryCount >= 2;
-    if (!shouldSwitch) return;
-
-    failedSourceIdsRef.current.add(selected.id);
-    const next =
-      sources.find((s) => s.id !== selected.id && !failedSourceIdsRef.current.has(s.id)) ??
-      sources.find((s) => s.id !== selected.id);
-    if (!next) return;
-
-    const timer = window.setTimeout(() => {
-      setSelectedId(next.id);
-      setLoading(true);
-      setDiagnostics(INITIAL_DIAGNOSTICS);
-    }, 800);
-    return () => window.clearTimeout(timer);
-  }, [diagnostics.retryCount, diagnostics.stallState, selected, sources, started]);
+  // Auto source-switching disabled: transient stalls during long playback were
+  // incorrectly hopping users between servers. The engine still auto-retries
+  // the current source; users can manually pick another server from the pill bar.
 
   if (!selected) {
     return (
