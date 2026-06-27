@@ -345,10 +345,12 @@ function WorldCup2026Schedule() {
 
   const grouped = new Map<string, typeof upcoming>();
   for (const m of upcoming) {
-    const date = new Date(m.kickoff).toLocaleDateString(undefined, {
+    const d = new Date(m.kickoff);
+    const date = d.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
+      timeZone: "UTC",
     });
     if (!grouped.has(date)) grouped.set(date, [] as typeof upcoming);
     grouped.get(date)!.push(m);
