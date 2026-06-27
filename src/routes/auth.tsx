@@ -39,12 +39,24 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: window.location.origin + redirectTo },
         });
         if (error) throw error;
-        toast.success("Check your email to confirm your account.");
+        if (data.session) {
+          toast.success("Account created!");
+          goBack();
+        } else {
+          // Auto-confirm may be on but session not returned — try signing in directly
+          const { error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+          if (signInErr) {
+            toast.success("Check your email to confirm your account.");
+          } else {
+            toast.success("Account created!");
+            goBack();
+          }
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
