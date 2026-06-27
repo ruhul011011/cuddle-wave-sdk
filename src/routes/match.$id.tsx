@@ -61,11 +61,17 @@ export const Route = createFileRoute("/match/$id")({
 
 function MatchPage() {
   const { id } = Route.useParams();
+  const { session, loading: authLoading } = useAuth();
   // Fixture metadata is best-effort: when api-football rate-limits or fails,
   // we still render the player using stream rows from our DB so users can watch.
   const { data: fixtureData } = useQuery(fixtureQuery(id));
-  const { data: access } = useQuery(accessQuery(id));
-  const { session, loading: authLoading } = useAuth();
+  const accessResult = useQuery({
+    ...accessQuery(id),
+    queryKey: ["match-access", id, session?.user?.id ?? "guest"],
+    enabled: !authLoading,
+    staleTime: 5_000,
+  });
+  const access = accessResult.data;
   const isAuthed = Boolean(session);
   const streamsResult = useQuery({
     ...streamsQuery(id),
@@ -146,7 +152,12 @@ function MatchPage() {
         </div>
 
         <div className="mt-8">
-          {!authLoading && !isAuthed ? (
+          {authLoading || accessResult.isLoading ? (
+            <div className="rounded-2xl border border-border/60 bg-card p-10 text-center">
+              <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="mt-4 text-sm text-muted-foreground">Checking your access…</p>
+            </div>
+          ) : !isAuthed ? (
             <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
                 <LogIn className="h-7 w-7" />

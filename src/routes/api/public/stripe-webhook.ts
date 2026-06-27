@@ -65,10 +65,59 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
         if (event.type === "checkout.session.completed") {
           const session = event.data.object as Stripe.Checkout.Session;
           const fixtureIdRaw = session.metadata?.fixture_id;
+          const planId = session.metadata?.plan_id;
+          const planMonths = Number(session.metadata?.plan_months ?? 0);
           const userId = session.metadata?.user_id;
           const fixtureId = fixtureIdRaw ? Number(fixtureIdRaw) : NaN;
 
-          if (userId && Number.isFinite(fixtureId) && session.payment_status === "paid") {
+          if (userId && planId && Number.isFinite(planMonths) && planMonths > 0 && session.payment_status === "paid") {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const { data: existing } = await supabaseAdmin
+              .from("subscriptions")
+              .select("current_period_end")
+              .eq("user_id", userId)
+              .maybeSingle();
+            const baseDate = existing?.current_period_end && new Date(existing.current_period_end) > new Date()
+              ? new Date(existing.current_period_end)
+              : new Date();
+            baseDate.setMonth(baseDate.getMonth() + planMonths);
+
+            const { error } = await supabaseAdmin.from("subscriptions").upsert(
+              {
+                user_id: userId,
+                plan: "premium",
+                status: "active",
+                current_period_end: baseDate.toISOString(),
+                updated_at: new Date().toISOString(),
+              },
+              { onConflict: "user_id" },
+            );
+            if (error) {
+              await logEntry({
+                status: "db_error",
+                message: error.message,
+                event_id: event.id,
+                event_type: event.type,
+                user_id: userId,
+                stripe_session_id: session.id,
+                amount_cents: session.amount_total ?? null,
+                currency: session.currency ?? null,
+                payload: event,
+              });
+            } else {
+              await logEntry({
+                status: "processed",
+                message: `Premium plan recorded: ${planId}`,
+                event_id: event.id,
+                event_type: event.type,
+                user_id: userId,
+                stripe_session_id: session.id,
+                amount_cents: session.amount_total ?? null,
+                currency: session.currency ?? null,
+                payload: event,
+              });
+            }
+          } else if (userId && Number.isFinite(fixtureId) && session.payment_status === "paid") {
             const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
             const { error } = await supabaseAdmin.from("match_purchases").upsert(
               {
