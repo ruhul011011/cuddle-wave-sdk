@@ -39,12 +39,13 @@ const todayISO = () => {
 const ACCESS_LABEL: Record<AccessType, string> = {
   free: "Free",
   premium: "Premium (paywall only)",
+  preview: "Premium (2 minute Preview)",
   ads: "With ads",
   mix: "Mix (per-link gating)",
 };
 
 function defaultLinkModeFor(access: AccessType): LinkMode {
-  if (access === "premium") return "premium";
+  if (access === "premium" || access === "preview") return "premium";
   if (access === "ads") return "ads";
   return "free"; // free or mix → start as free
 }
