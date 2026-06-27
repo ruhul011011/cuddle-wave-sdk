@@ -113,6 +113,25 @@ function MatchPage() {
     [streams],
   );
 
+  // 2-minute preview countdown for "preview" access type users without a sub.
+  const previewSeconds = isPreviewMode ? (access?.previewSeconds ?? 120) : 0;
+  const [previewLeft, setPreviewLeft] = useState<number>(previewSeconds);
+  useEffect(() => {
+    if (!isPreviewMode) return;
+    setPreviewLeft(previewSeconds);
+    if (playerSources.length === 0) return;
+    const startedAt = Date.now();
+    const t = setInterval(() => {
+      const remaining = Math.max(0, previewSeconds - Math.floor((Date.now() - startedAt) / 1000));
+      setPreviewLeft(remaining);
+      if (remaining <= 0) clearInterval(t);
+    }, 500);
+    return () => clearInterval(t);
+  }, [isPreviewMode, previewSeconds, playerSources.length]);
+  const previewExpired = isPreviewMode && previewLeft <= 0 && playerSources.length > 0;
+
+
+
 
 
   return (
