@@ -39,6 +39,18 @@ async function getReadClient() {
   );
 }
 
+async function getUserClient(token: string) {
+  const { getServerEnv } = await import("@/lib/env.server");
+  return createClient<Database>(
+    getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL")!,
+    getServerEnv("SUPABASE_PUBLISHABLE_KEY") ?? getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY")!,
+    {
+      global: { headers: { Authorization: `Bearer ${token}` } },
+      auth: { storage: undefined, persistSession: false, autoRefreshToken: false },
+    },
+  );
+}
+
 // Public: read access info + whether current user has purchased.
 export const getMatchAccess = createServerFn({ method: "GET" })
   .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
@@ -64,14 +76,24 @@ export const getMatchAccess = createServerFn({ method: "GET" })
       const auth = getRequestHeader("authorization") ?? "";
       const token = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7) : "";
       if (token) {
-        const { data: userRes } = await readClient.auth.getUser(token);
+        const userClient = await getUserClient(token);
+        const { data: userRes } = await userClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          const { data: sub } = await readClient.rpc("has_active_subscription", { _user_id: uid });
-          if (sub === true) {
+          const nowIso = new Date().toISOString();
+          const { data: subscription } = await userClient
+            .from("subscriptions")
+            .select("id")
+            .eq("user_id", uid)
+            .eq("status", "active")
+            .neq("plan", "free")
+            .or(`current_period_end.is.null,current_period_end.gt.${nowIso}`)
+            .maybeSingle();
+
+          if (subscription) {
             hasAccess = true;
           } else {
-            const { data: purchase } = await readClient
+            const { data: purchase } = await userClient
               .from("match_purchases")
               .select("id")
               .eq("user_id", uid)
