@@ -60,8 +60,7 @@ export const getAdminStats = createServerFn({ method: "GET" })
         supabaseAdmin.from("notifications").select("id", { count: "exact", head: true }),
       ]);
 
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
-    const totalUsers = (userList as any)?.total ?? (userList as any)?.users?.length ?? 0;
+    const { total: totalUsers } = await adminListUsers(1000);
 
     const { count: adminCount } = await supabaseAdmin
       .from("user_roles")
