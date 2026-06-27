@@ -374,6 +374,7 @@ function AdminLiveMatchesPage() {
           >
             <option value="free">{ACCESS_LABEL.free}</option>
             <option value="premium">{ACCESS_LABEL.premium}</option>
+            <option value="preview">{ACCESS_LABEL.preview}</option>
             <option value="ads">{ACCESS_LABEL.ads}</option>
             <option value="mix">{ACCESS_LABEL.mix}</option>
           </select>
