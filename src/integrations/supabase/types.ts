@@ -463,6 +463,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_grant_admin_by_email: { Args: { _email: string }; Returns: string }
       admin_grant_premium: {
         Args: { _months: number; _plan?: string; _user_id: string }
         Returns: {
@@ -481,6 +482,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      admin_list_admins: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          last_sign_in_at: string
+        }[]
+      }
       admin_list_subscriptions: {
         Args: never
         Returns: {
@@ -492,6 +502,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_revoke_admin: { Args: { _user_id: string }; Returns: undefined }
       admin_revoke_premium: { Args: { _user_id: string }; Returns: undefined }
       get_visible_streams: {
         Args: { _fixture_id: number }
