@@ -71,7 +71,7 @@ export const getMatchAccess = createServerFn({ method: "GET" })
     const isAvailable = !available_from || new Date(available_from).getTime() <= Date.now();
 
     // Determine signed-in user from bearer token (optional).
-    const gated = access === "premium";
+    const gated = access === "premium" || access === "preview";
     let hasAccess = !gated;
     if (gated) {
       const auth = getRequestHeader("authorization") ?? "";
@@ -109,7 +109,8 @@ export const getMatchAccess = createServerFn({ method: "GET" })
 
     }
 
-    return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess, available_from, isAvailable };
+    const previewSeconds = access === "preview" ? 120 : undefined;
+    return { fixture_id: data.fixtureId, access, price_cents, currency, hasAccess, available_from, isAvailable, previewSeconds };
   });
 
 // Admin: upsert access for a fixture.
