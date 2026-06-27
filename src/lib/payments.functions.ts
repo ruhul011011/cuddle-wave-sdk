@@ -80,17 +80,18 @@ export const getMatchAccess = createServerFn({ method: "GET" })
         const { data: userRes } = await userClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          const nowIso = new Date().toISOString();
           const { data: subscription } = await userClient
             .from("subscriptions")
-            .select("id")
+            .select("id, current_period_end")
             .eq("user_id", uid)
             .eq("status", "active")
             .neq("plan", "free")
-            .or(`current_period_end.is.null,current_period_end.gt.${nowIso}`)
             .maybeSingle();
 
-          if (subscription) {
+          if (
+            subscription &&
+            (!subscription.current_period_end || new Date(subscription.current_period_end).getTime() > Date.now())
+          ) {
             hasAccess = true;
           } else {
             const { data: purchase } = await userClient
