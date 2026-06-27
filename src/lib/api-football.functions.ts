@@ -219,7 +219,35 @@ export const getLiveFixtures = createServerFn({ method: "GET" }).handler(async (
 export const getFixturesByIds = createServerFn({ method: "GET" })
   .inputValidator((d: { ids: number[] }) => d)
   .handler(async ({ data }) => {
-    return fetchFixturesByIds(data.ids ?? []);
+    const ids = (data.ids ?? []).filter((n) => Number.isFinite(n));
+    const fetched = await fetchFixturesByIds(ids).catch(() => [] as Fixture[]);
+    const seen = new Set(fetched.map((f) => f.id));
+    const wcFallback = getWorldCup2026FallbackFixtures();
+    const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+    const missing: Fixture[] = [];
+    for (const id of ids) {
+      const key = String(id);
+      if (seen.has(key)) continue;
+      const wc = wcById.get(key);
+      missing.push(
+        wc
+          ? {
+              id: key,
+              league: wc.league,
+              leagueLogo: wc.leagueLogo,
+              leagueCountry: wc.leagueCountry,
+              homeTeam: wc.homeTeam,
+              awayTeam: wc.awayTeam,
+              homeLogo: wc.homeLogo,
+              awayLogo: wc.awayLogo,
+              kickoff: wc.kickoff,
+              status: wc.status,
+              venue: wc.venue,
+            }
+          : syntheticStreamFixture(id),
+      );
+    }
+    return [...fetched, ...missing];
   });
 
 export const getStreamedFixtures = createServerFn({ method: "GET" }).handler(async () => {
