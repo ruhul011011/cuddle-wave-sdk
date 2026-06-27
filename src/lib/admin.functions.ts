@@ -20,7 +20,13 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
 async function adminListUsers(
   context: { supabase: any },
 ): Promise<{
-  users: Array<{ id: string; email: string | null; created_at: string; last_sign_in_at: string | null }>;
+  users: Array<{
+    id: string;
+    email: string | null;
+    created_at: string;
+    last_sign_in_at: string | null;
+    roles: string[];
+  }>;
   total: number;
 }> {
   const { data, error } = await context.supabase.rpc("list_app_users");
@@ -30,8 +36,12 @@ async function adminListUsers(
     email: string | null;
     created_at: string;
     last_sign_in_at: string | null;
+    roles: string[] | null;
   }>;
-  return { users, total: users.length };
+  return {
+    users: users.map((user) => ({ ...user, roles: user.roles ?? [] })),
+    total: users.length,
+  };
 }
 
 
@@ -55,12 +65,8 @@ export const getAdminStats = createServerFn({ method: "GET" })
         supabaseAdmin.from("notifications").select("id", { count: "exact", head: true }),
       ]);
 
-    const { total: totalUsers } = await adminListUsers(context);
-
-    const { count: adminCount } = await supabaseAdmin
-      .from("user_roles")
-      .select("id", { count: "exact", head: true })
-      .eq("role", "admin");
+    const { users, total: totalUsers } = await adminListUsers(context);
+    const adminCount = users.filter((user) => user.roles.includes("admin")).length;
 
     const txData = txns.data ?? [];
     const succeeded = txData.filter((t: any) => t.status === "succeeded");
@@ -129,21 +135,13 @@ export const listAuthUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { users } = await adminListUsers(context);
-    const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
-    const roleMap = new Map<string, string[]>();
-    for (const r of roles ?? []) {
-      const arr = roleMap.get(r.user_id) ?? [];
-      arr.push(r.role);
-      roleMap.set(r.user_id, arr);
-    }
     return users.map((u) => ({
       id: u.id,
       email: u.email,
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at,
-      roles: roleMap.get(u.id) ?? [],
+      roles: u.roles,
     }));
   });
 
