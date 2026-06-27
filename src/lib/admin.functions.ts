@@ -13,32 +13,27 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
   if (!adminRole) throw new Error("Forbidden");
 }
 
-// Direct Supabase Auth Admin REST call. The supabase-js fetch wrapper strips
-// the Authorization header when the key is the new `sb_secret_*` format,
-// which the auth admin endpoints require, so list/listUsers silently returns
-// empty. Calling the REST API directly with both apikey + Bearer fixes that.
-async function adminListUsers(perPage = 200): Promise<{
+// Admin user listing now goes through the `list_app_users` SECURITY DEFINER
+// RPC, which checks `has_role(auth.uid(), 'admin')` server-side. This works
+// with the user's bearer token alone — no service role key required on the
+// self-hosted server.
+async function adminListUsers(
+  context: { supabase: any },
+): Promise<{
   users: Array<{ id: string; email: string | null; created_at: string; last_sign_in_at: string | null }>;
   total: number;
 }> {
-  const url = getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL");
-  const key = getServerEnv("SUPABASE_SERVICE_ROLE_KEY");
-  if (!url || !key) throw new Error("Supabase service role key not configured");
-  const all: any[] = [];
-  let page = 1;
-  while (true) {
-    const res = await fetch(`${url}/auth/v1/admin/users?page=${page}&per_page=${perPage}`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}` },
-    });
-    if (!res.ok) throw new Error(`Auth admin list failed: ${res.status} ${await res.text()}`);
-    const json: any = await res.json();
-    const users: any[] = json.users ?? [];
-    all.push(...users);
-    if (users.length < perPage || all.length >= 1000) break;
-    page += 1;
-  }
-  return { users: all, total: all.length };
+  const { data, error } = await context.supabase.rpc("list_app_users");
+  if (error) throw new Error(`list_app_users failed: ${error.message}`);
+  const users = (data ?? []) as Array<{
+    id: string;
+    email: string | null;
+    created_at: string;
+    last_sign_in_at: string | null;
+  }>;
+  return { users, total: users.length };
 }
+
 
 // ============== DASHBOARD STATS ==============
 export const getAdminStats = createServerFn({ method: "GET" })
