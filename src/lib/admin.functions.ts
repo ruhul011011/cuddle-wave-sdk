@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { getServerEnv } from "@/lib/env.server";
 
 async function assertAdmin(context: { supabase: any; userId: string }) {
   const { data: adminRole } = await context.supabase
@@ -10,6 +11,33 @@ async function assertAdmin(context: { supabase: any; userId: string }) {
     .eq("role", "admin")
     .maybeSingle();
   if (!adminRole) throw new Error("Forbidden");
+}
+
+// Direct Supabase Auth Admin REST call. The supabase-js fetch wrapper strips
+// the Authorization header when the key is the new `sb_secret_*` format,
+// which the auth admin endpoints require, so list/listUsers silently returns
+// empty. Calling the REST API directly with both apikey + Bearer fixes that.
+async function adminListUsers(perPage = 200): Promise<{
+  users: Array<{ id: string; email: string | null; created_at: string; last_sign_in_at: string | null }>;
+  total: number;
+}> {
+  const url = getServerEnv("SUPABASE_URL") ?? getServerEnv("VITE_SUPABASE_URL");
+  const key = getServerEnv("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) throw new Error("Supabase service role key not configured");
+  const all: any[] = [];
+  let page = 1;
+  while (true) {
+    const res = await fetch(`${url}/auth/v1/admin/users?page=${page}&per_page=${perPage}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) throw new Error(`Auth admin list failed: ${res.status} ${await res.text()}`);
+    const json: any = await res.json();
+    const users: any[] = json.users ?? [];
+    all.push(...users);
+    if (users.length < perPage || all.length >= 1000) break;
+    page += 1;
+  }
+  return { users: all, total: all.length };
 }
 
 // ============== DASHBOARD STATS ==============
@@ -32,8 +60,7 @@ export const getAdminStats = createServerFn({ method: "GET" })
         supabaseAdmin.from("notifications").select("id", { count: "exact", head: true }),
       ]);
 
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
-    const totalUsers = (userList as any)?.total ?? (userList as any)?.users?.length ?? 0;
+    const { total: totalUsers } = await adminListUsers(1000);
 
     const { count: adminCount } = await supabaseAdmin
       .from("user_roles")
@@ -89,14 +116,13 @@ export const getSignupSeries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const { users } = await adminListUsers(1000);
     const buckets: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(Date.now() - i * 86400000);
       buckets[d.toISOString().slice(0, 10)] = 0;
     }
-    for (const u of (data as any)?.users ?? []) {
+    for (const u of users) {
       const k = (u.created_at as string).slice(0, 10);
       if (k in buckets) buckets[k] += 1;
     }
@@ -109,7 +135,7 @@ export const listAuthUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 200 });
+    const { users } = await adminListUsers(1000);
     const { data: roles } = await supabaseAdmin.from("user_roles").select("user_id, role");
     const roleMap = new Map<string, string[]>();
     for (const r of roles ?? []) {
@@ -117,7 +143,7 @@ export const listAuthUsers = createServerFn({ method: "GET" })
       arr.push(r.role);
       roleMap.set(r.user_id, arr);
     }
-    return ((data as any)?.users ?? []).map((u: any) => ({
+    return users.map((u) => ({
       id: u.id,
       email: u.email,
       created_at: u.created_at,
