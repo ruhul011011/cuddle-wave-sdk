@@ -102,7 +102,7 @@ function SchedulePage() {
                 <div key={day}>
                   <h3 className="mb-5 font-display text-2xl text-primary">{day}</h3>
                   <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {list.map((m) => <MatchCard key={m.id} match={m} />)}
+                    {list.map((m) => <ScheduleCard key={m.id} match={m} />)}
                   </div>
                 </div>
               ))}
@@ -111,6 +111,40 @@ function SchedulePage() {
         )}
       </div>
       <Footer />
+    </div>
+  );
+}
+
+function ScheduleCard({ match: m }: { match: Fixture }) {
+  const time = new Date(m.kickoff).toLocaleTimeString("en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "UTC",
+  });
+  return (
+    <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card p-5">
+      <div className="flex items-center justify-between text-xs">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          {m.leagueLogo && <img src={m.leagueLogo} alt="" className="h-4 w-4 rounded-sm" />}
+          <span className="font-medium">{m.league}</span>
+        </div>
+        <span className="font-display tracking-wider text-foreground">{time}</span>
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
+        <div className="flex flex-col items-center text-center">
+          {m.homeLogo && <img src={m.homeLogo} alt="" className="h-12 w-12 rounded-full ring-2 ring-border/60" />}
+          <div className="mt-2 text-sm font-semibold leading-tight">{m.homeTeam}</div>
+        </div>
+        <div className="font-display text-3xl tracking-wider text-muted-foreground/60">VS</div>
+        <div className="flex flex-col items-center text-center">
+          {m.awayLogo && <img src={m.awayLogo} alt="" className="h-12 w-12 rounded-full ring-2 ring-border/60" />}
+          <div className="mt-2 text-sm font-semibold leading-tight">{m.awayTeam}</div>
+        </div>
+      </div>
+      {m.venue && (
+        <div className="border-t border-border/60 pt-3 text-xs text-muted-foreground">{m.venue}</div>
+      )}
     </div>
   );
 }
