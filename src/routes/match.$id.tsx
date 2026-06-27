@@ -73,6 +73,7 @@ function MatchPage() {
   });
   const access = accessResult.data;
   const isAuthed = Boolean(session);
+  const isPreviewMode = access?.access === "preview" && !access.hasAccess;
   const streamsResult = useQuery({
     ...streamsQuery(id),
     // Streams require authentication; wait for session restore to avoid 401s.
