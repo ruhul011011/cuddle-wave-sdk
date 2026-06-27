@@ -116,14 +116,13 @@ export const getSignupSeries = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    const { users } = await adminListUsers(1000);
     const buckets: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date(Date.now() - i * 86400000);
       buckets[d.toISOString().slice(0, 10)] = 0;
     }
-    for (const u of (data as any)?.users ?? []) {
+    for (const u of users) {
       const k = (u.created_at as string).slice(0, 10);
       if (k in buckets) buckets[k] += 1;
     }
