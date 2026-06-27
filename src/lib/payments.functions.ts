@@ -5,7 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { getRequestHost, getRequestHeader } from "@tanstack/react-start/server";
 import type { Database } from "@/integrations/supabase/types";
 
-export type AccessType = "free" | "premium" | "ads" | "mix";
+export type AccessType = "free" | "premium" | "ads" | "mix" | "preview";
 
 export type MatchAccess = {
   fixture_id: number;
@@ -15,11 +15,12 @@ export type MatchAccess = {
   hasAccess: boolean;
   available_from: string | null;
   isAvailable: boolean;
+  previewSeconds?: number;
 };
 
 function normalizeAccess(v: string | null | undefined): AccessType {
   if (v === "paid") return "premium";
-  if (v === "premium" || v === "ads" || v === "mix") return v;
+  if (v === "premium" || v === "ads" || v === "mix" || v === "preview") return v;
   return "free";
 }
 
