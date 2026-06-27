@@ -202,7 +202,7 @@ export type AdminMatchGroup = {
   premium_count: number;
   ads_count: number;
   free_count: number;
-  access: "free" | "premium" | "ads" | "mix";
+  access: "free" | "premium" | "ads" | "mix" | "preview";
   price_cents: number;
   currency: string;
   available_from: string | null;
