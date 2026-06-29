@@ -86,18 +86,49 @@ const RAW_WORLD_CUP_2026 = `
 1489418|2026-06-28T02:00:00+00:00|Algeria|Austria|Arrowhead Stadium
 1489421|2026-06-28T02:00:00+00:00|Jordan|Argentina|AT&T Stadium
 1561329|2026-06-28T19:00:00+00:00|South Africa|Canada|SoFi Stadium
+400021513|2026-06-29T16:30:00+00:00|Germany|Paraguay|Boston Stadium
+400021522|2026-06-29T21:00:00+00:00|Netherlands|Morocco|Estadio Monterrey
+400021516|2026-06-29T13:00:00+00:00|Brazil|Japan|Houston Stadium
+400021523|2026-06-30T17:00:00+00:00|France|Sweden|New York New Jersey Stadium
+400021514|2026-06-30T13:00:00+00:00|Côte d'Ivoire|Norway|Dallas Stadium
+400021520|2026-06-30T21:00:00+00:00|Mexico|Ecuador|Mexico City Stadium
+400021512|2026-07-01T12:00:00+00:00|England|Congo DR|Atlanta Stadium
+400021524|2026-07-01T20:00:00+00:00|USA|Bosnia and Herzegovina|San Francisco Bay Area Stadium
+400021525|2026-07-01T16:00:00+00:00|Belgium|Senegal|Seattle Stadium
+400021526|2026-07-02T19:00:00+00:00|Portugal|Croatia|Toronto Stadium
+400021519|2026-07-02T15:00:00+00:00|Spain|Austria|Los Angeles Stadium
+400021527|2026-07-02T23:00:00+00:00|Switzerland|Algeria|BC Place Vancouver
+400021521|2026-07-03T14:00:00+00:00|Argentina|Cabo Verde|Miami Stadium
+400021517|2026-07-03T18:00:00+00:00|Colombia|Ghana|Kansas City Stadium
+400021515|2026-07-03T21:30:00+00:00|Australia|Egypt|Dallas Stadium
+400021533|2026-07-04T17:00:00+00:00|W74|W77|
+400021530|2026-07-04T13:00:00+00:00|Canada|W75|
+400021532|2026-07-05T16:00:00+00:00|W76|W78|
+400021531|2026-07-05T20:00:00+00:00|W79|W80|
+400021529|2026-07-06T15:00:00+00:00|W83|W84|
+400021534|2026-07-06T20:00:00+00:00|W81|W82|
+400021528|2026-07-07T12:00:00+00:00|W86|W88|
+400021535|2026-07-07T16:00:00+00:00|W85|W87|
+400021536|2026-07-09T16:00:00+00:00|W89|W90|
+400021538|2026-07-10T15:00:00+00:00|W93|W94|
+400021539|2026-07-11T17:00:00+00:00|W91|W92|
+400021537|2026-07-11T21:00:00+00:00|W95|W96|
+400021541|2026-07-14T15:00:00+00:00|W97|W98|
+400021540|2026-07-15T15:00:00+00:00|W99|W100|
+400021542|2026-07-18T17:00:00+00:00|RU101|RU102|
+400021543|2026-07-19T15:00:00+00:00|W101|W102|
 `.trim();
 
 // ISO 3166-1 alpha-2 codes powering flagcdn.com fallback logos.
 // Used when api-football is unavailable (e.g. self-hosted VPS without API key).
 const TEAM_FLAG_CODES: Record<string, string> = {
   "Mexico": "mx", "South Africa": "za", "South Korea": "kr", "Czechia": "cz",
-  "Canada": "ca", "Bosnia & Herzegovina": "ba", "USA": "us", "Paraguay": "py",
+  "Canada": "ca", "Bosnia & Herzegovina": "ba", "Bosnia and Herzegovina": "ba", "USA": "us", "Paraguay": "py",
   "Qatar": "qa", "Switzerland": "ch", "Brazil": "br", "Morocco": "ma",
   "Haiti": "ht", "Scotland": "gb-sct", "Australia": "au", "Türkiye": "tr",
   "Germany": "de", "Curaçao": "cw", "Netherlands": "nl", "Japan": "jp",
-  "Ivory Coast": "ci", "Ecuador": "ec", "Sweden": "se", "Tunisia": "tn",
-  "Spain": "es", "Cape Verde Islands": "cv", "Belgium": "be", "Egypt": "eg",
+  "Ivory Coast": "ci", "Côte d'Ivoire": "ci", "Côte d’Ivoire": "ci", "Ecuador": "ec", "Sweden": "se", "Tunisia": "tn",
+  "Spain": "es", "Cape Verde Islands": "cv", "Cabo Verde": "cv", "Belgium": "be", "Egypt": "eg",
   "Saudi Arabia": "sa", "Uruguay": "uy", "Iran": "ir", "New Zealand": "nz",
   "France": "fr", "Senegal": "sn", "Iraq": "iq", "Norway": "no",
   "Argentina": "ar", "Algeria": "dz", "Austria": "at", "Jordan": "jo",
@@ -141,4 +172,9 @@ export function getWorldCup2026FallbackFixtures(date?: string, windowDays = 0): 
     const kickoff = Date.parse(match.kickoff);
     return Number.isFinite(kickoff) && Math.abs(kickoff - target) <= windowMs;
   });
+}
+
+export function getWorldCup2026FixtureById(id: string | number): WorldCup2026Fixture | undefined {
+  const key = String(id);
+  return ALL_WORLD_CUP_2026_FIXTURES.find((fixture) => fixture.id === key);
 }
