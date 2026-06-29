@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
-import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
+import { getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -422,16 +422,38 @@ export type FixtureDetail = Fixture & {
   statistics: Array<{ team: string; stats: Array<{ type: string; value: string | number | null }> }>;
 };
 
+function worldCupFixtureDetail(id: string): FixtureDetail | null {
+  const wc = getWorldCup2026FixtureById(id);
+  if (!wc) return null;
+  return {
+    id: wc.id,
+    league: wc.league,
+    leagueLogo: wc.leagueLogo,
+    leagueCountry: wc.leagueCountry,
+    homeTeam: wc.homeTeam,
+    awayTeam: wc.awayTeam,
+    homeLogo: wc.homeLogo,
+    awayLogo: wc.awayLogo,
+    kickoff: wc.kickoff,
+    status: wc.status,
+    venue: wc.venue,
+    events: [],
+    lineups: [],
+    statistics: [],
+  };
+}
+
 export const getFixtureDetail = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }): Promise<FixtureDetail | null> => {
+    const fallback = worldCupFixtureDetail(data.id);
     const [fixtures, events, lineups, statistics] = await Promise.all([
-      af<any[]>(`/fixtures?id=${data.id}`),
+      af<any[]>(`/fixtures?id=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/events?fixture=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/lineups?fixture=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/statistics?fixture=${data.id}`).catch(() => []),
     ]);
-    if (!fixtures.length) return null;
+    if (!fixtures.length) return fallback;
     const raw = fixtures[0];
     const base = normalize(raw);
     const homeId = raw.teams?.home?.id;
