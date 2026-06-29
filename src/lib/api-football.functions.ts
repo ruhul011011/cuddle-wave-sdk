@@ -386,7 +386,12 @@ export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
 
     // If the upstream API key is missing/rate-limited on a self-hosted server,
     // keep the admin usable for World Cup 2026 with real fixture IDs and dates.
-    if (data.leagueId === 1) return getWorldCup2026FallbackFixtures(data.date);
+    if (data.leagueId === 1) {
+      const exact = getWorldCup2026FallbackFixtures(data.date);
+      if (exact.length) return exact;
+      const nowIso = new Date().toISOString();
+      return getWorldCup2026FallbackFixtures().filter((f) => f.kickoff >= nowIso);
+    }
 
     return [];
   });
