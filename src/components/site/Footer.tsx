@@ -1,81 +1,157 @@
-import { Trophy, Twitter, Facebook, Instagram, Youtube } from "lucide-react";
+import { Trophy, Twitter, Youtube, Instagram, Facebook, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 export function Footer() {
   const year = new Date().getFullYear();
+
+  const columns = [
+    {
+      title: "Tournament",
+      links: [
+        { label: "Match Schedule", to: "/schedule" },
+        { label: "World Cup 2026", to: "/world-cup" },
+        { label: "Group Stage", to: "/world-cup" },
+        { label: "Knockouts", to: "/world-cup" },
+        { label: "Standings", to: "/world-cup" },
+      ],
+    },
+    {
+      title: "Broadcasting",
+      links: [
+        { label: "Live Now", to: "/live" },
+        { label: "Leagues", to: "/leagues" },
+        { label: "Pricing", to: "/pricing" },
+        { label: "Contact", to: "/contact" },
+        { label: "Sign In", to: "/auth" },
+      ],
+    },
+  ];
+
   return (
-    <footer className="mt-24 border-t border-border/60 bg-gradient-to-b from-card/40 to-card/80">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 pt-14 pb-10">
-        {/* Trophy banner */}
-        <div className="flex flex-col items-center text-center mb-12">
-          <div className="relative">
-            <div className="absolute inset-0 blur-2xl bg-primary/40 rounded-full" aria-hidden />
-            <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-yellow-400 via-amber-500 to-yellow-600 shadow-lg shadow-primary/30 ring-4 ring-background">
-              <Trophy className="h-10 w-10 text-background" strokeWidth={2.2} />
-            </div>
-          </div>
-          <h3 className="mt-5 font-display text-3xl sm:text-4xl tracking-wide">
-            WORLD CUP <span className="text-primary">TV 2026</span>
-          </h3>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Your home for every FIFA World Cup 2026 match — live in HD, with schedules,
-            fixtures, standings, and highlights from group stage to the final.
-          </p>
-        </div>
+    <footer className="mt-24 relative overflow-hidden border-t-2 border-[#d4af37]/40 bg-[#060d03] text-zinc-400">
+      {/* Top gold glow line */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-full bg-gradient-to-r from-transparent via-[#d4af37] to-transparent shadow-[0_0_20px_#d4af37] opacity-60" aria-hidden />
+      {/* Radial pitch glow */}
+      <div
+        className="absolute inset-0 opacity-20 pointer-events-none"
+        style={{ backgroundImage: "radial-gradient(circle at 50% -20%, #166534 0%, transparent 60%)" }}
+        aria-hidden
+      />
 
-        <div className="grid gap-10 md:grid-cols-4">
-          <div>
-            <div className="flex items-center gap-2 font-display text-xl tracking-wide">
-              <Trophy className="h-5 w-5 text-primary" />
-              <span>WORLD CUP <span className="text-primary">TV</span></span>
+      <div className="relative mx-auto max-w-7xl px-6 sm:px-8 pt-16 pb-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-14">
+          {/* Brand */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="absolute inset-0 blur-xl bg-[#d4af37]/40 rounded-full" aria-hidden />
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#f4cd54] via-[#d4af37] to-[#b8860b] shadow-[0_0_15px_rgba(212,175,55,0.35)]">
+                  <Trophy className="h-6 w-6 text-black" strokeWidth={2.4} />
+                </div>
+              </div>
+              <div className="font-display leading-none">
+                <span className="block text-2xl font-bold tracking-tight text-white">WORLD CUP</span>
+                <span className="block text-xs tracking-[0.32em] text-[#d4af37] font-semibold mt-1">LIVE TV 2026</span>
+              </div>
             </div>
-            <p className="mt-3 text-sm text-muted-foreground max-w-xs">
-              Live football streams, World Cup 2026 fixtures, standings and highlights — all in one place.
+            <p className="text-sm leading-relaxed max-w-xs">
+              The ultimate destination for every FIFA World Cup 2026 match — live in HD with schedules, fixtures, standings, and highlights.
             </p>
-            <div className="mt-4 flex items-center gap-3 text-muted-foreground">
-              <a href="#" aria-label="Twitter" className="hover:text-primary transition-colors"><Twitter className="h-4 w-4" /></a>
-              <a href="#" aria-label="Facebook" className="hover:text-primary transition-colors"><Facebook className="h-4 w-4" /></a>
-              <a href="#" aria-label="Instagram" className="hover:text-primary transition-colors"><Instagram className="h-4 w-4" /></a>
-              <a href="#" aria-label="YouTube" className="hover:text-primary transition-colors"><Youtube className="h-4 w-4" /></a>
+            <div className="flex gap-3">
+              {[
+                { Icon: Twitter, label: "Twitter" },
+                { Icon: Facebook, label: "Facebook" },
+                { Icon: Instagram, label: "Instagram" },
+                { Icon: Youtube, label: "YouTube" },
+              ].map(({ Icon, label }) => (
+                <a
+                  key={label}
+                  href="#"
+                  aria-label={label}
+                  className="w-9 h-9 rounded-full border border-zinc-800 flex items-center justify-center hover:bg-[#d4af37] hover:text-black hover:border-[#d4af37] transition-all duration-300"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
+              ))}
             </div>
           </div>
 
-          {[
-            { title: "Explore", links: [
-              { label: "Live Now", to: "/live" },
-              { label: "Schedule", to: "/schedule" },
-              { label: "World Cup 2026", to: "/world-cup" },
-              { label: "Leagues", to: "/leagues" },
-            ]},
-            { title: "World Cup", links: [
-              { label: "Fixtures", to: "/world-cup" },
-              { label: "Group Stage", to: "/world-cup" },
-              { label: "Knockouts", to: "/world-cup" },
-              { label: "Standings", to: "/world-cup" },
-            ]},
-            { title: "Company", links: [
-              { label: "Pricing", to: "/pricing" },
-              { label: "Contact", to: "/contact" },
-              { label: "Sign In", to: "/auth" },
-            ]},
-          ].map((col) => (
+          {/* Link columns */}
+          {columns.map((col) => (
             <div key={col.title}>
-              <h4 className="font-display text-sm tracking-wider text-foreground">{col.title}</h4>
-              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+              <h4 className="font-display text-white font-bold tracking-wider uppercase mb-6 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 bg-[#d4af37] rounded-full" />
+                {col.title}
+              </h4>
+              <ul className="space-y-3 text-sm">
                 {col.links.map((l) => (
                   <li key={l.label}>
-                    <Link to={l.to} className="hover:text-primary transition-colors">{l.label}</Link>
+                    <Link
+                      to={l.to}
+                      className="inline-block hover:text-white hover:translate-x-1 transition-all"
+                    >
+                      {l.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
             </div>
           ))}
+
+          {/* Updates panel */}
+          <div>
+            <h4 className="font-display text-white font-bold tracking-wider uppercase mb-6 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-[#d4af37] rounded-full" />
+              Updates
+            </h4>
+            <div className="bg-zinc-900/60 p-5 rounded-xl border border-zinc-800">
+              <p className="text-[11px] mb-4 text-zinc-500 font-medium uppercase tracking-widest">
+                Stay in the game
+              </p>
+              <form
+                className="flex gap-2"
+                onSubmit={(e) => e.preventDefault()}
+              >
+                <input
+                  type="email"
+                  placeholder="Your email"
+                  className="flex-1 bg-[#060d03] border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:border-[#d4af37] transition-colors"
+                />
+                <button
+                  type="submit"
+                  aria-label="Subscribe"
+                  className="bg-[#d4af37] hover:bg-[#b8860b] text-black font-bold p-2 rounded-lg transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </form>
+              <div className="mt-4 flex items-center gap-2">
+                <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                  Servers: Operational
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="text-xs font-medium tracking-wide flex flex-wrap justify-center gap-6">
+            <Link to="/contact" className="hover:text-white transition-colors">Contact</Link>
+            <a href="#" className="hover:text-white transition-colors">Terms</a>
+            <a href="#" className="hover:text-white transition-colors">Privacy</a>
+            <a href="#" className="hover:text-white transition-colors">Cookies</a>
+          </div>
+          <div className="text-[11px] font-bold text-zinc-600 tracking-widest uppercase flex items-center gap-2">
+            <Trophy className="h-3.5 w-3.5 text-[#d4af37]" />
+            © {year} World Cup TV 2026 · All rights reserved
+          </div>
         </div>
       </div>
-      <div className="border-t border-border/60 py-5 text-center text-xs text-muted-foreground flex flex-col sm:flex-row items-center justify-center gap-2">
-        <Trophy className="h-3.5 w-3.5 text-primary" />
-        <span>© {year} World Cup TV 2026. All rights reserved.</span>
-      </div>
+
+      {/* Decorative bottom bar */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-emerald-900 via-[#d4af37] to-emerald-900" aria-hidden />
     </footer>
   );
 }
