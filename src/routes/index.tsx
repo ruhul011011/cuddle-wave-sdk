@@ -240,9 +240,8 @@ function Index() {
           </div>
         </div>
       </main>
-
-      <Footer />
     </div>
+
   );
 }
 
