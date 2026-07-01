@@ -1,5 +1,26 @@
-import { Trophy, Twitter, Youtube, Instagram, Facebook, ChevronRight } from "lucide-react";
+import { Twitter, Youtube, Instagram, Facebook, ChevronRight } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+
+function FooterTrophyIcon({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      data-footer-trophy
+      viewBox="0 0 64 64"
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path d="M22 10h20v7c0 10.5-4.2 18-10 18s-10-7.5-10-18v-7Z" fill="currentColor" />
+      <path d="M19 14h-8v5c0 8 5.3 14.2 13 15.6" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M45 14h8v5c0 8-5.3 14.2-13 15.6" stroke="currentColor" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M28 35h8v9h-8z" fill="currentColor" />
+      <path d="M21 50h22" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+      <path d="M17 56h30" stroke="currentColor" strokeWidth="6" strokeLinecap="round" />
+      <path d="M28 15h8" stroke="rgba(255,255,255,0.7)" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function Footer() {
   const year = new Date().getFullYear();
@@ -46,7 +67,7 @@ export function Footer() {
               <div className="relative">
                 <div className="absolute inset-0 blur-xl bg-[#d4af37]/40 rounded-full" aria-hidden />
                 <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#f4cd54] via-[#d4af37] to-[#b8860b] shadow-[0_0_15px_rgba(212,175,55,0.35)]">
-                  <Trophy className="h-6 w-6 text-black" strokeWidth={2.4} />
+                  <FooterTrophyIcon className="h-7 w-7 text-[#111111]" />
                 </div>
               </div>
               <div className="font-display leading-none">
@@ -144,7 +165,7 @@ export function Footer() {
             <a href="#" className="hover:text-white transition-colors">Cookies</a>
           </div>
           <div className="text-[11px] font-bold text-zinc-600 tracking-widest uppercase flex items-center gap-2">
-            <Trophy className="h-3.5 w-3.5 text-[#d4af37]" />
+            <FooterTrophyIcon className="h-4 w-4 text-[#d4af37]" />
             © {year} World Cup TV 2026 · All rights reserved
           </div>
         </div>
