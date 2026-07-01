@@ -3,7 +3,7 @@ import { queryOptions, useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 
 import { Header } from "@/components/site/Header";
-import { Footer } from "@/components/site/Footer";
+
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
 import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
