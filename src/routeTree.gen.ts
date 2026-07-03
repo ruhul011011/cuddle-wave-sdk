@@ -13,6 +13,7 @@ import { Route as WorldCupRouteImport } from './routes/world-cup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as PricingRouteImport } from './routes/pricing'
+import { Route as NewsRouteImport } from './routes/news'
 import { Route as LiveRouteImport } from './routes/live'
 import { Route as LeaguesRouteImport } from './routes/leagues'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -23,6 +24,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as Char126oauthInitiateRouteImport } from './routes/~oauth.initiate'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
+import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
@@ -49,7 +51,10 @@ import { Route as AuthenticatedAdminHotMatchesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminClientQueryRouteImport } from './routes/_authenticated/admin.client-query'
 import { Route as AuthenticatedAdminAnalyticsRouteImport } from './routes/_authenticated/admin.analytics'
 import { Route as AuthenticatedAdminAdminsRouteImport } from './routes/_authenticated/admin.admins'
+import { Route as AuthenticatedAdminNewsIndexRouteImport } from './routes/_authenticated/admin.news.index'
 import { Route as ApiPublicOauthGoogleRouteImport } from './routes/api/public/oauth.google'
+import { Route as AuthenticatedAdminNewsNewRouteImport } from './routes/_authenticated/admin.news.new'
+import { Route as AuthenticatedAdminNewsIdRouteImport } from './routes/_authenticated/admin.news.$id'
 
 const WorldCupRoute = WorldCupRouteImport.update({
   id: '/world-cup',
@@ -69,6 +74,11 @@ const ScheduleRoute = ScheduleRouteImport.update({
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
   path: '/pricing',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewsRoute = NewsRouteImport.update({
+  id: '/news',
+  path: '/news',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LiveRoute = LiveRouteImport.update({
@@ -118,6 +128,11 @@ const MatchIdRoute = MatchIdRouteImport.update({
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth_/callback',
   path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ArticleSlugRoute = ArticleSlugRouteImport.update({
+  id: '/article/$slug',
+  path: '/article/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -268,11 +283,29 @@ const AuthenticatedAdminAdminsRoute =
     path: '/admins',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminNewsIndexRoute =
+  AuthenticatedAdminNewsIndexRouteImport.update({
+    id: '/news/',
+    path: '/news/',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const ApiPublicOauthGoogleRoute = ApiPublicOauthGoogleRouteImport.update({
   id: '/api/public/oauth/google',
   path: '/api/public/oauth/google',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAdminNewsNewRoute =
+  AuthenticatedAdminNewsNewRouteImport.update({
+    id: '/news/new',
+    path: '/news/new',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminNewsIdRoute =
+  AuthenticatedAdminNewsIdRouteImport.update({
+    id: '/news/$id',
+    path: '/news/$id',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -281,12 +314,14 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
+  '/news': typeof NewsRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/article/$slug': typeof ArticleSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
@@ -314,7 +349,10 @@ export interface FileRoutesByFullPath {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/news/$id': typeof AuthenticatedAdminNewsIdRoute
+  '/admin/news/new': typeof AuthenticatedAdminNewsNewRoute
   '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
+  '/admin/news/': typeof AuthenticatedAdminNewsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -323,11 +361,13 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
+  '/news': typeof NewsRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/admin/login': typeof AdminLoginRoute
+  '/article/$slug': typeof ArticleSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
@@ -355,7 +395,10 @@ export interface FileRoutesByTo {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/news/$id': typeof AuthenticatedAdminNewsIdRoute
+  '/admin/news/new': typeof AuthenticatedAdminNewsNewRoute
   '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
+  '/admin/news': typeof AuthenticatedAdminNewsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -366,12 +409,14 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
+  '/news': typeof NewsRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/world-cup': typeof WorldCupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
+  '/article/$slug': typeof ArticleSlugRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
@@ -399,7 +444,10 @@ export interface FileRoutesById {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/news/$id': typeof AuthenticatedAdminNewsIdRoute
+  '/_authenticated/admin/news/new': typeof AuthenticatedAdminNewsNewRoute
   '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
+  '/_authenticated/admin/news/': typeof AuthenticatedAdminNewsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -410,12 +458,14 @@ export interface FileRouteTypes {
     | '/contact'
     | '/leagues'
     | '/live'
+    | '/news'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
     | '/world-cup'
     | '/admin'
     | '/admin/login'
+    | '/article/$slug'
     | '/auth/callback'
     | '/match/$id'
     | '/~oauth/initiate'
@@ -443,7 +493,10 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/admin/'
+    | '/admin/news/$id'
+    | '/admin/news/new'
     | '/api/public/oauth/google'
+    | '/admin/news/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -452,11 +505,13 @@ export interface FileRouteTypes {
     | '/contact'
     | '/leagues'
     | '/live'
+    | '/news'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
     | '/world-cup'
     | '/admin/login'
+    | '/article/$slug'
     | '/auth/callback'
     | '/match/$id'
     | '/~oauth/initiate'
@@ -484,7 +539,10 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/admin'
+    | '/admin/news/$id'
+    | '/admin/news/new'
     | '/api/public/oauth/google'
+    | '/admin/news'
   id:
     | '__root__'
     | '/'
@@ -494,12 +552,14 @@ export interface FileRouteTypes {
     | '/contact'
     | '/leagues'
     | '/live'
+    | '/news'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
     | '/world-cup'
     | '/_authenticated/admin'
     | '/admin/login'
+    | '/article/$slug'
     | '/auth_/callback'
     | '/match/$id'
     | '/~oauth/initiate'
@@ -527,7 +587,10 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/_authenticated/admin/'
+    | '/_authenticated/admin/news/$id'
+    | '/_authenticated/admin/news/new'
     | '/api/public/oauth/google'
+    | '/_authenticated/admin/news/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -538,11 +601,13 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
   LiveRoute: typeof LiveRoute
+  NewsRoute: typeof NewsRoute
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   WorldCupRoute: typeof WorldCupRoute
   AdminLoginRoute: typeof AdminLoginRoute
+  ArticleSlugRoute: typeof ArticleSlugRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   MatchIdRoute: typeof MatchIdRoute
   Char126oauthInitiateRoute: typeof Char126oauthInitiateRoute
@@ -581,6 +646,13 @@ declare module '@tanstack/react-router' {
       path: '/pricing'
       fullPath: '/pricing'
       preLoaderRoute: typeof PricingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/news': {
+      id: '/news'
+      path: '/news'
+      fullPath: '/news'
+      preLoaderRoute: typeof NewsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/live': {
@@ -651,6 +723,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/callback'
       fullPath: '/auth/callback'
       preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/article/$slug': {
+      id: '/article/$slug'
+      path: '/article/$slug'
+      fullPath: '/article/$slug'
+      preLoaderRoute: typeof ArticleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/login': {
@@ -835,12 +914,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAdminsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/news/': {
+      id: '/_authenticated/admin/news/'
+      path: '/news'
+      fullPath: '/admin/news/'
+      preLoaderRoute: typeof AuthenticatedAdminNewsIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/api/public/oauth/google': {
       id: '/api/public/oauth/google'
       path: '/api/public/oauth/google'
       fullPath: '/api/public/oauth/google'
       preLoaderRoute: typeof ApiPublicOauthGoogleRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/admin/news/new': {
+      id: '/_authenticated/admin/news/new'
+      path: '/news/new'
+      fullPath: '/admin/news/new'
+      preLoaderRoute: typeof AuthenticatedAdminNewsNewRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/news/$id': {
+      id: '/_authenticated/admin/news/$id'
+      path: '/news/$id'
+      fullPath: '/admin/news/$id'
+      preLoaderRoute: typeof AuthenticatedAdminNewsIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
   }
 }
@@ -866,6 +966,9 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminWatchLiveRoute: typeof AuthenticatedAdminWatchLiveRoute
   AuthenticatedAdminWorldCupRoute: typeof AuthenticatedAdminWorldCupRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminNewsIdRoute: typeof AuthenticatedAdminNewsIdRoute
+  AuthenticatedAdminNewsNewRoute: typeof AuthenticatedAdminNewsNewRoute
+  AuthenticatedAdminNewsIndexRoute: typeof AuthenticatedAdminNewsIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
@@ -889,6 +992,9 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminWatchLiveRoute: AuthenticatedAdminWatchLiveRoute,
   AuthenticatedAdminWorldCupRoute: AuthenticatedAdminWorldCupRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminNewsIdRoute: AuthenticatedAdminNewsIdRoute,
+  AuthenticatedAdminNewsNewRoute: AuthenticatedAdminNewsNewRoute,
+  AuthenticatedAdminNewsIndexRoute: AuthenticatedAdminNewsIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
@@ -913,11 +1019,13 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
   LiveRoute: LiveRoute,
+  NewsRoute: NewsRoute,
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   WorldCupRoute: WorldCupRoute,
   AdminLoginRoute: AdminLoginRoute,
+  ArticleSlugRoute: ArticleSlugRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   MatchIdRoute: MatchIdRoute,
   Char126oauthInitiateRoute: Char126oauthInitiateRoute,
@@ -930,13 +1038,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

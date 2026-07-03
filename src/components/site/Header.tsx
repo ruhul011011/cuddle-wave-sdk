@@ -10,6 +10,7 @@ const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/schedule", label: "Matches" },
   { to: "/world-cup", label: "World Cup" },
   { to: "/leagues", label: "Leagues" },
+  { to: "/news", label: "News" },
   { to: "/pricing", label: "Pricing" },
   { to: "/contact", label: "Contact" },
 ];
