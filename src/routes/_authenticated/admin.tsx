@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard, Tv, Flame, Trophy, Users, Bell, MessageSquare, Star,
   UsersRound, CreditCard, BarChart3, LifeBuoy, PlayCircle, Crown, Lightbulb,
-  LogOut, Shield, Loader2, Webhook, Send,
+  LogOut, Shield, Loader2, Webhook, Send, Newspaper,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -20,6 +20,7 @@ const NAV: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
   { to: "/admin/top-leagues", label: "Top Leagues", icon: Trophy },
   { to: "/admin/world-cup", label: "World Cup", icon: Trophy },
   { to: "/admin/top-teams", label: "Top Teams", icon: Users },
+  { to: "/admin/news", label: "News", icon: Newspaper },
   { to: "/admin/notification", label: "Notification", icon: Bell },
   { to: "/admin/telegram", label: "Telegram", icon: Send },
   { to: "/admin/client-query", label: "Client Query", icon: MessageSquare },
