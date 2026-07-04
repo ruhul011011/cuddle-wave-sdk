@@ -55,6 +55,7 @@ import { Route as AuthenticatedAdminNewsIndexRouteImport } from './routes/_authe
 import { Route as ApiPublicOauthGoogleRouteImport } from './routes/api/public/oauth.google'
 import { Route as AuthenticatedAdminNewsNewRouteImport } from './routes/_authenticated/admin.news.new'
 import { Route as AuthenticatedAdminNewsIdRouteImport } from './routes/_authenticated/admin.news.$id'
+import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin.articles.$id'
 
 const WorldCupRoute = WorldCupRouteImport.update({
   id: '/world-cup',
@@ -306,6 +307,12 @@ const AuthenticatedAdminNewsIdRoute =
     path: '/news/$id',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminArticlesIdRoute =
+  AuthenticatedAdminArticlesIdRouteImport.update({
+    id: '/articles/$id',
+    path: '/articles/$id',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -349,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/admin/news/$id': typeof AuthenticatedAdminNewsIdRoute
   '/admin/news/new': typeof AuthenticatedAdminNewsNewRoute
   '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
@@ -395,6 +403,7 @@ export interface FileRoutesByTo {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/admin/news/$id': typeof AuthenticatedAdminNewsIdRoute
   '/admin/news/new': typeof AuthenticatedAdminNewsNewRoute
   '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
@@ -444,6 +453,7 @@ export interface FileRoutesById {
   '/api/stream/$id': typeof ApiStreamIdRoute
   '/api/stream/seg': typeof ApiStreamSegRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/_authenticated/admin/news/$id': typeof AuthenticatedAdminNewsIdRoute
   '/_authenticated/admin/news/new': typeof AuthenticatedAdminNewsNewRoute
   '/api/public/oauth/google': typeof ApiPublicOauthGoogleRoute
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/admin/'
+    | '/admin/articles/$id'
     | '/admin/news/$id'
     | '/admin/news/new'
     | '/api/public/oauth/google'
@@ -539,6 +550,7 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/admin'
+    | '/admin/articles/$id'
     | '/admin/news/$id'
     | '/admin/news/new'
     | '/api/public/oauth/google'
@@ -587,6 +599,7 @@ export interface FileRouteTypes {
     | '/api/stream/$id'
     | '/api/stream/seg'
     | '/_authenticated/admin/'
+    | '/_authenticated/admin/articles/$id'
     | '/_authenticated/admin/news/$id'
     | '/_authenticated/admin/news/new'
     | '/api/public/oauth/google'
@@ -942,6 +955,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminNewsIdRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/articles/$id': {
+      id: '/_authenticated/admin/articles/$id'
+      path: '/articles/$id'
+      fullPath: '/admin/articles/$id'
+      preLoaderRoute: typeof AuthenticatedAdminArticlesIdRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
@@ -966,6 +986,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminWatchLiveRoute: typeof AuthenticatedAdminWatchLiveRoute
   AuthenticatedAdminWorldCupRoute: typeof AuthenticatedAdminWorldCupRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminArticlesIdRoute: typeof AuthenticatedAdminArticlesIdRoute
   AuthenticatedAdminNewsIdRoute: typeof AuthenticatedAdminNewsIdRoute
   AuthenticatedAdminNewsNewRoute: typeof AuthenticatedAdminNewsNewRoute
   AuthenticatedAdminNewsIndexRoute: typeof AuthenticatedAdminNewsIndexRoute
@@ -992,6 +1013,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminWatchLiveRoute: AuthenticatedAdminWatchLiveRoute,
   AuthenticatedAdminWorldCupRoute: AuthenticatedAdminWorldCupRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminArticlesIdRoute: AuthenticatedAdminArticlesIdRoute,
   AuthenticatedAdminNewsIdRoute: AuthenticatedAdminNewsIdRoute,
   AuthenticatedAdminNewsNewRoute: AuthenticatedAdminNewsNewRoute,
   AuthenticatedAdminNewsIndexRoute: AuthenticatedAdminNewsIndexRoute,
