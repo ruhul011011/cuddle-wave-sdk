@@ -147,12 +147,29 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   const ids = await listActiveStreamFixtureIds();
   if (!ids.length) return [];
   const fetched = await fetchFixturesByIds(ids).catch(() => [] as Fixture[]);
-  const seen = new Set(fetched.map((f) => f.id));
-  // Fallback: for any active stream whose fixture isn't returned by api-football
-  // (e.g. future WC 2026 IDs the upstream hasn't published yet), build a Fixture
-  // from the local World Cup 2026 dataset so admin-added streams still appear.
   const wcFallback = getWorldCup2026FallbackFixtures();
   const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+
+  // Merge upstream data with the local WC dataset: whenever api-football
+  // returns a placeholder record with empty team names/logos (common for
+  // knockout fixtures where teams are TBD), backfill from our WC list so
+  // the live section shows a readable label and crest instead of blanks.
+  const merged = fetched.map((f) => {
+    const wc = wcById.get(f.id);
+    if (!wc) return f;
+    return {
+      ...f,
+      homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
+      awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
+      homeLogo: f.homeLogo?.trim() ? f.homeLogo : wc.homeLogo,
+      awayLogo: f.awayLogo?.trim() ? f.awayLogo : wc.awayLogo,
+      league: f.league?.trim() ? f.league : wc.league,
+      leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
+      venue: f.venue ?? wc.venue,
+    };
+  });
+
+  const seen = new Set(merged.map((f) => f.id));
   const missing: Fixture[] = [];
   for (const id of ids) {
     const key = String(id);
@@ -176,7 +193,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
         : syntheticStreamFixture(id),
     );
   }
-  return [...fetched, ...missing]
+  return [...merged, ...missing]
     .filter((match) => streamFixtureIsVisible(match))
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 }
