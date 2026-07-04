@@ -68,7 +68,7 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
       toast.success(status === "published" ? "Published!" : "Saved as draft");
       qc.invalidateQueries({ queryKey: ["admin-articles"] });
       qc.invalidateQueries({ queryKey: ["public-articles"] });
-      if (!initial?.id && res?.id) navigate({ to: "/admin/articles/$id", params: { id: res.id } });
+      if (!initial?.id && res?.id) navigate({ to: "/admin/news/$id", params: { id: res.id } });
     },
     onError: (e: any) => {
       const msg = e?.message || e?.toString?.() || "Failed to save";
