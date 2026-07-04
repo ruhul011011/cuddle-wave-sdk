@@ -138,7 +138,10 @@ const TEAM_FLAG_CODES: Record<string, string> = {
 
 function flagUrl(team: string): string {
   const code = TEAM_FLAG_CODES[team];
-  return code ? `https://flagcdn.com/w80/${code}.png` : "";
+  if (code) return `https://flagcdn.com/w80/${code}.png`;
+  // Placeholder logo for TBD teams (e.g. "W75" = winner of match 75) so the
+  // fixture card still shows a visible avatar next to the label.
+  return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(team || "TBD")}&backgroundType=gradientLinear&backgroundColor=991b1b,1e1e5a&fontWeight=700`;
 }
 
 const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.split("\n")
