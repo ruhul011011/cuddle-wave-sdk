@@ -144,9 +144,27 @@ function flagUrl(team: string): string {
   return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(team || "TBD")}&backgroundType=gradientLinear&backgroundColor=991b1b,1e1e5a&fontWeight=700`;
 }
 
+// Turn cryptic bracket codes like "W75" / "L12" / "1A" into human labels so
+// placeholder knockout fixtures don't look like broken data.
+function humanizeTeam(team: string): string {
+  const raw = (team ?? "").trim();
+  if (!raw) return "TBD";
+  let m = raw.match(/^W(\d+)$/i);
+  if (m) return `Winner Match ${m[1]}`;
+  m = raw.match(/^L(\d+)$/i);
+  if (m) return `Loser Match ${m[1]}`;
+  m = raw.match(/^([12])([A-L])$/i);
+  if (m) return `${m[1] === "1" ? "Winner" : "Runner-up"} Group ${m[2].toUpperCase()}`;
+  m = raw.match(/^3([A-L]+)$/i);
+  if (m) return `3rd Place Group ${m[1].toUpperCase()}`;
+  return raw;
+}
+
 const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.split("\n")
   .map((line) => {
-    const [id, kickoff, homeTeam, awayTeam, venue] = line.split("|");
+    const [id, kickoff, homeRaw, awayRaw, venue] = line.split("|");
+    const homeTeam = humanizeTeam(homeRaw);
+    const awayTeam = humanizeTeam(awayRaw);
     return {
       id,
       league: "World Cup",
@@ -154,8 +172,8 @@ const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.sp
       leagueCountry: "World",
       homeTeam,
       awayTeam,
-      homeLogo: flagUrl(homeTeam),
-      awayLogo: flagUrl(awayTeam),
+      homeLogo: flagUrl(homeRaw),
+      awayLogo: flagUrl(awayRaw),
       kickoff,
       status: "upcoming" as const,
       venue,
