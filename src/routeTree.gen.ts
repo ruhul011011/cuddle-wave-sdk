@@ -21,7 +21,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as NewsIndexRouteImport } from './routes/news.index'
 import { Route as Char126oauthInitiateRouteImport } from './routes/~oauth.initiate'
+import { Route as NewsSlugRouteImport } from './routes/news.$slug'
 import { Route as MatchIdRouteImport } from './routes/match.$id'
 import { Route as AuthCallbackRouteImport } from './routes/auth_.callback'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
@@ -116,10 +118,20 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewsIndexRoute = NewsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => NewsRoute,
+} as any)
 const Char126oauthInitiateRoute = Char126oauthInitiateRouteImport.update({
   id: '/~oauth/initiate',
   path: '/~oauth/initiate',
   getParentRoute: () => rootRouteImport,
+} as any)
+const NewsSlugRoute = NewsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => NewsRoute,
 } as any)
 const MatchIdRoute = MatchIdRouteImport.update({
   id: '/match/$id',
@@ -321,7 +333,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
-  '/news': typeof NewsRoute
+  '/news': typeof NewsRouteWithChildren
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -331,7 +343,9 @@ export interface FileRoutesByFullPath {
   '/article/$slug': typeof ArticleSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
+  '/news/': typeof NewsIndexRoute
   '/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -369,7 +383,6 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
-  '/news': typeof NewsRoute
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -378,7 +391,9 @@ export interface FileRoutesByTo {
   '/article/$slug': typeof ArticleSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
+  '/news': typeof NewsIndexRoute
   '/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -418,7 +433,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/leagues': typeof LeaguesRoute
   '/live': typeof LiveRoute
-  '/news': typeof NewsRoute
+  '/news': typeof NewsRouteWithChildren
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -428,7 +443,9 @@ export interface FileRoutesById {
   '/article/$slug': typeof ArticleSlugRoute
   '/auth_/callback': typeof AuthCallbackRoute
   '/match/$id': typeof MatchIdRoute
+  '/news/$slug': typeof NewsSlugRoute
   '/~oauth/initiate': typeof Char126oauthInitiateRoute
+  '/news/': typeof NewsIndexRoute
   '/_authenticated/admin/admins': typeof AuthenticatedAdminAdminsRoute
   '/_authenticated/admin/analytics': typeof AuthenticatedAdminAnalyticsRoute
   '/_authenticated/admin/client-query': typeof AuthenticatedAdminClientQueryRoute
@@ -478,7 +495,9 @@ export interface FileRouteTypes {
     | '/article/$slug'
     | '/auth/callback'
     | '/match/$id'
+    | '/news/$slug'
     | '/~oauth/initiate'
+    | '/news/'
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/client-query'
@@ -516,7 +535,6 @@ export interface FileRouteTypes {
     | '/contact'
     | '/leagues'
     | '/live'
-    | '/news'
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
@@ -525,7 +543,9 @@ export interface FileRouteTypes {
     | '/article/$slug'
     | '/auth/callback'
     | '/match/$id'
+    | '/news/$slug'
     | '/~oauth/initiate'
+    | '/news'
     | '/admin/admins'
     | '/admin/analytics'
     | '/admin/client-query'
@@ -574,7 +594,9 @@ export interface FileRouteTypes {
     | '/article/$slug'
     | '/auth_/callback'
     | '/match/$id'
+    | '/news/$slug'
     | '/~oauth/initiate'
+    | '/news/'
     | '/_authenticated/admin/admins'
     | '/_authenticated/admin/analytics'
     | '/_authenticated/admin/client-query'
@@ -614,7 +636,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   LeaguesRoute: typeof LeaguesRoute
   LiveRoute: typeof LiveRoute
-  NewsRoute: typeof NewsRoute
+  NewsRoute: typeof NewsRouteWithChildren
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -717,12 +739,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/news/': {
+      id: '/news/'
+      path: '/'
+      fullPath: '/news/'
+      preLoaderRoute: typeof NewsIndexRouteImport
+      parentRoute: typeof NewsRoute
+    }
     '/~oauth/initiate': {
       id: '/~oauth/initiate'
       path: '/~oauth/initiate'
       fullPath: '/~oauth/initiate'
       preLoaderRoute: typeof Char126oauthInitiateRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/news/$slug': {
+      id: '/news/$slug'
+      path: '/$slug'
+      fullPath: '/news/$slug'
+      preLoaderRoute: typeof NewsSlugRouteImport
+      parentRoute: typeof NewsRoute
     }
     '/match/$id': {
       id: '/match/$id'
@@ -1033,6 +1069,18 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface NewsRouteChildren {
+  NewsSlugRoute: typeof NewsSlugRoute
+  NewsIndexRoute: typeof NewsIndexRoute
+}
+
+const NewsRouteChildren: NewsRouteChildren = {
+  NewsSlugRoute: NewsSlugRoute,
+  NewsIndexRoute: NewsIndexRoute,
+}
+
+const NewsRouteWithChildren = NewsRoute._addFileChildren(NewsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
@@ -1041,7 +1089,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   LeaguesRoute: LeaguesRoute,
   LiveRoute: LiveRoute,
-  NewsRoute: NewsRoute,
+  NewsRoute: NewsRouteWithChildren,
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
