@@ -214,9 +214,13 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
         : syntheticStreamFixture(id),
     );
   }
-  return [...merged, ...missing]
+  const result = [...merged, ...missing]
     .filter((match) => streamFixtureIsVisible(match))
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+  console.log(
+    `[loadStreamedFixtures] returning ${result.length} fixtures (merged=${merged.length} missing=${missing.length})`,
+  );
+  return result;
 }
 
 function isoDate(d: Date) {
