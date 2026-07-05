@@ -15,8 +15,30 @@ export function MatchCard({ match }: { match: Match }) {
   const worldCupMatch = getWorldCup2026FixtureById(match.id);
   const homeTeam = worldCupMatch?.homeTeam ?? match.homeTeam;
   const awayTeam = worldCupMatch?.awayTeam ?? match.awayTeam;
-  const homeLogo = worldCupMatch?.homeLogo || match.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
-  const awayLogo = worldCupMatch?.awayLogo || match.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
+  const rawHome = match.homeLogo?.trim();
+  const rawAway = match.awayLogo?.trim();
+  const homeLogo = worldCupMatch?.homeLogo || rawHome || getTeamFlagUrl(homeTeam);
+  const awayLogo = worldCupMatch?.awayLogo || rawAway || getTeamFlagUrl(awayTeam);
+
+  if (isLive && typeof window !== "undefined") {
+    const homeSource = worldCupMatch?.homeLogo
+      ? "wc-dataset"
+      : rawHome
+        ? "api-football"
+        : "flag-fallback";
+    const awaySource = worldCupMatch?.awayLogo
+      ? "wc-dataset"
+      : rawAway
+        ? "api-football"
+        : "flag-fallback";
+    // eslint-disable-next-line no-console
+    console.debug("[live-fixture logo]", {
+      id: match.id,
+      wcFallback: Boolean(worldCupMatch),
+      home: { team: homeTeam, url: homeLogo, source: homeSource, apiUrl: match.homeLogo },
+      away: { team: awayTeam, url: awayLogo, source: awaySource, apiUrl: match.awayLogo },
+    });
+  }
   return (
     <Link
       to="/match/$id"
