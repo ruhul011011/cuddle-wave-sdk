@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
+import { getTeamFlagUrl } from "@/lib/world-cup-2026-fixtures";
 import { getStreamsForFixture } from "@/lib/streams.functions";
 import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
@@ -103,6 +104,8 @@ function MatchPage() {
     statistics: [],
   };
   const isLive = match.status === "live";
+  const homeLogo = match.homeLogo?.trim() || getTeamFlagUrl(match.homeTeam);
+  const awayLogo = match.awayLogo?.trim() || getTeamFlagUrl(match.awayTeam);
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
@@ -157,7 +160,7 @@ function MatchPage() {
 
         <div className="mt-6 grid grid-cols-[1fr_auto_1fr] items-center gap-6 rounded-2xl border border-border/60 bg-card/60 p-8">
           <div className="flex flex-col items-center text-center">
-            <img src={match.homeLogo} alt="" className="h-24 w-24 rounded-full ring-2 ring-primary/40 bg-secondary p-1" />
+            <img src={homeLogo} alt="" className="h-24 w-24 rounded-full object-cover ring-2 ring-primary/40 bg-secondary p-1" />
             <div className="mt-4 font-display text-2xl sm:text-3xl">{match.homeTeam}</div>
           </div>
           <div className="font-display text-6xl sm:text-7xl">
@@ -166,7 +169,7 @@ function MatchPage() {
               : <span>{match.homeScore ?? 0} <span className="text-muted-foreground/40">:</span> {match.awayScore ?? 0}</span>}
           </div>
           <div className="flex flex-col items-center text-center">
-            <img src={match.awayLogo} alt="" className="h-24 w-24 rounded-full ring-2 ring-primary/40 bg-secondary p-1" />
+            <img src={awayLogo} alt="" className="h-24 w-24 rounded-full object-cover ring-2 ring-primary/40 bg-secondary p-1" />
             <div className="mt-4 font-display text-2xl sm:text-3xl">{match.awayTeam}</div>
           </div>
         </div>

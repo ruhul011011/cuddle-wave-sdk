@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { Match } from "@/lib/matches";
+import { getTeamFlagUrl } from "@/lib/world-cup-2026-fixtures";
 import { Play } from "lucide-react";
 
 function timeLabel(m: Match) {
@@ -11,6 +12,8 @@ function timeLabel(m: Match) {
 
 export function MatchCard({ match }: { match: Match }) {
   const isLive = match.status === "live";
+  const homeLogo = match.homeLogo?.trim() || getTeamFlagUrl(match.homeTeam);
+  const awayLogo = match.awayLogo?.trim() || getTeamFlagUrl(match.awayTeam);
   return (
     <Link
       to="/match/$id"
@@ -19,7 +22,7 @@ export function MatchCard({ match }: { match: Match }) {
     >
       <div className="flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <img src={match.leagueLogo} alt="" className="h-4 w-4 rounded-sm" />
+          {match.leagueLogo && <img src={match.leagueLogo} alt="" className="h-4 w-4 rounded-sm" />}
           <span className="font-medium">{match.league}</span>
         </div>
         {isLive ? (
@@ -33,7 +36,7 @@ export function MatchCard({ match }: { match: Match }) {
 
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex flex-col items-center text-center">
-          <img src={match.homeLogo} alt="" className="h-12 w-12 rounded-full ring-2 ring-border/60" />
+          <img src={homeLogo} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-border/60" />
           <div className="mt-2 text-sm font-semibold leading-tight">{match.homeTeam}</div>
         </div>
         <div className="font-display text-3xl tracking-wider text-foreground">
@@ -44,7 +47,7 @@ export function MatchCard({ match }: { match: Match }) {
           )}
         </div>
         <div className="flex flex-col items-center text-center">
-          <img src={match.awayLogo} alt="" className="h-12 w-12 rounded-full ring-2 ring-border/60" />
+          <img src={awayLogo} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-border/60" />
           <div className="mt-2 text-sm font-semibold leading-tight">{match.awayTeam}</div>
         </div>
       </div>
