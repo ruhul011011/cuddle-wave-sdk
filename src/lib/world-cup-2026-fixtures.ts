@@ -101,14 +101,15 @@ const RAW_WORLD_CUP_2026 = `
 400021521|2026-07-03T14:00:00+00:00|Argentina|Cabo Verde|Miami Stadium
 400021517|2026-07-03T18:00:00+00:00|Colombia|Ghana|Kansas City Stadium
 400021515|2026-07-03T21:30:00+00:00|Australia|Egypt|Dallas Stadium
-400021533|2026-07-04T17:00:00+00:00|W74|W77|
-400021530|2026-07-04T13:00:00+00:00|Canada|W75|
-400021532|2026-07-05T16:00:00+00:00|W76|W78|
-400021531|2026-07-05T20:00:00+00:00|W79|W80|
-400021529|2026-07-06T15:00:00+00:00|W83|W84|
-400021534|2026-07-06T20:00:00+00:00|W81|W82|
-400021528|2026-07-07T12:00:00+00:00|W86|W88|
-400021535|2026-07-07T16:00:00+00:00|W85|W87|
+1567310|2026-07-04T01:30:00+00:00|Colombia|Ghana|Arrowhead Stadium
+1567824|2026-07-04T17:00:00+00:00|Canada|Morocco|NRG Stadium
+1569870|2026-07-04T21:00:00+00:00|Paraguay|France|Lincoln Financial Field
+1568100|2026-07-05T20:00:00+00:00|Brazil|Norway|MetLife Stadium
+1570714|2026-07-06T00:00:00+00:00|Mexico|England|Estadio Banorte
+1576756|2026-07-06T19:00:00+00:00|Portugal|Spain|
+1570715|2026-07-07T00:00:00+00:00|USA|Belgium|Lumen Field
+1576804|2026-07-07T16:00:00+00:00|Argentina|Egypt|
+1576805|2026-07-07T20:00:00+00:00|Switzerland|Colombia|
 400021536|2026-07-09T16:00:00+00:00|W89|W90|
 400021538|2026-07-10T15:00:00+00:00|W93|W94|
 400021539|2026-07-11T17:00:00+00:00|W91|W92|
@@ -185,6 +186,38 @@ const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.sp
   })
   .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
 
+function makeFixture(id: string, kickoff: string, homeRaw: string, awayRaw: string, venue = ""): WorldCup2026Fixture {
+  const homeTeam = humanizeTeam(homeRaw);
+  const awayTeam = humanizeTeam(awayRaw);
+  return {
+    id,
+    league: "World Cup",
+    leagueLogo: "",
+    leagueCountry: "World",
+    homeTeam,
+    awayTeam,
+    homeLogo: flagUrl(homeRaw),
+    awayLogo: flagUrl(awayRaw),
+    kickoff,
+    status: "upcoming",
+    venue,
+  };
+}
+
+// Some existing live-stream rows were created with an older fixture feed whose
+// knockout IDs no longer exist upstream. Keep those IDs usable for streams, but
+// display the resolved country teams/flags from the current World Cup feed.
+const LEGACY_WORLD_CUP_2026_BY_ID: Record<string, WorldCup2026Fixture> = {
+  "400021530": makeFixture("400021530", "2026-07-04T01:30:00+00:00", "Colombia", "Ghana", "Arrowhead Stadium"),
+  "400021533": makeFixture("400021533", "2026-07-04T17:00:00+00:00", "Canada", "Morocco", "NRG Stadium"),
+  "400021532": makeFixture("400021532", "2026-07-04T21:00:00+00:00", "Paraguay", "France", "Lincoln Financial Field"),
+  "400021531": makeFixture("400021531", "2026-07-05T20:00:00+00:00", "Brazil", "Norway", "MetLife Stadium"),
+  "400021529": makeFixture("400021529", "2026-07-06T00:00:00+00:00", "Mexico", "England", "Estadio Banorte"),
+  "400021534": makeFixture("400021534", "2026-07-06T19:00:00+00:00", "Portugal", "Spain"),
+  "400021528": makeFixture("400021528", "2026-07-07T00:00:00+00:00", "USA", "Belgium", "Lumen Field"),
+  "400021535": makeFixture("400021535", "2026-07-07T16:00:00+00:00", "Argentina", "Egypt"),
+};
+
 export function getWorldCup2026FallbackFixtures(date?: string, windowDays = 0): WorldCup2026Fixture[] {
   if (!date) return ALL_WORLD_CUP_2026_FIXTURES;
 
@@ -201,5 +234,5 @@ export function getWorldCup2026FallbackFixtures(date?: string, windowDays = 0): 
 
 export function getWorldCup2026FixtureById(id: string | number): WorldCup2026Fixture | undefined {
   const key = String(id);
-  return ALL_WORLD_CUP_2026_FIXTURES.find((fixture) => fixture.id === key);
+  return ALL_WORLD_CUP_2026_FIXTURES.find((fixture) => fixture.id === key) ?? LEGACY_WORLD_CUP_2026_BY_ID[key];
 }

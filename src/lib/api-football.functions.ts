@@ -102,9 +102,25 @@ function ensureTeamVisuals(match: Fixture): Fixture {
     ...match,
     homeTeam,
     awayTeam,
-    homeLogo: match.homeLogo?.trim() || getTeamFlagUrl(homeTeam),
-    awayLogo: match.awayLogo?.trim() || getTeamFlagUrl(awayTeam),
+    homeLogo: usableLogoUrl(match.homeLogo) || getTeamFlagUrl(homeTeam),
+    awayLogo: usableLogoUrl(match.awayLogo) || getTeamFlagUrl(awayTeam),
   };
+}
+
+function usableLogoUrl(url?: string): string {
+  const logo = url?.trim() ?? "";
+  if (!logo) return "";
+  const lower = logo.toLowerCase();
+  if (
+    lower === "null" ||
+    lower === "undefined" ||
+    lower.includes("/null.") ||
+    lower.includes("/undefined.") ||
+    lower.includes("placeholder")
+  ) {
+    return "";
+  }
+  return logo;
 }
 
 function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
@@ -113,8 +129,8 @@ function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
     ...f,
     homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
     awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
-    homeLogo: f.homeLogo?.trim() ? f.homeLogo : wc.homeLogo,
-    awayLogo: f.awayLogo?.trim() ? f.awayLogo : wc.awayLogo,
+    homeLogo: usableLogoUrl(f.homeLogo) || wc.homeLogo,
+    awayLogo: usableLogoUrl(f.awayLogo) || wc.awayLogo,
     league: f.league?.trim() ? f.league : wc.league,
     leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
     venue: f.venue ?? wc.venue,
@@ -180,6 +196,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   });
   const wcFallback = getWorldCup2026FallbackFixtures();
   const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+  const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
 
   console.log(
     `[loadStreamedFixtures] active stream ids=${ids.length} fetched=${fetched.length} wcDatasetSize=${wcFallback.length}`,
@@ -190,7 +207,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   // knockout fixtures where teams are TBD), backfill from our WC list so
   // the live section shows a readable label and crest instead of blanks.
   const merged = fetched.map((f) => {
-    const wc = wcById.get(f.id);
+    const wc = wcForId(f.id);
     const blanks: string[] = [];
     if (!f.homeTeam?.trim()) blanks.push("homeTeam");
     if (!f.awayTeam?.trim()) blanks.push("awayTeam");
@@ -201,7 +218,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
         `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"} flagFallback=yes`,
       );
     }
-    return mergeWithWorldCupFixture(f, wc);
+    return { ...mergeWithWorldCupFixture(f, wc), status: "live" as const, minute: f.minute ?? "LIVE" };
   });
 
   const seen = new Set(merged.map((f) => f.id));
@@ -209,7 +226,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   for (const id of ids) {
     const key = String(id);
     if (seen.has(key)) continue;
-    const wc = wcById.get(key);
+    const wc = wcForId(key);
     console.log(
       `[loadStreamedFixtures] missing from upstream fixtureId=${key} source=${wc ? "wc-dataset" : "synthetic"}`,
     );
@@ -226,7 +243,8 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
             homeLogo: wc.homeLogo,
             awayLogo: wc.awayLogo,
             kickoff: wc.kickoff,
-            status: wc.status,
+            status: "live",
+            minute: "LIVE",
             venue: wc.venue,
           }
         : ensureTeamVisuals(syntheticStreamFixture(id)),
@@ -282,14 +300,15 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
     const ids = (data.ids ?? []).filter((n) => Number.isFinite(n));
     const wcFallback = getWorldCup2026FallbackFixtures();
     const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+    const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
     const fetched = (await fetchFixturesByIds(ids).catch(() => [] as Fixture[]))
-      .map((f) => mergeWithWorldCupFixture(f, wcById.get(f.id)));
+      .map((f) => mergeWithWorldCupFixture(f, wcForId(f.id)));
     const seen = new Set(fetched.map((f) => f.id));
     const missing: Fixture[] = [];
     for (const id of ids) {
       const key = String(id);
       if (seen.has(key)) continue;
-      const wc = wcById.get(key);
+      const wc = wcForId(key);
       missing.push(
         wc
           ? {

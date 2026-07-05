@@ -6,7 +6,7 @@ import { Header } from "@/components/site/Header";
 
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
-import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl, getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
@@ -289,6 +289,11 @@ function FixturesBlock({
 
 function FixtureRow({ match: m }: { match: Fixture }) {
   const isLive = m.status === "live";
+  const worldCupMatch = getWorldCup2026FixtureById(m.id);
+  const homeTeam = worldCupMatch?.homeTeam ?? m.homeTeam;
+  const awayTeam = worldCupMatch?.awayTeam ?? m.awayTeam;
+  const homeLogo = worldCupMatch?.homeLogo || m.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
+  const awayLogo = worldCupMatch?.awayLogo || m.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   return (
     <Link
       to="/match/$id"
@@ -310,8 +315,8 @@ function FixtureRow({ match: m }: { match: Fixture }) {
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <img src={m.homeLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
-          <span className="font-display text-base sm:text-lg truncate">{m.homeTeam}</span>
+          <img src={homeLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
+          <span className="font-display text-base sm:text-lg truncate">{homeTeam}</span>
         </div>
         <div className="font-display text-lg tracking-wider text-muted-foreground">
           {isLive || m.status === "finished" ? (
@@ -321,8 +326,8 @@ function FixtureRow({ match: m }: { match: Fixture }) {
           )}
         </div>
         <div className="flex items-center justify-end gap-3 min-w-0">
-          <span className="font-display text-base sm:text-lg truncate text-right">{m.awayTeam}</span>
-          <img src={m.awayLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
+          <span className="font-display text-base sm:text-lg truncate text-right">{awayTeam}</span>
+          <img src={awayLogo} alt="" loading="lazy" decoding="async" className="h-8 w-8 rounded-full object-cover bg-secondary" />
         </div>
       </div>
       {isLive && (
