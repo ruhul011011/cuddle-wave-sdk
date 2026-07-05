@@ -146,9 +146,16 @@ async function fetchFixturesByIds(ids: number[]): Promise<Fixture[]> {
 async function loadStreamedFixtures(): Promise<Fixture[]> {
   const ids = await listActiveStreamFixtureIds();
   if (!ids.length) return [];
-  const fetched = await fetchFixturesByIds(ids).catch(() => [] as Fixture[]);
+  const fetched = await fetchFixturesByIds(ids).catch((e) => {
+    console.error("[loadStreamedFixtures] upstream fetch failed", e);
+    return [] as Fixture[];
+  });
   const wcFallback = getWorldCup2026FallbackFixtures();
   const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+
+  console.log(
+    `[loadStreamedFixtures] active stream ids=${ids.length} fetched=${fetched.length} wcDatasetSize=${wcFallback.length}`,
+  );
 
   // Merge upstream data with the local WC dataset: whenever api-football
   // returns a placeholder record with empty team names/logos (common for
@@ -156,6 +163,16 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   // the live section shows a readable label and crest instead of blanks.
   const merged = fetched.map((f) => {
     const wc = wcById.get(f.id);
+    const blanks: string[] = [];
+    if (!f.homeTeam?.trim()) blanks.push("homeTeam");
+    if (!f.awayTeam?.trim()) blanks.push("awayTeam");
+    if (!f.homeLogo?.trim()) blanks.push("homeLogo");
+    if (!f.awayLogo?.trim()) blanks.push("awayLogo");
+    if (blanks.length) {
+      console.log(
+        `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"}`,
+      );
+    }
     if (!wc) return f;
     return {
       ...f,
@@ -175,7 +192,11 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
     const key = String(id);
     if (seen.has(key)) continue;
     const wc = wcById.get(key);
+    console.log(
+      `[loadStreamedFixtures] missing from upstream fixtureId=${key} source=${wc ? "wc-dataset" : "synthetic"}`,
+    );
     missing.push(
+
       wc
         ? {
             id: key,
