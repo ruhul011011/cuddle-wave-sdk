@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
 import { getTeamFlagUrl, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
-import { getStreamsForFixture } from "@/lib/streams.functions";
+import { getStreamsForFixture, getPreviewStreamsForFixture } from "@/lib/streams.functions";
 import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
 import { useAuth } from "@/hooks/use-auth";
