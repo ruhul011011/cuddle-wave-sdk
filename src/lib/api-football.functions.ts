@@ -196,6 +196,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   });
   const wcFallback = getWorldCup2026FallbackFixtures();
   const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+  const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
 
   console.log(
     `[loadStreamedFixtures] active stream ids=${ids.length} fetched=${fetched.length} wcDatasetSize=${wcFallback.length}`,
@@ -206,7 +207,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   // knockout fixtures where teams are TBD), backfill from our WC list so
   // the live section shows a readable label and crest instead of blanks.
   const merged = fetched.map((f) => {
-    const wc = wcById.get(f.id);
+    const wc = wcForId(f.id);
     const blanks: string[] = [];
     if (!f.homeTeam?.trim()) blanks.push("homeTeam");
     if (!f.awayTeam?.trim()) blanks.push("awayTeam");
@@ -225,7 +226,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
   for (const id of ids) {
     const key = String(id);
     if (seen.has(key)) continue;
-    const wc = wcById.get(key);
+    const wc = wcForId(key);
     console.log(
       `[loadStreamedFixtures] missing from upstream fixtureId=${key} source=${wc ? "wc-dataset" : "synthetic"}`,
     );
@@ -299,14 +300,15 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
     const ids = (data.ids ?? []).filter((n) => Number.isFinite(n));
     const wcFallback = getWorldCup2026FallbackFixtures();
     const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+    const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
     const fetched = (await fetchFixturesByIds(ids).catch(() => [] as Fixture[]))
-      .map((f) => mergeWithWorldCupFixture(f, wcById.get(f.id)));
+      .map((f) => mergeWithWorldCupFixture(f, wcForId(f.id)));
     const seen = new Set(fetched.map((f) => f.id));
     const missing: Fixture[] = [];
     for (const id of ids) {
       const key = String(id);
       if (seen.has(key)) continue;
-      const wc = wcById.get(key);
+      const wc = wcForId(key);
       missing.push(
         wc
           ? {
