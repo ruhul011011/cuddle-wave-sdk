@@ -69,6 +69,31 @@ export const getStreamsForFixture = createServerFn({ method: "GET" })
   });
 
 
+// Public: returns active streams for a fixture WITHOUT requiring auth.
+// Used to power a short (2-minute) live preview for anonymous visitors.
+// The client enforces the 2-minute limit and then routes to /auth.
+// URLs are proxied through a short-lived signed segment endpoint, so raw
+// upstream URLs are never exposed to the browser.
+export const getPreviewStreamsForFixture = createServerFn({ method: "GET" })
+  .inputValidator((input) => z.object({ fixtureId: z.number() }).parse(input))
+  .handler(async ({ data }) => {
+    const supabase = await getReadClient();
+    const { data: rows, error } = await supabase.rpc("get_preview_streams", {
+      _fixture_id: data.fixtureId,
+    });
+    if (error) throw new Error(error.message);
+    let result = (rows ?? []) as StreamRow[];
+
+    const { signUpstream } = await import("@/lib/stream-sign.server");
+    result = result.map((r) => (
+      r.stream_type === "iframe"
+        ? r
+        : { ...r, url: `/api/stream/seg?${signUpstream(r.url)}` }
+    ));
+    return result;
+  });
+
+
 
 // Public: list distinct fixture_ids that have at least one active stream.
 // Uses the admin client server-side to bypass auth-only RLS on match_streams

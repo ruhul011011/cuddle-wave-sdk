@@ -1,11 +1,11 @@
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate, useRouter } from "@tanstack/react-router";
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
 import { getTeamFlagUrl, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
-import { getStreamsForFixture } from "@/lib/streams.functions";
+import { getStreamsForFixture, getPreviewStreamsForFixture } from "@/lib/streams.functions";
 import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
 import { useAuth } from "@/hooks/use-auth";
@@ -60,8 +60,28 @@ export const Route = createFileRoute("/match/$id")({
   component: MatchPage,
 });
 
+const ANON_PREVIEW_SECONDS = 120;
+const anonPreviewStorageKey = (fixtureId: string) => `anon-preview-used:${fixtureId}`;
+
+function readAnonPreviewUsed(fixtureId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(anonPreviewStorageKey(fixtureId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markAnonPreviewUsed(fixtureId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(anonPreviewStorageKey(fixtureId), "1");
+  } catch {}
+}
+
 function MatchPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
   // Fixture metadata is best-effort: when api-football rate-limits or fails,
   // we still render the player using stream rows from our DB so users can watch.
@@ -83,7 +103,25 @@ function MatchPage() {
       isAuthed &&
       (!access || !(access.access === "premium" && !access.hasAccess)),
   });
-  const streams = streamsResult.data ?? [];
+
+  // Anonymous 2-minute live preview: any visitor gets a short preview on any
+  // live match. Fetches through the public preview server fn (no auth), and
+  // localStorage records that the preview has been used per fixture.
+  const [anonPreviewUsed, setAnonPreviewUsed] = useState<boolean>(() => readAnonPreviewUsed(id));
+  useEffect(() => {
+    setAnonPreviewUsed(readAnonPreviewUsed(id));
+  }, [id]);
+  const anonEligible = !authLoading && !isAuthed && !anonPreviewUsed;
+  const previewStreamsResult = useQuery({
+    queryKey: ["preview-streams", id],
+    queryFn: () => getPreviewStreamsForFixture({ data: { fixtureId: Number(id) } }),
+    enabled: anonEligible,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const streams = isAuthed ? (streamsResult.data ?? []) : (previewStreamsResult.data ?? []);
   const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
     id,
     league: "",
@@ -110,16 +148,41 @@ function MatchPage() {
   const homeLogo = worldCupMatch?.homeLogo || match.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
   const awayLogo = worldCupMatch?.awayLogo || match.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   const kickoff = new Date(match.kickoff);
-  const isPaidLocked = access?.access === "premium" && !access.hasAccess;
+  const isPaidLocked = isAuthed && access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
-  const isMixLocked = access?.access === "mix" && !access.hasAccess;
-  const showAdsNotice = access?.access === "ads";
+  const isMixLocked = isAuthed && access?.access === "mix" && !access.hasAccess;
+  const showAdsNotice = isAuthed && access?.access === "ads";
   const playerSources = useMemo(
     () => streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url })),
     [streams],
   );
 
-  // 2-minute preview countdown for "preview" access type users without a sub.
+  // Anonymous preview: 2-minute client-side countdown. When it hits zero we
+  // record the preview as used for this fixture and route to /auth.
+  const showAnonPreview = anonEligible && playerSources.length > 0;
+  const [anonLeft, setAnonLeft] = useState<number>(ANON_PREVIEW_SECONDS);
+  const anonRedirectedRef = useRef(false);
+  useEffect(() => {
+    if (!showAnonPreview) return;
+    setAnonLeft(ANON_PREVIEW_SECONDS);
+    const startedAt = Date.now();
+    const t = window.setInterval(() => {
+      const remaining = Math.max(0, ANON_PREVIEW_SECONDS - Math.floor((Date.now() - startedAt) / 1000));
+      setAnonLeft(remaining);
+      if (remaining <= 0) {
+        window.clearInterval(t);
+        if (!anonRedirectedRef.current) {
+          anonRedirectedRef.current = true;
+          markAnonPreviewUsed(id);
+          setAnonPreviewUsed(true);
+          navigate({ to: "/auth", search: { redirect: `/match/${id}` } as never });
+        }
+      }
+    }, 500);
+    return () => window.clearInterval(t);
+  }, [showAnonPreview, id, navigate]);
+
+  // 2-minute preview countdown for signed-in "preview" access type users.
   const previewSeconds = isPreviewMode ? (access?.previewSeconds ?? 120) : 0;
   const [previewLeft, setPreviewLeft] = useState<number>(previewSeconds);
   useEffect(() => {
@@ -183,14 +246,38 @@ function MatchPage() {
               <div className="mx-auto h-10 w-10 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <p className="mt-4 text-sm text-muted-foreground">Checking your access…</p>
             </div>
+          ) : !isAuthed && showAnonPreview ? (
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3 text-sm">
+                <span className="text-muted-foreground">
+                  Free preview — <span className="font-display text-foreground">{Math.floor(anonLeft / 60)}:{String(anonLeft % 60).padStart(2, "0")}</span> remaining. Sign in to keep watching (it's free).
+                </span>
+                <Link
+                  to="/auth"
+                  search={{ redirect: `/match/${id}` } as never}
+                  className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <LogIn className="h-3.5 w-3.5" />
+                  Sign in
+                </Link>
+              </div>
+              <StreamPlayer
+                sources={playerSources}
+                isLive={isLive}
+                placeholder={
+                  isLive ? "NO STREAM AVAILABLE" :
+                  match.status === "upcoming" ? "STREAM STARTS AT KICKOFF" : "MATCH HIGHLIGHTS"
+                }
+              />
+            </div>
           ) : !isAuthed ? (
             <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
                 <LogIn className="h-7 w-7" />
               </div>
-              <h3 className="mt-4 font-display text-2xl">Sign in to watch</h3>
+              <h3 className="mt-4 font-display text-2xl">Sign in to keep watching</h3>
               <p className="mt-2 text-sm text-muted-foreground">
-                Live streams are available to signed-in viewers only. It's free — sign in to start watching.
+                Your free 2-minute preview is over. Sign in — it's free — to watch the full live match.
               </p>
               <Link
                 to="/auth"
