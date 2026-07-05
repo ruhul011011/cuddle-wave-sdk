@@ -74,23 +74,25 @@ function normalize(raw: any): Fixture {
       : "upcoming";
   const venueName = raw.fixture?.venue?.name;
   const venueCity = raw.fixture?.venue?.city;
-  return {
-    id: String(raw.fixture.id),
-    league: raw.league?.name ?? "",
-    leagueLogo: raw.league?.logo ?? "",
-    leagueCountry: raw.league?.country,
-    homeTeam: raw.teams?.home?.name ?? "",
-    awayTeam: raw.teams?.away?.name ?? "",
-    homeLogo: raw.teams?.home?.logo ?? "",
-    awayLogo: raw.teams?.away?.logo ?? "",
-    kickoff: raw.fixture?.date ?? "",
+  const id = String(raw.fixture.id);
+  const wc = getWorldCup2026FixtureById(id);
+  return ensureTeamVisuals({
+    id,
+    league: raw.league?.name ?? wc?.league ?? "",
+    leagueLogo: raw.league?.logo ?? wc?.leagueLogo ?? "",
+    leagueCountry: raw.league?.country ?? wc?.leagueCountry,
+    homeTeam: raw.teams?.home?.name ?? wc?.homeTeam ?? "",
+    awayTeam: raw.teams?.away?.name ?? wc?.awayTeam ?? "",
+    homeLogo: raw.teams?.home?.logo ?? wc?.homeLogo ?? "",
+    awayLogo: raw.teams?.away?.logo ?? wc?.awayLogo ?? "",
+    kickoff: raw.fixture?.date ?? wc?.kickoff ?? "",
     status,
     homeScore: raw.goals?.home ?? undefined,
     awayScore: raw.goals?.away ?? undefined,
     minute: raw.fixture?.status?.elapsed ? `${raw.fixture.status.elapsed}'` : undefined,
-    venue: venueName ? (venueCity ? `${venueName}, ${venueCity}` : venueName) : undefined,
+    venue: venueName ? (venueCity ? `${venueName}, ${venueCity}` : venueName) : wc?.venue,
     referee: raw.fixture?.referee ?? undefined,
-  };
+  });
 }
 
 function ensureTeamVisuals(match: Fixture): Fixture {
