@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { Match } from "@/lib/matches";
-import { getTeamFlagUrl } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
 import { Play } from "lucide-react";
 
 function timeLabel(m: Match) {
@@ -12,8 +12,11 @@ function timeLabel(m: Match) {
 
 export function MatchCard({ match }: { match: Match }) {
   const isLive = match.status === "live";
-  const homeLogo = match.homeLogo?.trim() || getTeamFlagUrl(match.homeTeam);
-  const awayLogo = match.awayLogo?.trim() || getTeamFlagUrl(match.awayTeam);
+  const worldCupMatch = getWorldCup2026FixtureById(match.id);
+  const homeTeam = worldCupMatch?.homeTeam ?? match.homeTeam;
+  const awayTeam = worldCupMatch?.awayTeam ?? match.awayTeam;
+  const homeLogo = worldCupMatch?.homeLogo || match.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
+  const awayLogo = worldCupMatch?.awayLogo || match.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   return (
     <Link
       to="/match/$id"
@@ -37,7 +40,7 @@ export function MatchCard({ match }: { match: Match }) {
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
         <div className="flex flex-col items-center text-center">
           <img src={homeLogo} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-border/60" />
-          <div className="mt-2 text-sm font-semibold leading-tight">{match.homeTeam}</div>
+          <div className="mt-2 text-sm font-semibold leading-tight">{homeTeam}</div>
         </div>
         <div className="font-display text-3xl tracking-wider text-foreground">
           {match.status === "upcoming" ? (
@@ -48,7 +51,7 @@ export function MatchCard({ match }: { match: Match }) {
         </div>
         <div className="flex flex-col items-center text-center">
           <img src={awayLogo} alt="" className="h-12 w-12 rounded-full object-cover ring-2 ring-border/60" />
-          <div className="mt-2 text-sm font-semibold leading-tight">{match.awayTeam}</div>
+          <div className="mt-2 text-sm font-semibold leading-tight">{awayTeam}</div>
         </div>
       </div>
 
