@@ -102,9 +102,25 @@ function ensureTeamVisuals(match: Fixture): Fixture {
     ...match,
     homeTeam,
     awayTeam,
-    homeLogo: match.homeLogo?.trim() || getTeamFlagUrl(homeTeam),
-    awayLogo: match.awayLogo?.trim() || getTeamFlagUrl(awayTeam),
+    homeLogo: usableLogoUrl(match.homeLogo) || getTeamFlagUrl(homeTeam),
+    awayLogo: usableLogoUrl(match.awayLogo) || getTeamFlagUrl(awayTeam),
   };
+}
+
+function usableLogoUrl(url?: string): string {
+  const logo = url?.trim() ?? "";
+  if (!logo) return "";
+  const lower = logo.toLowerCase();
+  if (
+    lower === "null" ||
+    lower === "undefined" ||
+    lower.includes("/null.") ||
+    lower.includes("/undefined.") ||
+    lower.includes("placeholder")
+  ) {
+    return "";
+  }
+  return logo;
 }
 
 function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
@@ -113,8 +129,8 @@ function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
     ...f,
     homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
     awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
-    homeLogo: f.homeLogo?.trim() ? f.homeLogo : wc.homeLogo,
-    awayLogo: f.awayLogo?.trim() ? f.awayLogo : wc.awayLogo,
+    homeLogo: usableLogoUrl(f.homeLogo) || wc.homeLogo,
+    awayLogo: usableLogoUrl(f.awayLogo) || wc.awayLogo,
     league: f.league?.trim() ? f.league : wc.league,
     leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
     venue: f.venue ?? wc.venue,
@@ -201,7 +217,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
         `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"} flagFallback=yes`,
       );
     }
-    return mergeWithWorldCupFixture(f, wc);
+    return { ...mergeWithWorldCupFixture(f, wc), status: "live" as const, minute: f.minute ?? "LIVE" };
   });
 
   const seen = new Set(merged.map((f) => f.id));
@@ -226,7 +242,8 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
             homeLogo: wc.homeLogo,
             awayLogo: wc.awayLogo,
             kickoff: wc.kickoff,
-            status: wc.status,
+            status: "live",
+            minute: "LIVE",
             venue: wc.venue,
           }
         : ensureTeamVisuals(syntheticStreamFixture(id)),
