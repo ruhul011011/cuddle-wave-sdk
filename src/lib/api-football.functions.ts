@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
-import { getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl, getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -93,6 +93,32 @@ function normalize(raw: any): Fixture {
   };
 }
 
+function ensureTeamVisuals(match: Fixture): Fixture {
+  const homeTeam = match.homeTeam?.trim() || "TBD";
+  const awayTeam = match.awayTeam?.trim() || "TBD";
+  return {
+    ...match,
+    homeTeam,
+    awayTeam,
+    homeLogo: match.homeLogo?.trim() || getTeamFlagUrl(homeTeam),
+    awayLogo: match.awayLogo?.trim() || getTeamFlagUrl(awayTeam),
+  };
+}
+
+function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
+  if (!wc) return ensureTeamVisuals(f);
+  return ensureTeamVisuals({
+    ...f,
+    homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
+    awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
+    homeLogo: f.homeLogo?.trim() ? f.homeLogo : wc.homeLogo,
+    awayLogo: f.awayLogo?.trim() ? f.awayLogo : wc.awayLogo,
+    league: f.league?.trim() ? f.league : wc.league,
+    leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
+    venue: f.venue ?? wc.venue,
+  });
+}
+
 function streamFixtureIsVisible(match: Fixture, now = Date.now()) {
   if (match.status !== "finished") return true;
   const kickoffMs = Date.parse(match.kickoff);
@@ -170,20 +196,10 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
     if (!f.awayLogo?.trim()) blanks.push("awayLogo");
     if (blanks.length) {
       console.log(
-        `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"}`,
+        `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"} flagFallback=yes`,
       );
     }
-    if (!wc) return f;
-    return {
-      ...f,
-      homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
-      awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
-      homeLogo: f.homeLogo?.trim() ? f.homeLogo : wc.homeLogo,
-      awayLogo: f.awayLogo?.trim() ? f.awayLogo : wc.awayLogo,
-      league: f.league?.trim() ? f.league : wc.league,
-      leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
-      venue: f.venue ?? wc.venue,
-    };
+    return mergeWithWorldCupFixture(f, wc);
   });
 
   const seen = new Set(merged.map((f) => f.id));
@@ -211,7 +227,7 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
             status: wc.status,
             venue: wc.venue,
           }
-        : syntheticStreamFixture(id),
+        : ensureTeamVisuals(syntheticStreamFixture(id)),
     );
   }
   const result = [...merged, ...missing]
@@ -262,10 +278,11 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
   .inputValidator((d: { ids: number[] }) => d)
   .handler(async ({ data }) => {
     const ids = (data.ids ?? []).filter((n) => Number.isFinite(n));
-    const fetched = await fetchFixturesByIds(ids).catch(() => [] as Fixture[]);
-    const seen = new Set(fetched.map((f) => f.id));
     const wcFallback = getWorldCup2026FallbackFixtures();
     const wcById = new Map(wcFallback.map((f) => [f.id, f]));
+    const fetched = (await fetchFixturesByIds(ids).catch(() => [] as Fixture[]))
+      .map((f) => mergeWithWorldCupFixture(f, wcById.get(f.id)));
+    const seen = new Set(fetched.map((f) => f.id));
     const missing: Fixture[] = [];
     for (const id of ids) {
       const key = String(id);
@@ -286,7 +303,7 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
               status: wc.status,
               venue: wc.venue,
             }
-          : syntheticStreamFixture(id),
+          : ensureTeamVisuals(syntheticStreamFixture(id)),
       );
     }
     return [...fetched, ...missing];
@@ -497,7 +514,7 @@ export const getFixtureDetail = createServerFn({ method: "GET" })
     ]);
     if (!fixtures.length) return fallback;
     const raw = fixtures[0];
-    const base = normalize(raw);
+    const base = mergeWithWorldCupFixture(normalize(raw), fallback ?? undefined);
     const homeId = raw.teams?.home?.id;
 
     const mapPlayer = (s: any): LineupPlayer => ({

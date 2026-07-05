@@ -144,6 +144,10 @@ function flagUrl(team: string): string {
   return `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(team || "TBD")}&backgroundType=gradientLinear&backgroundColor=991b1b,1e1e5a&fontWeight=700`;
 }
 
+export function getTeamFlagUrl(team: string): string {
+  return flagUrl(team);
+}
+
 // Turn cryptic bracket codes like "W75" / "L12" / "1A" into human labels so
 // placeholder knockout fixtures don't look like broken data.
 function humanizeTeam(team: string): string {
