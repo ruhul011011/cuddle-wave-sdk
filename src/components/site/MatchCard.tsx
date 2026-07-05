@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import type { Match } from "@/lib/matches";
-import { getTeamFlagUrl, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { resolveMatchVisuals } from "@/lib/match-visuals";
 import { Play } from "lucide-react";
 
 function timeLabel(m: Match) {
@@ -12,31 +12,16 @@ function timeLabel(m: Match) {
 
 export function MatchCard({ match }: { match: Match }) {
   const isLive = match.status === "live";
-  const worldCupMatch = getWorldCup2026FixtureById(match.id);
-  const homeTeam = worldCupMatch?.homeTeam ?? match.homeTeam;
-  const awayTeam = worldCupMatch?.awayTeam ?? match.awayTeam;
-  const rawHome = match.homeLogo?.trim();
-  const rawAway = match.awayLogo?.trim();
-  const homeLogo = worldCupMatch?.homeLogo || rawHome || getTeamFlagUrl(homeTeam);
-  const awayLogo = worldCupMatch?.awayLogo || rawAway || getTeamFlagUrl(awayTeam);
+  const visuals = resolveMatchVisuals(match);
+  const { homeTeam, awayTeam, homeLogo, awayLogo } = visuals;
 
   if (isLive && typeof window !== "undefined") {
-    const homeSource = worldCupMatch?.homeLogo
-      ? "wc-dataset"
-      : rawHome
-        ? "api-football"
-        : "flag-fallback";
-    const awaySource = worldCupMatch?.awayLogo
-      ? "wc-dataset"
-      : rawAway
-        ? "api-football"
-        : "flag-fallback";
     // eslint-disable-next-line no-console
     console.debug("[live-fixture logo]", {
       id: match.id,
-      wcFallback: Boolean(worldCupMatch),
-      home: { team: homeTeam, url: homeLogo, source: homeSource, apiUrl: match.homeLogo },
-      away: { team: awayTeam, url: awayLogo, source: awaySource, apiUrl: match.awayLogo },
+      wcFallback: visuals.wcFallbackApplied,
+      home: { team: homeTeam, url: homeLogo, source: visuals.homeLogoSource, apiUrl: match.homeLogo },
+      away: { team: awayTeam, url: awayLogo, source: visuals.awayLogoSource, apiUrl: match.awayLogo },
     });
   }
   return (
