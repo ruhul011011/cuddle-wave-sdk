@@ -60,8 +60,28 @@ export const Route = createFileRoute("/match/$id")({
   component: MatchPage,
 });
 
+const ANON_PREVIEW_SECONDS = 120;
+const anonPreviewStorageKey = (fixtureId: string) => `anon-preview-used:${fixtureId}`;
+
+function readAnonPreviewUsed(fixtureId: string): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(anonPreviewStorageKey(fixtureId)) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markAnonPreviewUsed(fixtureId: string) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(anonPreviewStorageKey(fixtureId), "1");
+  } catch {}
+}
+
 function MatchPage() {
   const { id } = Route.useParams();
+  const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
   // Fixture metadata is best-effort: when api-football rate-limits or fails,
   // we still render the player using stream rows from our DB so users can watch.
@@ -83,7 +103,25 @@ function MatchPage() {
       isAuthed &&
       (!access || !(access.access === "premium" && !access.hasAccess)),
   });
-  const streams = streamsResult.data ?? [];
+
+  // Anonymous 2-minute live preview: any visitor gets a short preview on any
+  // live match. Fetches through the public preview server fn (no auth), and
+  // localStorage records that the preview has been used per fixture.
+  const [anonPreviewUsed, setAnonPreviewUsed] = useState<boolean>(() => readAnonPreviewUsed(id));
+  useEffect(() => {
+    setAnonPreviewUsed(readAnonPreviewUsed(id));
+  }, [id]);
+  const anonEligible = !authLoading && !isAuthed && !anonPreviewUsed;
+  const previewStreamsResult = useQuery({
+    queryKey: ["preview-streams", id],
+    queryFn: () => getPreviewStreamsForFixture({ data: { fixtureId: Number(id) } }),
+    enabled: anonEligible,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+  });
+
+  const streams = isAuthed ? (streamsResult.data ?? []) : (previewStreamsResult.data ?? []);
   const match: import("@/lib/api-football.functions").FixtureDetail = fixtureData ?? {
     id,
     league: "",
@@ -110,16 +148,41 @@ function MatchPage() {
   const homeLogo = worldCupMatch?.homeLogo || match.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
   const awayLogo = worldCupMatch?.awayLogo || match.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   const kickoff = new Date(match.kickoff);
-  const isPaidLocked = access?.access === "premium" && !access.hasAccess;
+  const isPaidLocked = isAuthed && access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;
-  const isMixLocked = access?.access === "mix" && !access.hasAccess;
-  const showAdsNotice = access?.access === "ads";
+  const isMixLocked = isAuthed && access?.access === "mix" && !access.hasAccess;
+  const showAdsNotice = isAuthed && access?.access === "ads";
   const playerSources = useMemo(
     () => streams.map((s) => ({ id: s.id, label: s.label, stream_type: s.stream_type, url: s.url })),
     [streams],
   );
 
-  // 2-minute preview countdown for "preview" access type users without a sub.
+  // Anonymous preview: 2-minute client-side countdown. When it hits zero we
+  // record the preview as used for this fixture and route to /auth.
+  const showAnonPreview = anonEligible && playerSources.length > 0;
+  const [anonLeft, setAnonLeft] = useState<number>(ANON_PREVIEW_SECONDS);
+  const anonRedirectedRef = useRef(false);
+  useEffect(() => {
+    if (!showAnonPreview) return;
+    setAnonLeft(ANON_PREVIEW_SECONDS);
+    const startedAt = Date.now();
+    const t = window.setInterval(() => {
+      const remaining = Math.max(0, ANON_PREVIEW_SECONDS - Math.floor((Date.now() - startedAt) / 1000));
+      setAnonLeft(remaining);
+      if (remaining <= 0) {
+        window.clearInterval(t);
+        if (!anonRedirectedRef.current) {
+          anonRedirectedRef.current = true;
+          markAnonPreviewUsed(id);
+          setAnonPreviewUsed(true);
+          navigate({ to: "/auth", search: { redirect: `/match/${id}` } as never });
+        }
+      }
+    }, 500);
+    return () => window.clearInterval(t);
+  }, [showAnonPreview, id, navigate]);
+
+  // 2-minute preview countdown for signed-in "preview" access type users.
   const previewSeconds = isPreviewMode ? (access?.previewSeconds ?? 120) : 0;
   const [previewLeft, setPreviewLeft] = useState<number>(previewSeconds);
   useEffect(() => {
