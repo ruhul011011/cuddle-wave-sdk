@@ -337,11 +337,17 @@ export const deleteStream = createServerFn({ method: "POST" })
 export const checkIsAdmin = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data } = await context.supabase
+    const { data, error } = await context.supabase
       .from("user_roles")
-      .select("id")
-      .eq("user_id", context.userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    return { isAdmin: Boolean(data) };
+      .select("id, role")
+      .eq("user_id", context.userId);
+    const roles = (data ?? []).map((r) => r.role);
+    const email = (context.claims as { email?: string } | undefined)?.email ?? null;
+    return {
+      isAdmin: roles.includes("admin"),
+      userId: context.userId,
+      email,
+      roles,
+      queryError: error?.message ?? null,
+    };
   });
