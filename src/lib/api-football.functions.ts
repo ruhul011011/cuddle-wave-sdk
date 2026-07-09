@@ -51,6 +51,8 @@ export type Fixture = {
   leagueCountry?: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId?: number;
+  awayTeamId?: number;
   homeLogo: string;
   awayLogo: string;
   kickoff: string;
@@ -83,6 +85,8 @@ function normalize(raw: any): Fixture {
     leagueCountry: raw.league?.country ?? wc?.leagueCountry,
     homeTeam: raw.teams?.home?.name ?? wc?.homeTeam ?? "",
     awayTeam: raw.teams?.away?.name ?? wc?.awayTeam ?? "",
+    homeTeamId: raw.teams?.home?.id ?? wc?.homeTeamId,
+    awayTeamId: raw.teams?.away?.id ?? wc?.awayTeamId,
     homeLogo: raw.teams?.home?.logo ?? wc?.homeLogo ?? "",
     awayLogo: raw.teams?.away?.logo ?? wc?.awayLogo ?? "",
     kickoff: raw.fixture?.date ?? wc?.kickoff ?? "",
@@ -129,6 +133,8 @@ function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
     ...f,
     homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
     awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
+    homeTeamId: f.homeTeamId ?? wc.homeTeamId,
+    awayTeamId: f.awayTeamId ?? wc.awayTeamId,
     homeLogo: usableLogoUrl(f.homeLogo) || wc.homeLogo,
     awayLogo: usableLogoUrl(f.awayLogo) || wc.awayLogo,
     league: f.league?.trim() ? f.league : wc.league,
@@ -240,6 +246,8 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
             leagueCountry: wc.leagueCountry,
             homeTeam: wc.homeTeam,
             awayTeam: wc.awayTeam,
+            homeTeamId: wc.homeTeamId,
+            awayTeamId: wc.awayTeamId,
             homeLogo: wc.homeLogo,
             awayLogo: wc.awayLogo,
             kickoff: wc.kickoff,
@@ -318,6 +326,8 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
               leagueCountry: wc.leagueCountry,
               homeTeam: wc.homeTeam,
               awayTeam: wc.awayTeam,
+              homeTeamId: wc.homeTeamId,
+              awayTeamId: wc.awayTeamId,
               homeLogo: wc.homeLogo,
               awayLogo: wc.awayLogo,
               kickoff: wc.kickoff,
@@ -512,6 +522,8 @@ function worldCupFixtureDetail(id: string): FixtureDetail | null {
     leagueCountry: wc.leagueCountry,
     homeTeam: wc.homeTeam,
     awayTeam: wc.awayTeam,
+    homeTeamId: wc.homeTeamId,
+    awayTeamId: wc.awayTeamId,
     homeLogo: wc.homeLogo,
     awayLogo: wc.awayLogo,
     kickoff: wc.kickoff,
