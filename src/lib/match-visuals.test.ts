@@ -22,6 +22,18 @@ function makeMatch(overrides: Partial<Match>): Match {
 }
 
 describe("resolveMatchVisuals — live vs upcoming parity", () => {
+  it("resolves W89/W90 quarter-final entrants to real team ids and API logo URLs", () => {
+    const fixture = getWorldCup2026FixtureById("400021536");
+
+    expect(fixture).toBeDefined();
+    expect(fixture!.homeTeam).toBe("Colombia");
+    expect(fixture!.awayTeam).toBe("Morocco");
+    expect(fixture!.homeTeamId).toBe(8);
+    expect(fixture!.awayTeamId).toBe(31);
+    expect(fixture!.homeLogo).toBe("https://media.api-sports.io/football/teams/8.png");
+    expect(fixture!.awayLogo).toBe("https://media.api-sports.io/football/teams/31.png");
+  });
+
   it("returns identical visuals for a live and upcoming fixture when logos are blank", () => {
     const upcoming = makeMatch({ id: WC_ID, status: "upcoming", homeLogo: "", awayLogo: "" });
     const live = makeMatch({ id: WC_ID, status: "live", homeLogo: "", awayLogo: "", minute: "45'" });
