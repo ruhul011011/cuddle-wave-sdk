@@ -17,6 +17,7 @@ export const Route = createFileRoute("/api/public/health")({
           STRIPE_WEBHOOK_SECRET: Boolean(stripeWebhook),
           API_FOOTBALL_KEY: Boolean(getServerEnv("API_FOOTBALL_KEY")),
           SUPABASE_SERVICE_ROLE_KEY: Boolean(getServerEnv("SUPABASE_SERVICE_ROLE_KEY")),
+          STREAM_SIGNING_SECRET: Boolean(getServerEnv("STREAM_SIGNING_SECRET")),
         };
         return Response.json({ ok: true, authEnv, stripe });
       },
