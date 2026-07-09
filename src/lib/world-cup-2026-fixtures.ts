@@ -165,20 +165,55 @@ function humanizeTeam(team: string): string {
   return raw;
 }
 
-const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026.split("\n")
-  .map((line) => {
+type RawWorldCupFixture = {
+  matchNumber: number;
+  id: string;
+  kickoff: string;
+  homeRaw: string;
+  awayRaw: string;
+  venue?: string;
+};
+
+const RAW_WORLD_CUP_2026_FIXTURES: RawWorldCupFixture[] = RAW_WORLD_CUP_2026.split("\n")
+  .map((line, index) => {
     const [id, kickoff, homeRaw, awayRaw, venue] = line.split("|");
-    const homeTeam = humanizeTeam(homeRaw);
-    const awayTeam = humanizeTeam(awayRaw);
+    return { matchNumber: index + 1, id, kickoff, homeRaw, awayRaw, venue };
+  });
+
+const RAW_WORLD_CUP_BY_MATCH_NUMBER = new Map(
+  RAW_WORLD_CUP_2026_FIXTURES.map((fixture) => [fixture.matchNumber, fixture]),
+);
+
+function bracketEntrant(rawTeam: string): { team: string; logoRaw: string } {
+  const raw = (rawTeam ?? "").trim();
+  const bracket = raw.match(/^(W|L|RU)(\d+)$/i);
+  if (!bracket) return { team: humanizeTeam(raw), logoRaw: raw };
+
+  const source = RAW_WORLD_CUP_BY_MATCH_NUMBER.get(Number(bracket[2]));
+  if (!source) return { team: humanizeTeam(raw), logoRaw: raw };
+
+  const sourceHome = bracketEntrant(source.homeRaw);
+  const sourceAway = bracketEntrant(source.awayRaw);
+  const prefix = bracket[1].toUpperCase() === "W" ? "Winner" : bracket[1].toUpperCase() === "L" ? "Loser" : "Runner-up";
+  return {
+    team: `${prefix}: ${sourceHome.team} / ${sourceAway.team}`,
+    logoRaw: sourceHome.logoRaw,
+  };
+}
+
+const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026_FIXTURES
+  .map(({ id, kickoff, homeRaw, awayRaw, venue }) => {
+    const home = bracketEntrant(homeRaw);
+    const away = bracketEntrant(awayRaw);
     return {
       id,
       league: "World Cup",
       leagueLogo: "",
       leagueCountry: "World",
-      homeTeam,
-      awayTeam,
-      homeLogo: flagUrl(homeRaw),
-      awayLogo: flagUrl(awayRaw),
+      homeTeam: home.team,
+      awayTeam: away.team,
+      homeLogo: flagUrl(home.logoRaw),
+      awayLogo: flagUrl(away.logoRaw),
       kickoff,
       status: "upcoming" as const,
       venue,
