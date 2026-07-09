@@ -58,6 +58,8 @@ function AdminLayout() {
     );
   }
   if (!adminQ.data?.isAdmin) {
+    const diag = adminQ.data as { userId?: string; email?: string | null; roles?: string[]; queryError?: string | null } | undefined;
+    const errMsg = adminQ.error instanceof Error ? adminQ.error.message : adminQ.error ? String(adminQ.error) : null;
     return (
       <div className="min-h-screen grid place-items-center bg-background px-4">
         <div className="max-w-md rounded-2xl border border-border/60 bg-card p-8 text-center">
@@ -67,6 +69,13 @@ function AdminLayout() {
             Your account doesn't have the <code className="bg-secondary px-1 rounded">admin</code> role.
             Ask an existing admin to grant it.
           </p>
+          <div className="mt-4 rounded-lg bg-muted/40 p-3 text-left text-xs font-mono text-muted-foreground break-all">
+            <div>email: {diag?.email ?? "—"}</div>
+            <div>userId: {diag?.userId ?? "—"}</div>
+            <div>roles: {diag?.roles?.length ? diag.roles.join(", ") : "(none)"}</div>
+            {diag?.queryError ? <div className="text-destructive">db: {diag.queryError}</div> : null}
+            {errMsg ? <div className="text-destructive">err: {errMsg}</div> : null}
+          </div>
           <Link to="/" className="mt-5 inline-block rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
             Back to site
           </Link>
