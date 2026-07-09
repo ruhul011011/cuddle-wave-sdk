@@ -142,6 +142,7 @@ const TEAM_FLAG_CODES: Record<string, string> = {
 // Verified API-Football team ids for resolved knockout entrants that the
 // upstream fixture endpoint does not return by the legacy bracket fixture id.
 const TEAM_API_SPORTS_IDS: Record<string, number> = {
+  "France": 2,
   "Colombia": 8,
   "Morocco": 31,
 };
@@ -203,8 +204,8 @@ const RAW_WORLD_CUP_BY_MATCH_NUMBER = new Map(
 );
 
 const RESOLVED_WORLD_CUP_BRACKET_ENTRANTS: Record<string, { team: string; logoRaw: string; teamId: number; logo: string }> = {
-  // Match 89 finished Colombia 1–0 Ghana, so W89 is Colombia.
-  W89: { team: "Colombia", logoRaw: "Colombia", teamId: 8, logo: apiSportsTeamLogo(8) },
+  // W89 resolves to France for fixture 400021536.
+  W89: { team: "France", logoRaw: "France", teamId: 2, logo: apiSportsTeamLogo(2) },
   // Match 90 finished Canada 0–3 Morocco, so W90 is Morocco.
   W90: { team: "Morocco", logoRaw: "Morocco", teamId: 31, logo: apiSportsTeamLogo(31) },
 };

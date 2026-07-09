@@ -26,11 +26,11 @@ describe("resolveMatchVisuals — live vs upcoming parity", () => {
     const fixture = getWorldCup2026FixtureById("400021536");
 
     expect(fixture).toBeDefined();
-    expect(fixture!.homeTeam).toBe("Colombia");
+    expect(fixture!.homeTeam).toBe("France");
     expect(fixture!.awayTeam).toBe("Morocco");
-    expect(fixture!.homeTeamId).toBe(8);
+    expect(fixture!.homeTeamId).toBe(2);
     expect(fixture!.awayTeamId).toBe(31);
-    expect(fixture!.homeLogo).toBe("https://media.api-sports.io/football/teams/8.png");
+    expect(fixture!.homeLogo).toBe("https://media.api-sports.io/football/teams/2.png");
     expect(fixture!.awayLogo).toBe("https://media.api-sports.io/football/teams/31.png");
   });
 
