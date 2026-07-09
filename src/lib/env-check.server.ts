@@ -2,13 +2,15 @@
 // project ref. Logs a single loud warning block if anything is off so
 // self-hosted deploys catch mis-wired .env files immediately.
 
+import { getServerEnv } from "./env.server";
+
 const EXPECTED_PROJECT_REF = "whxchritocpwpphodvsi";
 const EXPECTED_URL = `https://${EXPECTED_PROJECT_REF}.supabase.co`;
 
 let checked = false;
 
 function readEnv(key: string): string | undefined {
-  const v = process.env[key];
+  const v = getServerEnv(key);
   return typeof v === "string" && v.length > 0 ? v.trim() : undefined;
 }
 
@@ -24,10 +26,35 @@ function extractRefFromUrl(url: string | undefined): string | undefined {
   return m?.[1];
 }
 
-export function verifySupabaseEnv(): void {
-  if (checked) return;
-  checked = true;
+function extractRefFromPublishableKey(key: string | undefined): string | undefined {
+  if (!key) return undefined;
+  const parts = key.split(".");
+  if (parts.length !== 3) return undefined;
+  try {
+    const payload = JSON.parse(
+      Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"),
+    );
+    return typeof payload?.ref === "string" ? payload.ref : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
+export type SupabaseEnvDiagnostic = {
+  ok: boolean;
+  expectedProjectRef: string;
+  expectedUrl: string;
+  checks: Array<{
+    name: string;
+    ok: boolean;
+    expected: string;
+    actual: string;
+    actualProjectRef?: string;
+  }>;
+  problems: string[];
+};
+
+export function getSupabaseEnvDiagnostics(): SupabaseEnvDiagnostic {
   const pairs: Array<[string, string | undefined, string]> = [
     ["SUPABASE_URL", readEnv("SUPABASE_URL"), EXPECTED_URL],
     ["VITE_SUPABASE_URL", readEnv("VITE_SUPABASE_URL"), EXPECTED_URL],
@@ -35,61 +62,78 @@ export function verifySupabaseEnv(): void {
     ["VITE_SUPABASE_PROJECT_ID", readEnv("VITE_SUPABASE_PROJECT_ID"), EXPECTED_PROJECT_REF],
   ];
 
+  const checks: SupabaseEnvDiagnostic["checks"] = [];
   const problems: string[] = [];
 
   for (const [name, actual, expected] of pairs) {
+    const actualProjectRef = name.endsWith("URL") ? extractRefFromUrl(actual) : undefined;
+    const ok = name.endsWith("URL")
+      ? actualProjectRef === EXPECTED_PROJECT_REF
+      : actual === expected;
+
+    checks.push({
+      name,
+      ok: Boolean(actual && ok),
+      expected,
+      actual: actual || "(unset)",
+      ...(actualProjectRef ? { actualProjectRef } : {}),
+    });
+
     if (!actual) {
       problems.push(`  - ${name} is not set (expected "${expected}")`);
-      continue;
-    }
-    if (name.endsWith("URL")) {
-      const ref = extractRefFromUrl(actual);
-      if (ref !== EXPECTED_PROJECT_REF) {
-        problems.push(
-          `  - ${name}="${actual}" points to project "${ref ?? "unknown"}", expected "${EXPECTED_PROJECT_REF}"`,
-        );
-      }
-    } else if (actual !== expected) {
+    } else if (name.endsWith("URL") && actualProjectRef !== EXPECTED_PROJECT_REF) {
+      problems.push(
+        `  - ${name}="${actual}" points to project "${actualProjectRef ?? "unknown"}", expected "${EXPECTED_PROJECT_REF}"`,
+      );
+    } else if (!name.endsWith("URL") && actual !== expected) {
       problems.push(`  - ${name}="${actual}", expected "${expected}"`);
     }
   }
 
   const anonKey = readEnv("SUPABASE_PUBLISHABLE_KEY");
   const viteAnonKey = readEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
+  const anonRef = extractRefFromPublishableKey(anonKey);
+  const viteAnonRef = extractRefFromPublishableKey(viteAnonKey);
 
-  if (!anonKey) {
-    problems.push("  - SUPABASE_PUBLISHABLE_KEY is not set");
+  for (const [name, key, ref] of [
+    ["SUPABASE_PUBLISHABLE_KEY", anonKey, anonRef],
+    ["VITE_SUPABASE_PUBLISHABLE_KEY", viteAnonKey, viteAnonRef],
+  ] as const) {
+    const ok = Boolean(key) && (!ref || ref === EXPECTED_PROJECT_REF);
+    checks.push({
+      name,
+      ok,
+      expected: `publishable key for ${EXPECTED_PROJECT_REF}`,
+      actual: key ? mask(key) : "(unset)",
+      ...(ref ? { actualProjectRef: ref } : {}),
+    });
+    if (!key) {
+      problems.push(`  - ${name} is not set`);
+    } else if (ref && ref !== EXPECTED_PROJECT_REF) {
+      problems.push(`  - ${name} is a JWT for project "${ref}", expected "${EXPECTED_PROJECT_REF}"`);
+    }
   }
-  if (!viteAnonKey) {
-    problems.push("  - VITE_SUPABASE_PUBLISHABLE_KEY is not set");
-  }
+
   if (anonKey && viteAnonKey && anonKey !== viteAnonKey) {
     problems.push(
       `  - SUPABASE_PUBLISHABLE_KEY (${mask(anonKey)}) does not match VITE_SUPABASE_PUBLISHABLE_KEY (${mask(viteAnonKey)}) — client and server would talk to different auth contexts`,
     );
   }
 
-  // Sanity-check the anon JWT payload's project ref if the key is a JWT.
-  for (const [name, key] of [
-    ["SUPABASE_PUBLISHABLE_KEY", anonKey],
-    ["VITE_SUPABASE_PUBLISHABLE_KEY", viteAnonKey],
-  ] as const) {
-    if (!key) continue;
-    const parts = key.split(".");
-    if (parts.length !== 3) continue; // new opaque sb_publishable_ keys — skip
-    try {
-      const payload = JSON.parse(
-        Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"),
-      );
-      if (payload?.ref && payload.ref !== EXPECTED_PROJECT_REF) {
-        problems.push(
-          `  - ${name} is a JWT for project "${payload.ref}", expected "${EXPECTED_PROJECT_REF}"`,
-        );
-      }
-    } catch {
-      // ignore parse errors
-    }
-  }
+  return {
+    ok: problems.length === 0,
+    expectedProjectRef: EXPECTED_PROJECT_REF,
+    expectedUrl: EXPECTED_URL,
+    checks,
+    problems,
+  };
+}
+
+export function verifySupabaseEnv(): void {
+  if (checked) return;
+  checked = true;
+
+  const { problems } = getSupabaseEnvDiagnostics();
 
   if (problems.length === 0) {
     console.log(
