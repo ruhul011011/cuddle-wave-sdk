@@ -203,11 +203,20 @@ const RAW_WORLD_CUP_BY_MATCH_NUMBER = new Map(
   RAW_WORLD_CUP_2026_FIXTURES.map((fixture) => [fixture.matchNumber, fixture]),
 );
 
-const RESOLVED_WORLD_CUP_BRACKET_ENTRANTS: Record<string, { team: string; logoRaw: string; teamId: number; logo: string }> = {
-  // W89 resolves to France for fixture 400021536.
+const RESOLVED_WORLD_CUP_BRACKET_ENTRANTS: Record<string, { team: string; logoRaw: string; teamId?: number; logo?: string }> = {
+  // Quarter-final entrants (resolved after Round of 16).
+  // 400021536 · Jul 9 · France vs Morocco
   W89: { team: "France", logoRaw: "France", teamId: 2, logo: apiSportsTeamLogo(2) },
-  // Match 90 finished Canada 0–3 Morocco, so W90 is Morocco.
   W90: { team: "Morocco", logoRaw: "Morocco", teamId: 31, logo: apiSportsTeamLogo(31) },
+  // 400021539 · Jul 11 · Norway vs England
+  W91: { team: "Norway", logoRaw: "Norway" },
+  W92: { team: "England", logoRaw: "England" },
+  // 400021538 · Jul 10 · Spain vs Belgium
+  W93: { team: "Spain", logoRaw: "Spain" },
+  W94: { team: "Belgium", logoRaw: "Belgium" },
+  // 400021537 · Jul 11 · Argentina vs Switzerland
+  W95: { team: "Argentina", logoRaw: "Argentina" },
+  W96: { team: "Switzerland", logoRaw: "Switzerland" },
 };
 
 function bracketEntrant(rawTeam: string): { team: string; logoRaw: string; teamId?: number; logo?: string } {
