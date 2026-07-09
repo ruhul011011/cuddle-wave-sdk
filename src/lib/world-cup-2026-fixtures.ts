@@ -5,6 +5,8 @@ export type WorldCup2026Fixture = {
   leagueCountry?: string;
   homeTeam: string;
   awayTeam: string;
+  homeTeamId?: number;
+  awayTeamId?: number;
   homeLogo: string;
   awayLogo: string;
   kickoff: string;
@@ -137,6 +139,22 @@ const TEAM_FLAG_CODES: Record<string, string> = {
   "Ghana": "gh", "Panama": "pa", "Uzbekistan": "uz", "Colombia": "co",
 };
 
+// Verified API-Football team ids for resolved knockout entrants that the
+// upstream fixture endpoint does not return by the legacy bracket fixture id.
+const TEAM_API_SPORTS_IDS: Record<string, number> = {
+  "Colombia": 8,
+  "Morocco": 31,
+};
+
+function apiSportsTeamLogo(teamId: number): string {
+  return `https://media.api-sports.io/football/teams/${teamId}.png`;
+}
+
+function teamMeta(team: string): { teamId?: number; logo?: string } {
+  const teamId = TEAM_API_SPORTS_IDS[team];
+  return teamId ? { teamId, logo: apiSportsTeamLogo(teamId) } : {};
+}
+
 function flagUrl(team: string): string {
   const code = TEAM_FLAG_CODES[team];
   if (code) return `https://flagcdn.com/w80/${code}.png`;
@@ -184,10 +202,23 @@ const RAW_WORLD_CUP_BY_MATCH_NUMBER = new Map(
   RAW_WORLD_CUP_2026_FIXTURES.map((fixture) => [fixture.matchNumber, fixture]),
 );
 
-function bracketEntrant(rawTeam: string): { team: string; logoRaw: string } {
+const RESOLVED_WORLD_CUP_BRACKET_ENTRANTS: Record<string, { team: string; logoRaw: string; teamId: number; logo: string }> = {
+  // Match 89 finished Colombia 1–0 Ghana, so W89 is Colombia.
+  W89: { team: "Colombia", logoRaw: "Colombia", teamId: 8, logo: apiSportsTeamLogo(8) },
+  // Match 90 finished Canada 0–3 Morocco, so W90 is Morocco.
+  W90: { team: "Morocco", logoRaw: "Morocco", teamId: 31, logo: apiSportsTeamLogo(31) },
+};
+
+function bracketEntrant(rawTeam: string): { team: string; logoRaw: string; teamId?: number; logo?: string } {
   const raw = (rawTeam ?? "").trim();
+  const resolved = RESOLVED_WORLD_CUP_BRACKET_ENTRANTS[raw.toUpperCase()];
+  if (resolved) return resolved;
+
   const bracket = raw.match(/^(W|L|RU)(\d+)$/i);
-  if (!bracket) return { team: humanizeTeam(raw), logoRaw: raw };
+  if (!bracket) {
+    const team = humanizeTeam(raw);
+    return { team, logoRaw: raw, ...teamMeta(team) };
+  }
 
   const source = RAW_WORLD_CUP_BY_MATCH_NUMBER.get(Number(bracket[2]));
   if (!source) return { team: humanizeTeam(raw), logoRaw: raw };
@@ -212,8 +243,10 @@ const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026_FI
       leagueCountry: "World",
       homeTeam: home.team,
       awayTeam: away.team,
-      homeLogo: flagUrl(home.logoRaw),
-      awayLogo: flagUrl(away.logoRaw),
+      homeTeamId: home.teamId,
+      awayTeamId: away.teamId,
+      homeLogo: home.logo ?? flagUrl(home.logoRaw),
+      awayLogo: away.logo ?? flagUrl(away.logoRaw),
       kickoff,
       status: "upcoming" as const,
       venue,
@@ -224,6 +257,8 @@ const ALL_WORLD_CUP_2026_FIXTURES: WorldCup2026Fixture[] = RAW_WORLD_CUP_2026_FI
 function makeFixture(id: string, kickoff: string, homeRaw: string, awayRaw: string, venue = ""): WorldCup2026Fixture {
   const homeTeam = humanizeTeam(homeRaw);
   const awayTeam = humanizeTeam(awayRaw);
+  const home = teamMeta(homeTeam);
+  const away = teamMeta(awayTeam);
   return {
     id,
     league: "World Cup",
@@ -231,8 +266,10 @@ function makeFixture(id: string, kickoff: string, homeRaw: string, awayRaw: stri
     leagueCountry: "World",
     homeTeam,
     awayTeam,
-    homeLogo: flagUrl(homeRaw),
-    awayLogo: flagUrl(awayRaw),
+    homeTeamId: home.teamId,
+    awayTeamId: away.teamId,
+    homeLogo: home.logo ?? flagUrl(homeRaw),
+    awayLogo: away.logo ?? flagUrl(awayRaw),
     kickoff,
     status: "upcoming",
     venue,
