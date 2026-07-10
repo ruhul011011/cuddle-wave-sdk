@@ -99,6 +99,14 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           const planMonths = Number(session.metadata?.plan_months ?? 0);
           const userId = session.metadata?.user_id;
           const fixtureId = fixtureIdRaw ? Number(fixtureIdRaw) : NaN;
+          log("checkout.session.completed", {
+            sessionId: session.id,
+            payment_status: session.payment_status,
+            amount_total: session.amount_total,
+            currency: session.currency,
+            metadata: session.metadata,
+            parsed: { userId, planId, planMonths, fixtureId },
+          });
 
           if (userId && planId && Number.isFinite(planMonths) && planMonths > 0 && session.payment_status === "paid") {
             const { data: existing } = await supabaseAdmin
