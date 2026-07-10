@@ -5,6 +5,19 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const reqId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+        const t0 = Date.now();
+        const log = (...args: unknown[]) => console.log(`[stripe-webhook][${reqId}]`, ...args);
+        const logErr = (...args: unknown[]) => console.error(`[stripe-webhook][${reqId}]`, ...args);
+        log("incoming", {
+          url: request.url,
+          method: request.method,
+          hasSignature: !!request.headers.get("stripe-signature"),
+          contentType: request.headers.get("content-type"),
+          contentLength: request.headers.get("content-length"),
+          userAgent: request.headers.get("user-agent"),
+        });
+        try {
         const { getServerEnv } = await import("@/lib/env.server");
         const secret = getServerEnv("STRIPE_SECRET_KEY");
         const whSecret = getServerEnv("STRIPE_WEBHOOK_SECRET");
