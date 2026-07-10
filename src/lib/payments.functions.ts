@@ -81,18 +81,16 @@ export const getMatchAccess = createServerFn({ method: "GET" })
         const { data: userRes } = await userClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          // Per-match paid games ("premium") require a per-match purchase.
-          // A general subscription does NOT bypass per-match paywalls — it only
-          // unlocks non-per-match tiers (e.g. "preview").
-          if (access === "premium") {
-            const { data: purchase } = await userClient
-              .from("match_purchases")
-              .select("id")
-              .eq("user_id", uid)
-              .eq("fixture_id", data.fixtureId)
-              .eq("status", "paid")
-              .maybeSingle();
-            hasAccess = Boolean(purchase);
+          // Either a per-match purchase OR an active subscription unlocks premium/mix.
+          const { data: purchase } = await userClient
+            .from("match_purchases")
+            .select("id")
+            .eq("user_id", uid)
+            .eq("fixture_id", data.fixtureId)
+            .eq("status", "paid")
+            .maybeSingle();
+          if (purchase) {
+            hasAccess = true;
           } else {
             const { data: subscription } = await userClient
               .from("subscriptions")
