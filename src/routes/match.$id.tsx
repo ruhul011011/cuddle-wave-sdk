@@ -112,7 +112,7 @@ function MatchPage() {
     setAnonPreviewUsed(readAnonPreviewUsed(id));
   }, [id]);
   const isPremiumAccess = access?.access === "premium";
-  const anonEligible = !authLoading && !isAuthed && !anonPreviewUsed && !isPremiumAccess;
+  const anonEligible = !authLoading && !isAuthed && !anonPreviewUsed;
   const previewStreamsResult = useQuery({
     queryKey: ["preview-streams", id],
     queryFn: () => getPreviewStreamsForFixture({ data: { fixtureId: Number(id) } }),
@@ -251,7 +251,7 @@ function MatchPage() {
             <div className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-primary/40 bg-primary/5 px-4 py-3 text-sm">
                 <span className="text-muted-foreground">
-                  Free preview — <span className="font-display text-foreground">{Math.floor(anonLeft / 60)}:{String(anonLeft % 60).padStart(2, "0")}</span> remaining. Sign in to keep watching (it's free).
+                  Free preview — <span className="font-display text-foreground">{Math.floor(anonLeft / 60)}:{String(anonLeft % 60).padStart(2, "0")}</span> remaining. {isPremiumAccess ? "Sign in and choose a plan to keep watching." : "Sign in to keep watching (it's free)."}
                 </span>
                 <Link
                   to="/auth"
