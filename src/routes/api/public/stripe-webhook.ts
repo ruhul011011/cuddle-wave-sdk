@@ -65,25 +65,32 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
         }
 
         const body = await request.text();
+        log("body read", { bytes: body.length });
         const stripe = new Stripe(secret);
 
         let event: Stripe.Event;
         try {
           event = await stripe.webhooks.constructEventAsync(body, sig, whSecret);
         } catch (err) {
-          const msg = (err as Error).message;
-          await logEntry({ status: "invalid_signature", message: msg });
-          return new Response(`Invalid signature: ${msg}`, { status: 400 });
+          const e = err as Error;
+          logErr("signature verification failed", { message: e?.message, stack: e?.stack });
+          await logEntry({ status: "invalid_signature", message: `[${reqId}] ${e?.message}` });
+          return new Response(`Invalid signature: ${e?.message}`, { status: 400 });
         }
+        log("event constructed", { id: event.id, type: event.type, livemode: event.livemode });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: alreadyProcessed } = await supabaseAdmin
+        const { data: alreadyProcessed, error: dupErr } = await supabaseAdmin
           .from("stripe_webhook_logs")
           .select("id")
           .eq("event_id", event.id)
           .eq("status", "processed")
           .maybeSingle();
-        if (alreadyProcessed) return new Response("ok", { status: 200 });
+        if (dupErr) logErr("dedupe lookup error", dupErr);
+        if (alreadyProcessed) {
+          log("duplicate event, skipping");
+          return new Response("ok", { status: 200 });
+        }
 
         if (event.type === "checkout.session.completed") {
           const session = event.data.object as Stripe.Checkout.Session;
