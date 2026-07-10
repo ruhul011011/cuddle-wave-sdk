@@ -271,6 +271,33 @@ function MatchPage() {
                 }
               />
             </div>
+          ) : !isAuthed && isPremiumAccess ? (
+            <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
+              <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
+                <Lock className="h-7 w-7" />
+              </div>
+              <h3 className="mt-4 font-display text-2xl">Premium match</h3>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This match requires a plan. Sign in and unlock instant access.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Link
+                  to="/auth"
+                  search={{ redirect: `/match/${id}` } as never}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign in
+                </Link>
+                <Link
+                  to="/pricing"
+                  className="inline-flex items-center gap-2 rounded-lg border border-primary/40 px-6 py-3 text-sm font-semibold text-primary hover:bg-primary/10"
+                >
+                  <Lock className="h-4 w-4" />
+                  View plans
+                </Link>
+              </div>
+            </div>
           ) : !isAuthed ? (
             <div className="rounded-2xl border border-primary/40 bg-card p-10 text-center">
               <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary/15 text-primary">
