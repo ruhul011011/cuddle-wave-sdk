@@ -111,7 +111,8 @@ function MatchPage() {
   useEffect(() => {
     setAnonPreviewUsed(readAnonPreviewUsed(id));
   }, [id]);
-  const anonEligible = !authLoading && !isAuthed && !anonPreviewUsed;
+  const isPremiumAccess = access?.access === "premium";
+  const anonEligible = !authLoading && !isAuthed && !anonPreviewUsed && !isPremiumAccess;
   const previewStreamsResult = useQuery({
     queryKey: ["preview-streams", id],
     queryFn: () => getPreviewStreamsForFixture({ data: { fixtureId: Number(id) } }),
