@@ -57,12 +57,11 @@ function SchedulePage() {
       venue: m.venue,
     }));
   const wcByDay = wc.reduce<Record<string, Fixture[]>>((acc, m) => {
-    const day = new Date(m.kickoff).toLocaleDateString("en-US", {
+    const day = new Date(m.kickoff).toLocaleDateString(undefined, {
       weekday: "long",
       month: "short",
       day: "numeric",
       year: "numeric",
-      timeZone: "UTC",
     });
     (acc[day] ||= []).push(m);
     return acc;
@@ -116,11 +115,9 @@ function SchedulePage() {
 }
 
 function ScheduleCard({ match: m }: { match: Fixture }) {
-  const time = new Date(m.kickoff).toLocaleTimeString("en-US", {
+  const time = new Date(m.kickoff).toLocaleTimeString(undefined, {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false,
-    timeZone: "UTC",
   });
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-border/60 bg-card p-5">

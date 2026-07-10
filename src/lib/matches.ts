@@ -14,20 +14,18 @@ const teamLogoSeed = (name: string) =>
 
 export function formatKickoffTime(iso: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleTimeString("en-GB", {
+  return new Date(iso).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
-    timeZone: "UTC",
   });
 }
 
 export function formatKickoffDate(iso: string) {
   if (!iso) return "";
-  return new Date(iso).toLocaleDateString("en-GB", {
+  return new Date(iso).toLocaleDateString([], {
     weekday: "long",
     day: "numeric",
     month: "short",
-    timeZone: "UTC",
   });
 }
 
