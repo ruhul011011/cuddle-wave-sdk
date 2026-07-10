@@ -5,6 +5,19 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        const reqId = (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+        const t0 = Date.now();
+        const log = (...args: unknown[]) => console.log(`[stripe-webhook][${reqId}]`, ...args);
+        const logErr = (...args: unknown[]) => console.error(`[stripe-webhook][${reqId}]`, ...args);
+        log("incoming", {
+          url: request.url,
+          method: request.method,
+          hasSignature: !!request.headers.get("stripe-signature"),
+          contentType: request.headers.get("content-type"),
+          contentLength: request.headers.get("content-length"),
+          userAgent: request.headers.get("user-agent"),
+        });
+        try {
         const { getServerEnv } = await import("@/lib/env.server");
         const secret = getServerEnv("STRIPE_SECRET_KEY");
         const whSecret = getServerEnv("STRIPE_WEBHOOK_SECRET");
@@ -52,25 +65,32 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
         }
 
         const body = await request.text();
+        log("body read", { bytes: body.length });
         const stripe = new Stripe(secret);
 
         let event: Stripe.Event;
         try {
           event = await stripe.webhooks.constructEventAsync(body, sig, whSecret);
         } catch (err) {
-          const msg = (err as Error).message;
-          await logEntry({ status: "invalid_signature", message: msg });
-          return new Response(`Invalid signature: ${msg}`, { status: 400 });
+          const e = err as Error;
+          logErr("signature verification failed", { message: e?.message, stack: e?.stack });
+          await logEntry({ status: "invalid_signature", message: `[${reqId}] ${e?.message}` });
+          return new Response(`Invalid signature: ${e?.message}`, { status: 400 });
         }
+        log("event constructed", { id: event.id, type: event.type, livemode: event.livemode });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: alreadyProcessed } = await supabaseAdmin
+        const { data: alreadyProcessed, error: dupErr } = await supabaseAdmin
           .from("stripe_webhook_logs")
           .select("id")
           .eq("event_id", event.id)
           .eq("status", "processed")
           .maybeSingle();
-        if (alreadyProcessed) return new Response("ok", { status: 200 });
+        if (dupErr) logErr("dedupe lookup error", dupErr);
+        if (alreadyProcessed) {
+          log("duplicate event, skipping");
+          return new Response("ok", { status: 200 });
+        }
 
         if (event.type === "checkout.session.completed") {
           const session = event.data.object as Stripe.Checkout.Session;
@@ -79,6 +99,14 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           const planMonths = Number(session.metadata?.plan_months ?? 0);
           const userId = session.metadata?.user_id;
           const fixtureId = fixtureIdRaw ? Number(fixtureIdRaw) : NaN;
+          log("checkout.session.completed", {
+            sessionId: session.id,
+            payment_status: session.payment_status,
+            amount_total: session.amount_total,
+            currency: session.currency,
+            metadata: session.metadata,
+            parsed: { userId, planId, planMonths, fixtureId },
+          });
 
           if (userId && planId && Number.isFinite(planMonths) && planMonths > 0 && session.payment_status === "paid") {
             const { data: existing } = await supabaseAdmin
@@ -189,7 +217,27 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           });
         }
 
-        return new Response("ok", { status: 200 });
+          log("done", { ms: Date.now() - t0 });
+          return new Response("ok", { status: 200 });
+        } catch (err) {
+          const e = err as Error;
+          const stack = e?.stack ?? String(err);
+          logErr("unhandled error", { message: e?.message, stack, ms: Date.now() - t0 });
+          try {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            await supabaseAdmin.from("stripe_webhook_logs").insert({
+              status: "server_error",
+              message: `[${reqId}] ${e?.message ?? String(err)}\n${stack}`.slice(0, 8000),
+              payload: { reqId, stack } as never,
+            });
+          } catch (logE) {
+            logErr("failed to persist error log", logE);
+          }
+          return new Response(
+            `Internal error [${reqId}]: ${e?.message ?? "unknown"}`,
+            { status: 500 },
+          );
+        }
       },
     },
   },
