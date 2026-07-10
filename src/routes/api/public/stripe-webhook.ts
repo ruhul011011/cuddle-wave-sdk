@@ -202,7 +202,27 @@ export const Route = createFileRoute("/api/public/stripe-webhook")({
           });
         }
 
-        return new Response("ok", { status: 200 });
+          log("done", { ms: Date.now() - t0 });
+          return new Response("ok", { status: 200 });
+        } catch (err) {
+          const e = err as Error;
+          const stack = e?.stack ?? String(err);
+          logErr("unhandled error", { message: e?.message, stack, ms: Date.now() - t0 });
+          try {
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            await supabaseAdmin.from("stripe_webhook_logs").insert({
+              status: "server_error",
+              message: `[${reqId}] ${e?.message ?? String(err)}\n${stack}`.slice(0, 8000),
+              payload: { reqId, stack } as never,
+            });
+          } catch (logE) {
+            logErr("failed to persist error log", logE);
+          }
+          return new Response(
+            `Internal error [${reqId}]: ${e?.message ?? "unknown"}`,
+            { status: 500 },
+          );
+        }
       },
     },
   },
