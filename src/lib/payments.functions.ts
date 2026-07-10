@@ -81,20 +81,10 @@ export const getMatchAccess = createServerFn({ method: "GET" })
         const { data: userRes } = await userClient.auth.getUser(token);
         const uid = userRes?.user?.id;
         if (uid) {
-          const { data: subscription } = await userClient
-            .from("subscriptions")
-            .select("id, current_period_end")
-            .eq("user_id", uid)
-            .eq("status", "active")
-            .neq("plan", "free")
-            .maybeSingle();
-
-          if (
-            subscription &&
-            (!subscription.current_period_end || new Date(subscription.current_period_end).getTime() > Date.now())
-          ) {
-            hasAccess = true;
-          } else {
+          // Per-match paid games ("premium") require a per-match purchase.
+          // A general subscription does NOT bypass per-match paywalls — it only
+          // unlocks non-per-match tiers (e.g. "preview").
+          if (access === "premium") {
             const { data: purchase } = await userClient
               .from("match_purchases")
               .select("id")
@@ -103,6 +93,19 @@ export const getMatchAccess = createServerFn({ method: "GET" })
               .eq("status", "paid")
               .maybeSingle();
             hasAccess = Boolean(purchase);
+          } else {
+            const { data: subscription } = await userClient
+              .from("subscriptions")
+              .select("id, current_period_end")
+              .eq("user_id", uid)
+              .eq("status", "active")
+              .neq("plan", "free")
+              .maybeSingle();
+            hasAccess = Boolean(
+              subscription &&
+                (!subscription.current_period_end ||
+                  new Date(subscription.current_period_end).getTime() > Date.now()),
+            );
           }
         }
       }
