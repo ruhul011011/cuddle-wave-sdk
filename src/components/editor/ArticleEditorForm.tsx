@@ -136,8 +136,14 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
           </select>
         </Field>
 
-        <Field label="Cover image URL">
-          <Input value={cover ?? ""} onChange={(e) => setCover(e.target.value)} placeholder="https://…" />
+        <Field label="Cover image" hint="Upload or paste URL">
+          <div className="flex gap-2">
+            <Input value={cover ?? ""} onChange={(e) => setCover(e.target.value)} placeholder="https://…" className="flex-1" />
+            <Button type="button" variant="outline" size="sm" disabled={coverUploading} onClick={() => coverFileRef.current?.click()}>
+              <Upload className="mr-1 h-4 w-4" /> {coverUploading ? "…" : "Upload"}
+            </Button>
+            <input ref={coverFileRef} type="file" accept="image/*" hidden onChange={onCoverFile} />
+          </div>
           {cover && <img src={cover} alt="" className="mt-2 aspect-video w-full rounded-lg object-cover" />}
         </Field>
 
