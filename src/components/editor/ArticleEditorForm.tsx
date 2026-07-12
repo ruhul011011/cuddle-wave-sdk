@@ -136,16 +136,39 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
           </select>
         </Field>
 
-        <Field label="Cover image" hint="Upload or paste URL">
-          <div className="flex gap-2">
-            <Input value={cover ?? ""} onChange={(e) => setCover(e.target.value)} placeholder="https://…" className="flex-1" />
-            <Button type="button" variant="outline" size="sm" disabled={coverUploading} onClick={() => coverFileRef.current?.click()}>
-              <Upload className="mr-1 h-4 w-4" /> {coverUploading ? "…" : "Upload"}
-            </Button>
-            <input ref={coverFileRef} type="file" accept="image/*" hidden onChange={onCoverFile} />
+        <Field label="Cover image" hint="Upload a file or paste an image URL">
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                disabled={coverUploading}
+                onClick={() => coverFileRef.current?.click()}
+              >
+                <Upload className="mr-1.5 h-4 w-4" />
+                {coverUploading ? "Uploading…" : "Upload image"}
+              </Button>
+              {cover && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => setCover("")}>
+                  Clear
+                </Button>
+              )}
+              <input ref={coverFileRef} type="file" accept="image/*" hidden onChange={onCoverFile} />
+            </div>
+            <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <div className="h-px flex-1 bg-border/60" /> or paste URL <div className="h-px flex-1 bg-border/60" />
+            </div>
+            <Input
+              value={cover ?? ""}
+              onChange={(e) => setCover(e.target.value)}
+              placeholder="https://example.com/image.jpg"
+            />
           </div>
-          {cover && <img src={cover} alt="" className="mt-2 aspect-video w-full rounded-lg object-cover" />}
+          {cover && <img src={cover} alt="" className="mt-3 aspect-video w-full rounded-lg object-cover" />}
         </Field>
+
 
         <Field label="Excerpt" hint="Short summary shown on listings">
           <Textarea value={excerpt ?? ""} onChange={(e) => setExcerpt(e.target.value)} rows={3} maxLength={400} />
