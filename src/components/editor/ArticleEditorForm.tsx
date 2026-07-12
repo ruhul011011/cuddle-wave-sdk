@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Save, Send } from "lucide-react";
+import { Save, Send, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { RichEditor } from "./RichEditor";
 import { upsertArticle } from "@/lib/articles.functions";
+import { uploadArticleImage } from "@/lib/upload-image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
