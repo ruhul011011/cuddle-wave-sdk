@@ -42,6 +42,25 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
+  const coverFileRef = useRef<HTMLInputElement>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+
+  const onCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setCoverUploading(true);
+      const url = await uploadArticleImage(file);
+      setCover(url);
+      toast.success("Cover uploaded");
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
 
   const mut = useMutation({
     mutationFn: async (status: "draft" | "published") => {
