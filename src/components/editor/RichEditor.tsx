@@ -8,7 +8,9 @@ import {
   List, ListOrdered, Quote, Code, Link as LinkIcon, Image as ImageIcon,
   Undo, Redo, Minus, Pilcrow,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { uploadArticleImage } from "@/lib/upload-image";
+import { toast } from "sonner";
 
 type Props = {
   value: string;
@@ -53,6 +55,8 @@ function Toolbar({ editor }: { editor: Editor }) {
   const btn = "inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-white/10 hover:text-foreground disabled:opacity-40";
   const active = "bg-white/10 text-foreground";
   const g = (b: boolean) => `${btn} ${b ? active : ""}`;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
 
   const promptLink = () => {
     const prev = editor.getAttributes("link").href as string | undefined;
@@ -65,6 +69,21 @@ function Toolbar({ editor }: { editor: Editor }) {
     const url = window.prompt("Image URL");
     if (!url) return;
     editor.chain().focus().setImage({ src: url }).run();
+  };
+  const onPickFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setUploading(true);
+      const url = await uploadArticleImage(file);
+      editor.chain().focus().setImage({ src: url }).run();
+      toast.success("Image uploaded");
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -88,7 +107,11 @@ function Toolbar({ editor }: { editor: Editor }) {
       <button type="button" className={btn} onClick={() => editor.chain().focus().setHorizontalRule().run()} aria-label="Divider"><Minus className="h-4 w-4" /></button>
       <span className="mx-1 h-5 w-px bg-border/60" />
       <button type="button" className={g(editor.isActive("link"))} onClick={promptLink} aria-label="Link"><LinkIcon className="h-4 w-4" /></button>
-      <button type="button" className={btn} onClick={promptImage} aria-label="Image"><ImageIcon className="h-4 w-4" /></button>
+      <button type="button" className={btn} onClick={promptImage} aria-label="Image from URL" title="Image from URL"><ImageIcon className="h-4 w-4" /></button>
+      <button type="button" className={btn} onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Upload image" title="Upload image">
+        {uploading ? <span className="text-[10px]">…</span> : <span className="text-[10px] font-semibold">UP</span>}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" hidden onChange={onPickFile} />
     </div>
   );
 }
