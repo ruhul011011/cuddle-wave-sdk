@@ -80,8 +80,8 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
       if (payload.title.length < 3) throw new Error("Title must be at least 3 characters.");
       if ((payload.content_html?.length ?? 0) > 200_000)
         throw new Error("Article content is too large (max ~200KB). Use image URLs instead of pasting images.");
-      if (payload.cover_image && payload.cover_image.length > 600)
-        throw new Error("Cover image URL is too long. Use a short hosted URL.");
+      if (payload.cover_image && payload.cover_image.length > 2000)
+        throw new Error("Cover image URL is too long.");
       return await save({ data: payload as any });
     },
     onSuccess: (res, status) => {
