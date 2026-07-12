@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { Save, Send } from "lucide-react";
+import { Save, Send, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { RichEditor } from "./RichEditor";
 import { upsertArticle } from "@/lib/articles.functions";
+import { uploadArticleImage } from "@/lib/upload-image";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -41,6 +42,25 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
   const [tags, setTags] = useState((initial?.tags ?? []).join(", "));
   const [seoTitle, setSeoTitle] = useState(initial?.seo_title ?? "");
   const [seoDesc, setSeoDesc] = useState(initial?.seo_description ?? "");
+  const coverFileRef = useRef<HTMLInputElement>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
+
+  const onCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      setCoverUploading(true);
+      const url = await uploadArticleImage(file);
+      setCover(url);
+      toast.success("Cover uploaded");
+    } catch (err: any) {
+      toast.error(err?.message || "Upload failed");
+    } finally {
+      setCoverUploading(false);
+    }
+  };
+
 
   const mut = useMutation({
     mutationFn: async (status: "draft" | "published") => {
@@ -60,8 +80,8 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
       if (payload.title.length < 3) throw new Error("Title must be at least 3 characters.");
       if ((payload.content_html?.length ?? 0) > 200_000)
         throw new Error("Article content is too large (max ~200KB). Use image URLs instead of pasting images.");
-      if (payload.cover_image && payload.cover_image.length > 600)
-        throw new Error("Cover image URL is too long. Use a short hosted URL.");
+      if (payload.cover_image && payload.cover_image.length > 2000)
+        throw new Error("Cover image URL is too long.");
       return await save({ data: payload as any });
     },
     onSuccess: (res, status) => {
@@ -116,8 +136,14 @@ export function ArticleEditorForm({ initial }: { initial?: Article }) {
           </select>
         </Field>
 
-        <Field label="Cover image URL">
-          <Input value={cover ?? ""} onChange={(e) => setCover(e.target.value)} placeholder="https://…" />
+        <Field label="Cover image" hint="Upload or paste URL">
+          <div className="flex gap-2">
+            <Input value={cover ?? ""} onChange={(e) => setCover(e.target.value)} placeholder="https://…" className="flex-1" />
+            <Button type="button" variant="outline" size="sm" disabled={coverUploading} onClick={() => coverFileRef.current?.click()}>
+              <Upload className="mr-1 h-4 w-4" /> {coverUploading ? "…" : "Upload"}
+            </Button>
+            <input ref={coverFileRef} type="file" accept="image/*" hidden onChange={onCoverFile} />
+          </div>
           {cover && <img src={cover} alt="" className="mt-2 aspect-video w-full rounded-lg object-cover" />}
         </Field>
 

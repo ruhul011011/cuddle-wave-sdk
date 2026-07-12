@@ -55,7 +55,7 @@ const articleInput = z.object({
   slug: z.string().trim().max(120).optional(),
   excerpt: z.string().trim().max(400).optional().nullable(),
   content_html: z.string().max(200_000).default(""),
-  cover_image: z.string().trim().max(600).optional().nullable(),
+  cover_image: z.string().trim().max(2000).optional().nullable(),
   category: z.string().trim().max(60).default("News"),
   tags: z.array(z.string().trim().max(40)).max(20).default([]),
   status: z.enum(["draft", "published"]).default("draft"),
