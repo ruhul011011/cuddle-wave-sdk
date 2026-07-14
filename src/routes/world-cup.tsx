@@ -190,29 +190,6 @@ function WorldCupPage() {
           )}
         </section>
 
-        {/* Key matches */}
-        <section>
-          <SectionHeading
-            eyebrow="Marquee Fixtures"
-            title="Matches to watch"
-            sub="Opening match, host nations and knockout-stage headliners."
-          />
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {keyMatches.map((m, i) => (
-              <div key={i} className="rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/40 transition-colors">
-                <div className="flex items-center justify-between text-xs uppercase tracking-wider">
-                  <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">{m.stage}</span>
-                  <span className="text-muted-foreground">{m.date}</span>
-                </div>
-                <div className="mt-3 font-display text-xl">{m.match}</div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {m.kickoff}</span>
-                  <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {m.venue}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
         {/* Points table per group */}
         <section>
