@@ -82,18 +82,20 @@ export type WCStage = {
   dates: string;
   matches: string;
   venues: string;
+  startsAt: string; // ISO
+  endsAt: string;   // ISO (inclusive end-of-day)
 };
 
 export const tournamentSchedule: WCStage[] = [
-  { stage: "Group Stage — Matchday 1", dates: "Jun 11 – Jun 17, 2026", matches: "24 matches", venues: "All 16 host cities" },
-  { stage: "Group Stage — Matchday 2", dates: "Jun 18 – Jun 23, 2026", matches: "24 matches", venues: "All 16 host cities" },
-  { stage: "Group Stage — Matchday 3", dates: "Jun 24 – Jun 27, 2026", matches: "24 matches", venues: "All 16 host cities" },
-  { stage: "Round of 32", dates: "Jun 28 – Jul 3, 2026", matches: "16 matches", venues: "Across host nations" },
-  { stage: "Round of 16", dates: "Jul 4 – Jul 7, 2026", matches: "8 matches", venues: "Across host nations" },
-  { stage: "Quarter-finals", dates: "Jul 9 – Jul 11, 2026", matches: "4 matches", venues: "Boston, LA, Dallas, Kansas City" },
-  { stage: "Semi-finals", dates: "Jul 14 – Jul 15, 2026", matches: "2 matches", venues: "Dallas & Atlanta" },
-  { stage: "Third-place play-off", dates: "Jul 18, 2026", matches: "1 match", venues: "Miami" },
-  { stage: "Final", dates: "Jul 19, 2026", matches: "1 match", venues: "MetLife Stadium, New Jersey" },
+  { stage: "Group Stage — Matchday 1", dates: "Jun 11 – Jun 17, 2026", matches: "24 matches", venues: "All 16 host cities", startsAt: "2026-06-11T00:00:00Z", endsAt: "2026-06-17T23:59:59Z" },
+  { stage: "Group Stage — Matchday 2", dates: "Jun 18 – Jun 23, 2026", matches: "24 matches", venues: "All 16 host cities", startsAt: "2026-06-18T00:00:00Z", endsAt: "2026-06-23T23:59:59Z" },
+  { stage: "Group Stage — Matchday 3", dates: "Jun 24 – Jun 27, 2026", matches: "24 matches", venues: "All 16 host cities", startsAt: "2026-06-24T00:00:00Z", endsAt: "2026-06-27T23:59:59Z" },
+  { stage: "Round of 32", dates: "Jun 28 – Jul 3, 2026", matches: "16 matches", venues: "Across host nations", startsAt: "2026-06-28T00:00:00Z", endsAt: "2026-07-03T23:59:59Z" },
+  { stage: "Round of 16", dates: "Jul 4 – Jul 7, 2026", matches: "8 matches", venues: "Across host nations", startsAt: "2026-07-04T00:00:00Z", endsAt: "2026-07-07T23:59:59Z" },
+  { stage: "Quarter-finals", dates: "Jul 9 – Jul 11, 2026", matches: "4 matches", venues: "Boston, LA, Dallas, Kansas City", startsAt: "2026-07-09T00:00:00Z", endsAt: "2026-07-11T23:59:59Z" },
+  { stage: "Semi-finals", dates: "Jul 14 – Jul 15, 2026", matches: "2 matches", venues: "Dallas & Atlanta", startsAt: "2026-07-14T00:00:00Z", endsAt: "2026-07-15T23:59:59Z" },
+  { stage: "Third-place play-off", dates: "Jul 18, 2026", matches: "1 match", venues: "Miami", startsAt: "2026-07-18T00:00:00Z", endsAt: "2026-07-18T23:59:59Z" },
+  { stage: "Final", dates: "Jul 19, 2026", matches: "1 match", venues: "MetLife Stadium, New Jersey", startsAt: "2026-07-19T00:00:00Z", endsAt: "2026-07-19T23:59:59Z" },
 ];
 
 export type KeyMatch = {
@@ -102,15 +104,12 @@ export type KeyMatch = {
   stage: string;
   match: string;
   venue: string;
+  kickoffAt?: string; // ISO — used to filter current/upcoming
 };
 
 export const keyMatches: KeyMatch[] = [
-  { date: "Thu Jun 11, 2026", kickoff: "20:00", stage: "Opening Match", match: "Mexico vs TBD", venue: "Estadio Azteca, Mexico City" },
-  { date: "Fri Jun 12, 2026", kickoff: "20:00", stage: "Group Stage", match: "Canada vs TBD", venue: "BMO Field, Toronto" },
-  { date: "Fri Jun 12, 2026", kickoff: "21:00", stage: "Group Stage", match: "USA vs TBD", venue: "SoFi Stadium, Los Angeles" },
-  { date: "Sun Jul 5, 2026", kickoff: "TBD", stage: "Round of 16", match: "TBD vs TBD", venue: "AT&T Stadium, Dallas" },
-  { date: "Fri Jul 10, 2026", kickoff: "TBD", stage: "Quarter-final", match: "TBD vs TBD", venue: "Gillette Stadium, Boston" },
-  { date: "Tue Jul 14, 2026", kickoff: "TBD", stage: "Semi-final", match: "TBD vs TBD", venue: "AT&T Stadium, Dallas" },
-  { date: "Sat Jul 18, 2026", kickoff: "TBD", stage: "Third-place", match: "TBD vs TBD", venue: "Hard Rock Stadium, Miami" },
-  { date: "Sun Jul 19, 2026", kickoff: "15:00", stage: "Final", match: "TBD vs TBD", venue: "MetLife Stadium, New Jersey" },
+  { date: "Tue Jul 14, 2026", kickoff: "20:00", stage: "Semi-final", match: "France vs Spain", venue: "AT&T Stadium, Dallas", kickoffAt: "2026-07-15T00:00:00Z" },
+  { date: "Wed Jul 15, 2026", kickoff: "20:00", stage: "Semi-final", match: "England vs Argentina", venue: "Mercedes-Benz Stadium, Atlanta", kickoffAt: "2026-07-16T00:00:00Z" },
+  { date: "Sat Jul 18, 2026", kickoff: "15:00", stage: "Third-place play-off", match: "TBD vs TBD", venue: "Hard Rock Stadium, Miami", kickoffAt: "2026-07-18T19:00:00Z" },
+  { date: "Sun Jul 19, 2026", kickoff: "15:00", stage: "Final", match: "TBD vs TBD", venue: "MetLife Stadium, New Jersey", kickoffAt: "2026-07-19T19:00:00Z" },
 ];

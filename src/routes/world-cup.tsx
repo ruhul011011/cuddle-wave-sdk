@@ -70,10 +70,23 @@ function WorldCupPage() {
     staleTime: 30_000,
   });
 
-  const keyMatches =
-    liveMatches && liveMatches.source === "api" && liveMatches.matches.length > 0
-      ? liveMatches.matches
-      : fallbackKeyMatches;
+  const now = Date.now();
+  const apiMatches = liveMatches && liveMatches.source === "api" && liveMatches.matches.length > 0
+    ? liveMatches.matches
+    : fallbackKeyMatches;
+  const keyMatches = apiMatches
+    .filter((m) => {
+      if (!m.kickoffAt) return true;
+      const t = Date.parse(m.kickoffAt);
+      return !Number.isFinite(t) || t >= now - 3 * 60 * 60 * 1000;
+    })
+    .sort((a, b) => {
+      const at = a.kickoffAt ? Date.parse(a.kickoffAt) : 0;
+      const bt = b.kickoffAt ? Date.parse(b.kickoffAt) : 0;
+      return at - bt;
+    });
+
+  const upcomingSchedule = tournamentSchedule.filter((s) => Date.parse(s.endsAt) >= now);
 
   return (
     <div className="min-h-screen">
@@ -106,8 +119,8 @@ function WorldCupPage() {
         <section>
           <SectionHeading
             eyebrow="Tournament Schedule"
-            title="Stage-by-stage calendar"
-            sub="Key dates from kickoff to the Final at MetLife Stadium."
+            title="Current & upcoming stages"
+            sub="Live stage and everything still to come, from now until the Final at MetLife Stadium."
           />
           <div className="mt-6 overflow-hidden rounded-2xl border border-border/60 bg-card">
             <table className="w-full text-sm">
@@ -117,17 +130,31 @@ function WorldCupPage() {
                   <th className="px-4 py-3">Dates</th>
                   <th className="px-4 py-3 hidden sm:table-cell">Matches</th>
                   <th className="px-4 py-3 hidden md:table-cell">Venues</th>
+                  <th className="px-4 py-3">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/50">
-                {tournamentSchedule.map((s) => (
-                  <tr key={s.stage} className="hover:bg-secondary/20">
-                    <td className="px-4 py-3 font-medium">{s.stage}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{s.dates}</td>
-                    <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{s.matches}</td>
-                    <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{s.venues}</td>
-                  </tr>
-                ))}
+                {(upcomingSchedule.length ? upcomingSchedule : tournamentSchedule).map((s) => {
+                  const startedAt = Date.parse(s.startsAt);
+                  const live = startedAt <= now && now <= Date.parse(s.endsAt);
+                  return (
+                    <tr key={s.stage} className={live ? "bg-primary/10" : "hover:bg-secondary/20"}>
+                      <td className="px-4 py-3 font-medium">{s.stage}</td>
+                      <td className="px-4 py-3 text-muted-foreground">{s.dates}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{s.matches}</td>
+                      <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">{s.venues}</td>
+                      <td className="px-4 py-3">
+                        {live ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary-foreground">
+                            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary-foreground" /> In progress
+                          </span>
+                        ) : (
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Upcoming</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -136,26 +163,33 @@ function WorldCupPage() {
         {/* Key matches */}
         <section>
           <SectionHeading
-            eyebrow="Marquee Fixtures"
-            title="Matches to watch"
-            sub="Opening match, host nations and knockout-stage headliners."
+            eyebrow="Current & Upcoming"
+            title="Next matches"
+            sub="Matches happening now and still to come — sorted by kickoff."
           />
-          <div className="mt-6 grid gap-4 md:grid-cols-2">
-            {keyMatches.map((m, i) => (
-              <div key={i} className="rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/40 transition-colors">
-                <div className="flex items-center justify-between text-xs uppercase tracking-wider">
-                  <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">{m.stage}</span>
-                  <span className="text-muted-foreground">{m.date}</span>
+          {keyMatches.length === 0 ? (
+            <div className="mt-6 rounded-2xl border border-border/60 bg-card p-8 text-center text-sm text-muted-foreground">
+              No upcoming matches — the tournament has concluded.
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4 md:grid-cols-2">
+              {keyMatches.map((m, i) => (
+                <div key={i} className="rounded-2xl border border-border/60 bg-card p-5 hover:border-primary/40 transition-colors">
+                  <div className="flex items-center justify-between text-xs uppercase tracking-wider">
+                    <span className="rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">{m.stage}</span>
+                    <span className="text-muted-foreground">{m.date}</span>
+                  </div>
+                  <div className="mt-3 font-display text-xl">{m.match}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {m.kickoff}</span>
+                    <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {m.venue}</span>
+                  </div>
                 </div>
-                <div className="mt-3 font-display text-xl">{m.match}</div>
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /> {m.kickoff}</span>
-                  <span className="inline-flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5" /> {m.venue}</span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
+
 
         {/* Points table per group */}
         <section>
