@@ -73,24 +73,20 @@ function stageFromRound(round: string): string {
   return round;
 }
 
-function pickMarquee(all: KeyMatch[]): KeyMatch[] {
-  const priority = ["Opening Match", "Final", "Third-place", "Semi-final", "Quarter-final", "Round of 16", "Round of 32", "Group Stage"];
-  const sorted = [...all].sort((a, b) => {
-    const ai = priority.indexOf(a.stage);
-    const bi = priority.indexOf(b.stage);
-    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
-  });
-  // Take a balanced subset: openers + headline knockouts (up to 8)
-  const seen = new Set<string>();
-  const out: KeyMatch[] = [];
-  for (const m of sorted) {
-    const k = `${m.stage}|${m.match}`;
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(m);
-    if (out.length >= 8) break;
-  }
-  return out;
+function pickCurrentAndUpcoming(all: KeyMatch[]): KeyMatch[] {
+  const cutoff = Date.now() - 3 * 60 * 60 * 1000; // keep live matches (kickoff up to 3h ago)
+  const future = all
+    .filter((m) => {
+      if (!m.kickoffAt) return true;
+      const t = Date.parse(m.kickoffAt);
+      return !Number.isFinite(t) || t >= cutoff;
+    })
+    .sort((a, b) => {
+      const at = a.kickoffAt ? Date.parse(a.kickoffAt) : 0;
+      const bt = b.kickoffAt ? Date.parse(b.kickoffAt) : 0;
+      return at - bt;
+    });
+  return future.slice(0, 8);
 }
 
 export const getWorldCupFixtures = createServerFn({ method: "GET" }).handler(
@@ -114,23 +110,18 @@ export const getWorldCupFixtures = createServerFn({ method: "GET" }).handler(
         const date = d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
         const kickoff = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
         const venue = [f.fixture.venue.name, f.fixture.venue.city].filter(Boolean).join(", ") || "TBD";
-        let stage = stageFromRound(f.league.round);
-        // Detect opening match: earliest group-stage fixture
+        const stage = stageFromRound(f.league.round);
         return {
           date,
           kickoff,
           stage,
           match: `${f.teams.home.name} vs ${f.teams.away.name}`,
           venue,
+          kickoffAt: f.fixture.date,
         };
       });
-      // Sort by date asc, then flag the earliest as Opening Match
-      mapped.sort((a, b) => +new Date(a.date) - +new Date(b.date));
-      if (mapped.length > 0 && mapped[0].stage === "Group Stage") {
-        mapped[0] = { ...mapped[0], stage: "Opening Match" };
-      }
       return {
-        matches: pickMarquee(mapped),
+        matches: pickCurrentAndUpcoming(mapped),
         source: "api",
         updatedAt: new Date().toISOString(),
       };
