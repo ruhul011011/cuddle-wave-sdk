@@ -40,9 +40,9 @@ function SchedulePage() {
     return acc;
   }, {});
 
-  const nowIso = new Date().toISOString();
+  const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const wc: Fixture[] = getWorldCup2026FallbackFixtures()
-    .filter((m) => m.kickoff >= nowIso)
+    .filter((m) => m.kickoff >= currentOrLiveCutoff)
     .map((m) => ({
       id: m.id,
       league: m.league,

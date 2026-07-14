@@ -342,9 +342,9 @@ function FixtureRow({ match: m }: { match: Fixture }) {
 }
 
 function WorldCup2026Schedule() {
-  const nowIso = new Date().toISOString();
+  const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const all = getWorldCup2026FallbackFixtures();
-  const upcoming = all.filter((m) => m.kickoff >= nowIso).slice(0, 24);
+  const upcoming = all.filter((m) => m.kickoff >= currentOrLiveCutoff).slice(0, 24);
   if (upcoming.length === 0) return null;
 
   const grouped = new Map<string, typeof upcoming>();
@@ -363,7 +363,7 @@ function WorldCup2026Schedule() {
   return (
     <FixturesBlock
       icon={<Trophy className="h-5 w-5 text-primary" />}
-      title="World Cup 2026 Schedule"
+      title="Current & Upcoming World Cup 2026"
       allHref="/world-cup"
     >
       {[...grouped.entries()].map(([date, list]) => (
