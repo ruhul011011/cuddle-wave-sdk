@@ -70,10 +70,23 @@ function WorldCupPage() {
     staleTime: 30_000,
   });
 
-  const keyMatches =
-    liveMatches && liveMatches.source === "api" && liveMatches.matches.length > 0
-      ? liveMatches.matches
-      : fallbackKeyMatches;
+  const now = Date.now();
+  const apiMatches = liveMatches && liveMatches.source === "api" && liveMatches.matches.length > 0
+    ? liveMatches.matches
+    : fallbackKeyMatches;
+  const keyMatches = apiMatches
+    .filter((m) => {
+      if (!m.kickoffAt) return true;
+      const t = Date.parse(m.kickoffAt);
+      return !Number.isFinite(t) || t >= now - 3 * 60 * 60 * 1000;
+    })
+    .sort((a, b) => {
+      const at = a.kickoffAt ? Date.parse(a.kickoffAt) : 0;
+      const bt = b.kickoffAt ? Date.parse(b.kickoffAt) : 0;
+      return at - bt;
+    });
+
+  const upcomingSchedule = tournamentSchedule.filter((s) => Date.parse(s.endsAt) >= now);
 
   return (
     <div className="min-h-screen">
