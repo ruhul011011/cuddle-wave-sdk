@@ -113,6 +113,7 @@ function Index() {
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   const upcoming = feed.upcoming;
   const featured = upcoming[0] ?? live[0];
+  const upcomingGroups = groupByDate(upcoming.slice(0, 20));
 
 
   return (
@@ -219,22 +220,24 @@ function Index() {
               </FixturesBlock>
             )}
 
-            <FixturesBlock
-              icon={<Calendar className="h-5 w-5 text-primary" />}
-              title="Upcoming Matches"
-              allHref="/schedule"
-            >
-              {groupByDate(upcoming.slice(0, 20)).map(([date, list]) => (
-                <div key={date}>
-                  <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4 text-primary" /> {date}
+            {upcomingGroups.length > 0 && (
+              <FixturesBlock
+                icon={<Calendar className="h-5 w-5 text-primary" />}
+                title="Upcoming Matches"
+                allHref="/schedule"
+              >
+                {upcomingGroups.map(([date, list]) => (
+                  <div key={date}>
+                    <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
+                      <Calendar className="h-4 w-4 text-primary" /> {date}
+                    </div>
+                    {list.map((m) => (
+                      <FixtureRow key={m.id} match={m} />
+                    ))}
                   </div>
-                  {list.map((m) => (
-                    <FixtureRow key={m.id} match={m} />
-                  ))}
-                </div>
-              ))}
-            </FixturesBlock>
+                ))}
+              </FixturesBlock>
+            )}
 
             <WorldCup2026Schedule />
           </div>
@@ -344,8 +347,10 @@ function FixtureRow({ match: m }: { match: Fixture }) {
 function WorldCup2026Schedule() {
   const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
   const all = getWorldCup2026FallbackFixtures();
-  const upcoming = all.filter((m) => m.kickoff >= currentOrLiveCutoff).slice(0, 24);
+  const currentOrUpcoming = all.filter((m) => m.kickoff >= currentOrLiveCutoff);
+  const upcoming = (currentOrUpcoming.length > 0 ? currentOrUpcoming : all).slice(0, 24);
   if (upcoming.length === 0) return null;
+  const title = currentOrUpcoming.length > 0 ? "Current & Upcoming World Cup 2026" : "World Cup 2026 Schedule";
 
   const grouped = new Map<string, typeof upcoming>();
   for (const m of upcoming) {
@@ -363,7 +368,7 @@ function WorldCup2026Schedule() {
   return (
     <FixturesBlock
       icon={<Trophy className="h-5 w-5 text-primary" />}
-      title="Current & Upcoming World Cup 2026"
+      title={title}
       allHref="/world-cup"
     >
       {[...grouped.entries()].map(([date, list]) => (
