@@ -11,7 +11,8 @@ const _cache = new Map<string, CacheEntry>();
 const _inflight = new Map<string, Promise<unknown>>();
 
 async function af<T>(path: string, ttlMs = 30_000): Promise<T> {
-  const key = process.env.API_FOOTBALL_KEY;
+  const { getServerEnv } = await import("@/lib/env.server");
+  const key = getServerEnv("API_FOOTBALL_KEY");
   if (!key) throw new Error("API_FOOTBALL_KEY is not configured");
   const now = Date.now();
   const hit = _cache.get(path);
@@ -397,7 +398,8 @@ export const listPopularLeagues = createServerFn({ method: "GET" }).handler(asyn
 export type LeagueOption = { id: number; name: string; country?: string; logo?: string };
 
 export const listAvailableLeagues = createServerFn({ method: "GET" }).handler(async () => {
-  const key = process.env.API_FOOTBALL_KEY;
+  const { getServerEnv } = await import("@/lib/env.server");
+  const key = getServerEnv("API_FOOTBALL_KEY");
   const fallback: LeagueOption[] = POPULAR_LEAGUES.map((l) => ({
     id: l.id,
     name: l.name,
