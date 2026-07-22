@@ -150,8 +150,9 @@ function streamFixtureIsVisible(match: Fixture, now = Date.now()) {
 }
 
 async function listActiveStreamFixtureIds(): Promise<number[]> {
-  const supabaseUrl = process.env.SUPABASE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim();
-  const supabaseKey = process.env.SUPABASE_PUBLISHABLE_KEY?.trim() || process.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim();
+  const { getServerEnv } = await import("@/lib/env.server");
+  const supabaseUrl = getServerEnv("SUPABASE_URL") || getServerEnv("VITE_SUPABASE_URL");
+  const supabaseKey = getServerEnv("SUPABASE_PUBLISHABLE_KEY") || getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
   if (!supabaseUrl || !supabaseKey) return [];
 
   // Public-safe summary table: exposes only active fixture IDs, never stream URLs.
