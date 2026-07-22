@@ -3,6 +3,15 @@ import path from "node:path";
 
 let cachedFileEnv: Record<string, string> | undefined;
 
+const FILE_ENV_PREFERRED_KEYS = new Set([
+  "SUPABASE_URL",
+  "SUPABASE_PUBLISHABLE_KEY",
+  "SUPABASE_PROJECT_ID",
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_PUBLISHABLE_KEY",
+  "VITE_SUPABASE_PROJECT_ID",
+]);
+
 function candidateEnvDirs(): string[] {
   const dirs = new Set<string>();
   const addWithParents = (start?: string) => {
@@ -63,9 +72,24 @@ function getFileEnv(): Record<string, string> {
 }
 
 export function getServerEnv(name: string): string | undefined {
+  const fileValue = getFileEnv()[name]?.trim();
+  if (FILE_ENV_PREFERRED_KEYS.has(name) && fileValue) return fileValue;
+
+  if (
+    name === "SUPABASE_SERVICE_ROLE_KEY" &&
+    fileValue == null &&
+    getFileEnv().SUPABASE_URL?.trim() &&
+    process.env.SUPABASE_URL?.trim() &&
+    getFileEnv().SUPABASE_URL?.trim() !== process.env.SUPABASE_URL?.trim()
+  ) {
+    // If a remix intentionally points at another backend via .env, do not use
+    // this project's managed service-role key against the wrong backend.
+    return undefined;
+  }
+
   const runtimeValue = process.env[name]?.trim();
   if (runtimeValue) return runtimeValue;
-  return getFileEnv()[name]?.trim() || undefined;
+  return fileValue || undefined;
 }
 
 export function hasServerEnv(name: string): boolean {
