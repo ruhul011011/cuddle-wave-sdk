@@ -104,7 +104,7 @@ function AdminLiveMatchesPage() {
   const fixtureOptions = useMemo<Fixture[]>(() => {
     return fixturesQ.data ?? [];
   }, [fixturesQ.data]);
-  }, [fixturesQ.data, leagueId, date]);
+  
 
   const [search, setSearch] = useState("");
   const [accessFilter, setAccessFilter] = useState<"all" | AccessType>("all");
