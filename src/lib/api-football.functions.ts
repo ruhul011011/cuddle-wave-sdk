@@ -187,17 +187,24 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
     return [] as Fixture[];
   });
 
-  const merged = fetched.map((f) => ({
-    ...ensureTeamVisuals(f),
-    status: "live" as const,
-    minute: f.minute ?? "LIVE",
-  }));
+  // Preserve upstream status so finished matches auto-drop off the site.
+  // Only fixtures still upcoming or currently live are promoted to "live"
+  // in the streamed feed; finished fixtures are filtered out entirely.
+  const merged = fetched
+    .filter((f) => f.status !== "finished")
+    .map((f) => ({
+      ...ensureTeamVisuals(f),
+      status: (f.status === "live" ? "live" : f.status) as Fixture["status"],
+      minute: f.minute ?? (f.status === "live" ? "LIVE" : undefined),
+    }));
 
-  const seen = new Set(merged.map((f) => f.id));
+  const seen = new Set(fetched.map((f) => f.id));
   const missing: Fixture[] = [];
   for (const id of ids) {
     const key = String(id);
     if (seen.has(key)) continue;
+    // Fixture not returned by upstream (unknown status) — keep as synthetic
+    // live placeholder so freshly-added admin links still render.
     missing.push(ensureTeamVisuals(syntheticStreamFixture(id)));
   }
   const result = [...merged, ...missing]
