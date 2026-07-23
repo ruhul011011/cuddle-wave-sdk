@@ -46,12 +46,15 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
       <div className="mx-auto flex h-20 max-w-[1400px] items-center gap-4 px-4 sm:px-6">
-        <Link to="/" className="flex items-center gap-1 font-display text-2xl sm:text-3xl tracking-wide">
-          <span className="text-primary">FOOTY</span>
-          <span className="text-foreground">STREAM</span>
+        <Link to="/" className="flex items-center gap-2 font-display text-2xl sm:text-3xl tracking-wide">
+          <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground glow-primary">
+            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden><path d="M12 2l2.39 4.84 5.34.78-3.87 3.77.91 5.32L12 14.77l-4.77 2.51.91-5.32L4.27 7.62l5.34-.78L12 2z"/></svg>
+          </span>
+          <span className="text-foreground">GOAL</span><span className="text-primary -ml-2">STREAM</span>
         </Link>
+
 
         <nav className="mx-auto hidden md:flex items-center gap-1 rounded-full border border-border/60 bg-card/60 p-1.5 text-sm font-medium">
           {NAV.map((l) => (
