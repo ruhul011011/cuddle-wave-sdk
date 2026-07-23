@@ -295,11 +295,10 @@ function FixturesBlock({
 
 function FixtureRow({ match: m }: { match: Fixture }) {
   const isLive = m.status === "live";
-  const worldCupMatch = getWorldCup2026FixtureById(m.id);
-  const homeTeam = worldCupMatch?.homeTeam ?? m.homeTeam;
-  const awayTeam = worldCupMatch?.awayTeam ?? m.awayTeam;
-  const homeLogo = worldCupMatch?.homeLogo || m.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
-  const awayLogo = worldCupMatch?.awayLogo || m.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
+  const homeTeam = m.homeTeam;
+  const awayTeam = m.awayTeam;
+  const homeLogo = m.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
+  const awayLogo = m.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   return (
     <Link
       to="/match/$id"
