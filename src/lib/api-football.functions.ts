@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
-import { getTeamFlagUrl, getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl } from "@/lib/team-flags";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -78,24 +78,23 @@ function normalize(raw: any): Fixture {
   const venueName = raw.fixture?.venue?.name;
   const venueCity = raw.fixture?.venue?.city;
   const id = String(raw.fixture.id);
-  const wc = getWorldCup2026FixtureById(id);
   return ensureTeamVisuals({
     id,
-    league: raw.league?.name ?? wc?.league ?? "",
-    leagueLogo: raw.league?.logo ?? wc?.leagueLogo ?? "",
-    leagueCountry: raw.league?.country ?? wc?.leagueCountry,
-    homeTeam: raw.teams?.home?.name ?? wc?.homeTeam ?? "",
-    awayTeam: raw.teams?.away?.name ?? wc?.awayTeam ?? "",
-    homeTeamId: raw.teams?.home?.id ?? wc?.homeTeamId,
-    awayTeamId: raw.teams?.away?.id ?? wc?.awayTeamId,
-    homeLogo: raw.teams?.home?.logo ?? wc?.homeLogo ?? "",
-    awayLogo: raw.teams?.away?.logo ?? wc?.awayLogo ?? "",
-    kickoff: raw.fixture?.date ?? wc?.kickoff ?? "",
+    league: raw.league?.name ?? "",
+    leagueLogo: raw.league?.logo ?? "",
+    leagueCountry: raw.league?.country,
+    homeTeam: raw.teams?.home?.name ?? "",
+    awayTeam: raw.teams?.away?.name ?? "",
+    homeTeamId: raw.teams?.home?.id,
+    awayTeamId: raw.teams?.away?.id,
+    homeLogo: raw.teams?.home?.logo ?? "",
+    awayLogo: raw.teams?.away?.logo ?? "",
+    kickoff: raw.fixture?.date ?? "",
     status,
     homeScore: raw.goals?.home ?? undefined,
     awayScore: raw.goals?.away ?? undefined,
     minute: raw.fixture?.status?.elapsed ? `${raw.fixture.status.elapsed}'` : undefined,
-    venue: venueName ? (venueCity ? `${venueName}, ${venueCity}` : venueName) : wc?.venue,
+    venue: venueName ? (venueCity ? `${venueName}, ${venueCity}` : venueName) : undefined,
     referee: raw.fixture?.referee ?? undefined,
   });
 }
@@ -128,21 +127,6 @@ function usableLogoUrl(url?: string): string {
   return logo;
 }
 
-function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
-  if (!wc) return ensureTeamVisuals(f);
-  return ensureTeamVisuals({
-    ...f,
-    homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
-    awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
-    homeTeamId: f.homeTeamId ?? wc.homeTeamId,
-    awayTeamId: f.awayTeamId ?? wc.awayTeamId,
-    homeLogo: usableLogoUrl(f.homeLogo) || wc.homeLogo,
-    awayLogo: usableLogoUrl(f.awayLogo) || wc.awayLogo,
-    league: f.league?.trim() ? f.league : wc.league,
-    leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
-    venue: f.venue ?? wc.venue,
-  });
-}
 
 function streamFixtureIsVisible(match: Fixture, now = Date.now()) {
   if (match.status !== "finished") return true;
