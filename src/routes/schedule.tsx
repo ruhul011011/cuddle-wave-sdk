@@ -4,8 +4,6 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { MatchCard } from "@/components/site/MatchCard";
 import { getScheduleFeed, type Fixture } from "@/lib/api-football.functions";
-import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
-import { Trophy } from "lucide-react";
 
 const scheduleQuery = queryOptions({
   queryKey: ["schedule-feed"],
@@ -40,32 +38,6 @@ function SchedulePage() {
     return acc;
   }, {});
 
-  const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const wc: Fixture[] = getWorldCup2026FallbackFixtures()
-    .filter((m) => m.kickoff >= currentOrLiveCutoff)
-    .map((m) => ({
-      id: m.id,
-      league: m.league,
-      leagueLogo: m.leagueLogo,
-      leagueCountry: m.leagueCountry,
-      homeTeam: m.homeTeam,
-      awayTeam: m.awayTeam,
-      homeLogo: m.homeLogo,
-      awayLogo: m.awayLogo,
-      kickoff: m.kickoff,
-      status: m.status,
-      venue: m.venue,
-    }));
-  const wcByDay = wc.reduce<Record<string, Fixture[]>>((acc, m) => {
-    const day = new Date(m.kickoff).toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    (acc[day] ||= []).push(m);
-    return acc;
-  }, {});
 
   return (
     <div className="min-h-screen">
@@ -87,27 +59,6 @@ function SchedulePage() {
           ))}
         </div>
 
-        {wc.length > 0 && (
-          <div className="mt-16">
-            <div className="mb-8 flex items-center gap-3">
-              <Trophy className="h-7 w-7 text-primary" />
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Tournament</div>
-                <h2 className="font-display text-3xl sm:text-4xl">World Cup 2026 Schedule</h2>
-              </div>
-            </div>
-            <div className="space-y-12">
-              {Object.entries(wcByDay).map(([day, list]) => (
-                <div key={day}>
-                  <h3 className="mb-5 font-display text-2xl text-primary">{day}</h3>
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {list.map((m) => <ScheduleCard key={m.id} match={m} />)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       <Footer />
     </div>

@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as WorldCupRouteImport } from './routes/world-cup'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as ScheduleRouteImport } from './routes/schedule'
 import { Route as PricingRouteImport } from './routes/pricing'
@@ -34,7 +33,6 @@ import { Route as ApiStreamSegRouteImport } from './routes/api/stream.seg'
 import { Route as ApiStreamIdRouteImport } from './routes/api/stream.$id'
 import { Route as ApiPublicStripeWebhookRouteImport } from './routes/api/public/stripe-webhook'
 import { Route as ApiPublicHealthRouteImport } from './routes/api/public/health'
-import { Route as AuthenticatedAdminWorldCupRouteImport } from './routes/_authenticated/admin.world-cup'
 import { Route as AuthenticatedAdminWatchLiveRouteImport } from './routes/_authenticated/admin.watch-live'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTransactionsRouteImport } from './routes/_authenticated/admin.transactions'
@@ -59,11 +57,6 @@ import { Route as AuthenticatedAdminNewsNewRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminNewsIdRouteImport } from './routes/_authenticated/admin.news.$id'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin.articles.$id'
 
-const WorldCupRoute = WorldCupRouteImport.update({
-  id: '/world-cup',
-  path: '/world-cup',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -183,12 +176,6 @@ const ApiPublicHealthRoute = ApiPublicHealthRouteImport.update({
   path: '/api/public/health',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminWorldCupRoute =
-  AuthenticatedAdminWorldCupRouteImport.update({
-    id: '/world-cup',
-    path: '/world-cup',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
 const AuthenticatedAdminWatchLiveRoute =
   AuthenticatedAdminWatchLiveRouteImport.update({
     id: '/watch-live',
@@ -337,7 +324,6 @@ export interface FileRoutesByFullPath {
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/world-cup': typeof WorldCupRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/article/$slug': typeof ArticleSlugRoute
@@ -364,7 +350,6 @@ export interface FileRoutesByFullPath {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
-  '/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
@@ -386,7 +371,6 @@ export interface FileRoutesByTo {
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/world-cup': typeof WorldCupRoute
   '/admin/login': typeof AdminLoginRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -412,7 +396,6 @@ export interface FileRoutesByTo {
   '/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
-  '/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
@@ -437,7 +420,6 @@ export interface FileRoutesById {
   '/pricing': typeof PricingRoute
   '/schedule': typeof ScheduleRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
-  '/world-cup': typeof WorldCupRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/admin/login': typeof AdminLoginRoute
   '/article/$slug': typeof ArticleSlugRoute
@@ -464,7 +446,6 @@ export interface FileRoutesById {
   '/_authenticated/admin/transactions': typeof AuthenticatedAdminTransactionsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/watch-live': typeof AuthenticatedAdminWatchLiveRoute
-  '/_authenticated/admin/world-cup': typeof AuthenticatedAdminWorldCupRoute
   '/api/public/health': typeof ApiPublicHealthRoute
   '/api/public/stripe-webhook': typeof ApiPublicStripeWebhookRoute
   '/api/stream/$id': typeof ApiStreamIdRoute
@@ -489,7 +470,6 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
-    | '/world-cup'
     | '/admin'
     | '/admin/login'
     | '/article/$slug'
@@ -516,7 +496,6 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/users'
     | '/admin/watch-live'
-    | '/admin/world-cup'
     | '/api/public/health'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
@@ -538,7 +517,6 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
-    | '/world-cup'
     | '/admin/login'
     | '/article/$slug'
     | '/auth/callback'
@@ -564,7 +542,6 @@ export interface FileRouteTypes {
     | '/admin/transactions'
     | '/admin/users'
     | '/admin/watch-live'
-    | '/admin/world-cup'
     | '/api/public/health'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
@@ -588,7 +565,6 @@ export interface FileRouteTypes {
     | '/pricing'
     | '/schedule'
     | '/sitemap.xml'
-    | '/world-cup'
     | '/_authenticated/admin'
     | '/admin/login'
     | '/article/$slug'
@@ -615,7 +591,6 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/transactions'
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/watch-live'
-    | '/_authenticated/admin/world-cup'
     | '/api/public/health'
     | '/api/public/stripe-webhook'
     | '/api/stream/$id'
@@ -640,7 +615,6 @@ export interface RootRouteChildren {
   PricingRoute: typeof PricingRoute
   ScheduleRoute: typeof ScheduleRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
-  WorldCupRoute: typeof WorldCupRoute
   AdminLoginRoute: typeof AdminLoginRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
@@ -655,13 +629,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/world-cup': {
-      id: '/world-cup'
-      path: '/world-cup'
-      fullPath: '/world-cup'
-      preLoaderRoute: typeof WorldCupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/sitemap.xml': {
       id: '/sitemap.xml'
       path: '/sitemap.xml'
@@ -829,13 +796,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/health'
       preLoaderRoute: typeof ApiPublicHealthRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/admin/world-cup': {
-      id: '/_authenticated/admin/world-cup'
-      path: '/world-cup'
-      fullPath: '/admin/world-cup'
-      preLoaderRoute: typeof AuthenticatedAdminWorldCupRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/admin/watch-live': {
       id: '/_authenticated/admin/watch-live'
@@ -1020,7 +980,6 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminTransactionsRoute: typeof AuthenticatedAdminTransactionsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminWatchLiveRoute: typeof AuthenticatedAdminWatchLiveRoute
-  AuthenticatedAdminWorldCupRoute: typeof AuthenticatedAdminWorldCupRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminArticlesIdRoute: typeof AuthenticatedAdminArticlesIdRoute
   AuthenticatedAdminNewsIdRoute: typeof AuthenticatedAdminNewsIdRoute
@@ -1047,7 +1006,6 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminTransactionsRoute: AuthenticatedAdminTransactionsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedAdminWatchLiveRoute: AuthenticatedAdminWatchLiveRoute,
-  AuthenticatedAdminWorldCupRoute: AuthenticatedAdminWorldCupRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminArticlesIdRoute: AuthenticatedAdminArticlesIdRoute,
   AuthenticatedAdminNewsIdRoute: AuthenticatedAdminNewsIdRoute,
@@ -1093,7 +1051,6 @@ const rootRouteChildren: RootRouteChildren = {
   PricingRoute: PricingRoute,
   ScheduleRoute: ScheduleRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
-  WorldCupRoute: WorldCupRoute,
   AdminLoginRoute: AdminLoginRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   AuthCallbackRoute: AuthCallbackRoute,

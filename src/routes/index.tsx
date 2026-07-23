@@ -6,7 +6,7 @@ import { Header } from "@/components/site/Header";
 
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
-import { getTeamFlagUrl, getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl } from "@/lib/team-flags";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
@@ -134,7 +134,7 @@ function Index() {
             {popularLeagues.map((l) => (
               <Link
                 key={l.id}
-                to={l.id === "wc" ? "/world-cup" : "/leagues"}
+                to="/leagues"
                 className={`group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br ${l.accent} p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50`}
               >
                 <img src={l.logo} alt="" loading="lazy" decoding="async" className="absolute -right-4 -top-4 h-24 w-24 opacity-20 transition-transform group-hover:scale-110" />
@@ -159,7 +159,7 @@ function Index() {
               <ul className="divide-y divide-border/60">
                 {topLeagues.map((l) => (
                   <li key={l.id}>
-                    <Link to={l.id === "wc" ? "/world-cup" : "/leagues"} className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
+                    <Link to="/leagues" className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
                       <img src={l.logo} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full bg-secondary p-0.5" />
                       <span className="flex-1 truncate">{l.name}</span>
                       <span className="text-xs text-muted-foreground">{l.country}</span>
@@ -241,8 +241,6 @@ function Index() {
                 ))}
               </FixturesBlock>
             )}
-
-            <WorldCup2026Schedule />
           </div>
         </div>
       </main>
@@ -295,11 +293,10 @@ function FixturesBlock({
 
 function FixtureRow({ match: m }: { match: Fixture }) {
   const isLive = m.status === "live";
-  const worldCupMatch = getWorldCup2026FixtureById(m.id);
-  const homeTeam = worldCupMatch?.homeTeam ?? m.homeTeam;
-  const awayTeam = worldCupMatch?.awayTeam ?? m.awayTeam;
-  const homeLogo = worldCupMatch?.homeLogo || m.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
-  const awayLogo = worldCupMatch?.awayLogo || m.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
+  const homeTeam = m.homeTeam;
+  const awayTeam = m.awayTeam;
+  const homeLogo = m.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
+  const awayLogo = m.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   return (
     <Link
       to="/match/$id"
@@ -347,61 +344,6 @@ function FixtureRow({ match: m }: { match: Fixture }) {
   );
 }
 
-function WorldCup2026Schedule() {
-  const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const all = getWorldCup2026FallbackFixtures();
-  const currentOrUpcoming = all.filter((m) => m.kickoff >= currentOrLiveCutoff);
-  const upcoming = (currentOrUpcoming.length > 0 ? currentOrUpcoming : all).slice(0, 24);
-  if (upcoming.length === 0) return null;
-  const title = currentOrUpcoming.length > 0 ? "Current & Upcoming World Cup 2026" : "World Cup 2026 Schedule";
-
-  const grouped = new Map<string, typeof upcoming>();
-  for (const m of upcoming) {
-    const d = new Date(m.kickoff);
-    const date = d.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    });
-    if (!grouped.has(date)) grouped.set(date, [] as typeof upcoming);
-    grouped.get(date)!.push(m);
-  }
-
-  return (
-    <FixturesBlock
-      icon={<Trophy className="h-5 w-5 text-primary" />}
-      title={title}
-      allHref="/world-cup"
-    >
-      {[...grouped.entries()].map(([date, list]) => (
-        <div key={date}>
-          <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 text-primary" /> {date}
-          </div>
-          {list.map((m) => (
-            <FixtureRow
-              key={m.id}
-              match={{
-                id: m.id,
-                league: m.league,
-                leagueLogo: m.leagueLogo,
-                leagueCountry: m.leagueCountry,
-                homeTeam: m.homeTeam,
-                awayTeam: m.awayTeam,
-                homeLogo: m.homeLogo,
-                awayLogo: m.awayLogo,
-                kickoff: m.kickoff,
-                status: m.status,
-                venue: m.venue,
-              }}
-            />
-          ))}
-        </div>
-      ))}
-    </FixturesBlock>
-  );
-}
 
 function TelegramJoinCard() {
   const { data } = useQuery({

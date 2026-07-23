@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
-import { getTeamFlagUrl, getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl } from "@/lib/team-flags";
 
 const BASE = "https://v3.football.api-sports.io";
 
@@ -78,24 +78,23 @@ function normalize(raw: any): Fixture {
   const venueName = raw.fixture?.venue?.name;
   const venueCity = raw.fixture?.venue?.city;
   const id = String(raw.fixture.id);
-  const wc = getWorldCup2026FixtureById(id);
   return ensureTeamVisuals({
     id,
-    league: raw.league?.name ?? wc?.league ?? "",
-    leagueLogo: raw.league?.logo ?? wc?.leagueLogo ?? "",
-    leagueCountry: raw.league?.country ?? wc?.leagueCountry,
-    homeTeam: raw.teams?.home?.name ?? wc?.homeTeam ?? "",
-    awayTeam: raw.teams?.away?.name ?? wc?.awayTeam ?? "",
-    homeTeamId: raw.teams?.home?.id ?? wc?.homeTeamId,
-    awayTeamId: raw.teams?.away?.id ?? wc?.awayTeamId,
-    homeLogo: raw.teams?.home?.logo ?? wc?.homeLogo ?? "",
-    awayLogo: raw.teams?.away?.logo ?? wc?.awayLogo ?? "",
-    kickoff: raw.fixture?.date ?? wc?.kickoff ?? "",
+    league: raw.league?.name ?? "",
+    leagueLogo: raw.league?.logo ?? "",
+    leagueCountry: raw.league?.country,
+    homeTeam: raw.teams?.home?.name ?? "",
+    awayTeam: raw.teams?.away?.name ?? "",
+    homeTeamId: raw.teams?.home?.id,
+    awayTeamId: raw.teams?.away?.id,
+    homeLogo: raw.teams?.home?.logo ?? "",
+    awayLogo: raw.teams?.away?.logo ?? "",
+    kickoff: raw.fixture?.date ?? "",
     status,
     homeScore: raw.goals?.home ?? undefined,
     awayScore: raw.goals?.away ?? undefined,
     minute: raw.fixture?.status?.elapsed ? `${raw.fixture.status.elapsed}'` : undefined,
-    venue: venueName ? (venueCity ? `${venueName}, ${venueCity}` : venueName) : wc?.venue,
+    venue: venueName ? (venueCity ? `${venueName}, ${venueCity}` : venueName) : undefined,
     referee: raw.fixture?.referee ?? undefined,
   });
 }
@@ -128,21 +127,6 @@ function usableLogoUrl(url?: string): string {
   return logo;
 }
 
-function mergeWithWorldCupFixture(f: Fixture, wc?: Fixture): Fixture {
-  if (!wc) return ensureTeamVisuals(f);
-  return ensureTeamVisuals({
-    ...f,
-    homeTeam: f.homeTeam?.trim() ? f.homeTeam : wc.homeTeam,
-    awayTeam: f.awayTeam?.trim() ? f.awayTeam : wc.awayTeam,
-    homeTeamId: f.homeTeamId ?? wc.homeTeamId,
-    awayTeamId: f.awayTeamId ?? wc.awayTeamId,
-    homeLogo: usableLogoUrl(f.homeLogo) || wc.homeLogo,
-    awayLogo: usableLogoUrl(f.awayLogo) || wc.awayLogo,
-    league: f.league?.trim() ? f.league : wc.league,
-    leagueLogo: f.leagueLogo?.trim() ? f.leagueLogo : wc.leagueLogo,
-    venue: f.venue ?? wc.venue,
-  });
-}
 
 function streamFixtureIsVisible(match: Fixture, now = Date.now()) {
   if (match.status !== "finished") return true;
@@ -202,70 +186,23 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
     console.error("[loadStreamedFixtures] upstream fetch failed", e);
     return [] as Fixture[];
   });
-  const wcFallback = getWorldCup2026FallbackFixtures();
-  const wcById = new Map(wcFallback.map((f) => [f.id, f]));
-  const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
 
-  console.log(
-    `[loadStreamedFixtures] active stream ids=${ids.length} fetched=${fetched.length} wcDatasetSize=${wcFallback.length}`,
-  );
-
-  // Merge upstream data with the local WC dataset: whenever api-football
-  // returns a placeholder record with empty team names/logos (common for
-  // knockout fixtures where teams are TBD), backfill from our WC list so
-  // the live section shows a readable label and crest instead of blanks.
-  const merged = fetched.map((f) => {
-    const wc = wcForId(f.id);
-    const blanks: string[] = [];
-    if (!f.homeTeam?.trim()) blanks.push("homeTeam");
-    if (!f.awayTeam?.trim()) blanks.push("awayTeam");
-    if (!f.homeLogo?.trim()) blanks.push("homeLogo");
-    if (!f.awayLogo?.trim()) blanks.push("awayLogo");
-    if (blanks.length) {
-      console.log(
-        `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"} flagFallback=yes`,
-      );
-    }
-    return { ...mergeWithWorldCupFixture(f, wc), status: "live" as const, minute: f.minute ?? "LIVE" };
-  });
+  const merged = fetched.map((f) => ({
+    ...ensureTeamVisuals(f),
+    status: "live" as const,
+    minute: f.minute ?? "LIVE",
+  }));
 
   const seen = new Set(merged.map((f) => f.id));
   const missing: Fixture[] = [];
   for (const id of ids) {
     const key = String(id);
     if (seen.has(key)) continue;
-    const wc = wcForId(key);
-    console.log(
-      `[loadStreamedFixtures] missing from upstream fixtureId=${key} source=${wc ? "wc-dataset" : "synthetic"}`,
-    );
-    missing.push(
-
-      wc
-        ? {
-            id: key,
-            league: wc.league,
-            leagueLogo: wc.leagueLogo,
-            leagueCountry: wc.leagueCountry,
-            homeTeam: wc.homeTeam,
-            awayTeam: wc.awayTeam,
-            homeTeamId: wc.homeTeamId,
-            awayTeamId: wc.awayTeamId,
-            homeLogo: wc.homeLogo,
-            awayLogo: wc.awayLogo,
-            kickoff: wc.kickoff,
-            status: "live",
-            minute: "LIVE",
-            venue: wc.venue,
-          }
-        : ensureTeamVisuals(syntheticStreamFixture(id)),
-    );
+    missing.push(ensureTeamVisuals(syntheticStreamFixture(id)));
   }
   const result = [...merged, ...missing]
     .filter((match) => streamFixtureIsVisible(match))
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
-  console.log(
-    `[loadStreamedFixtures] returning ${result.length} fixtures (merged=${merged.length} missing=${missing.length})`,
-  );
   return result;
 }
 
@@ -308,36 +245,14 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
   .inputValidator((d: { ids: number[] }) => d)
   .handler(async ({ data }) => {
     const ids = (data.ids ?? []).filter((n) => Number.isFinite(n));
-    const wcFallback = getWorldCup2026FallbackFixtures();
-    const wcById = new Map(wcFallback.map((f) => [f.id, f]));
-    const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
     const fetched = (await fetchFixturesByIds(ids).catch(() => [] as Fixture[]))
-      .map((f) => mergeWithWorldCupFixture(f, wcForId(f.id)));
+      .map((f) => ensureTeamVisuals(f));
     const seen = new Set(fetched.map((f) => f.id));
     const missing: Fixture[] = [];
     for (const id of ids) {
       const key = String(id);
       if (seen.has(key)) continue;
-      const wc = wcForId(key);
-      missing.push(
-        wc
-          ? {
-              id: key,
-              league: wc.league,
-              leagueLogo: wc.leagueLogo,
-              leagueCountry: wc.leagueCountry,
-              homeTeam: wc.homeTeam,
-              awayTeam: wc.awayTeam,
-              homeTeamId: wc.homeTeamId,
-              awayTeamId: wc.awayTeamId,
-              homeLogo: wc.homeLogo,
-              awayLogo: wc.awayLogo,
-              kickoff: wc.kickoff,
-              status: wc.status,
-              venue: wc.venue,
-            }
-          : ensureTeamVisuals(syntheticStreamFixture(id)),
-      );
+      missing.push(ensureTeamVisuals(syntheticStreamFixture(id)));
     }
     return [...fetched, ...missing];
   });
@@ -366,7 +281,7 @@ export const getScheduleFeed = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const POPULAR_LEAGUES: Array<{ id: number; name: string; country?: string }> = [
-  { id: 1, name: "World Cup" },
+  
   { id: 4, name: "Euro Championship" },
   { id: 9, name: "Copa America" },
   { id: 2, name: "UEFA Champions League" },
@@ -477,15 +392,6 @@ export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
     const normalized = raw.map(normalize).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
     if (normalized.length) return normalized;
 
-    // If the upstream API key is missing/rate-limited on a self-hosted server,
-    // keep the admin usable for World Cup 2026 with real fixture IDs and dates.
-    if (data.leagueId === 1) {
-      const exact = getWorldCup2026FallbackFixtures(data.date);
-      if (exact.length) return exact;
-      const nowIso = new Date().toISOString();
-      return getWorldCup2026FallbackFixtures().filter((f) => f.kickoff >= nowIso);
-    }
-
     return [];
   });
 
@@ -515,42 +421,19 @@ export type FixtureDetail = Fixture & {
   statistics: Array<{ team: string; stats: Array<{ type: string; value: string | number | null }> }>;
 };
 
-function worldCupFixtureDetail(id: string): FixtureDetail | null {
-  const wc = getWorldCup2026FixtureById(id);
-  if (!wc) return null;
-  return {
-    id: wc.id,
-    league: wc.league,
-    leagueLogo: wc.leagueLogo,
-    leagueCountry: wc.leagueCountry,
-    homeTeam: wc.homeTeam,
-    awayTeam: wc.awayTeam,
-    homeTeamId: wc.homeTeamId,
-    awayTeamId: wc.awayTeamId,
-    homeLogo: wc.homeLogo,
-    awayLogo: wc.awayLogo,
-    kickoff: wc.kickoff,
-    status: wc.status,
-    venue: wc.venue,
-    events: [],
-    lineups: [],
-    statistics: [],
-  };
-}
 
 export const getFixtureDetail = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }): Promise<FixtureDetail | null> => {
-    const fallback = worldCupFixtureDetail(data.id);
     const [fixtures, events, lineups, statistics] = await Promise.all([
       af<any[]>(`/fixtures?id=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/events?fixture=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/lineups?fixture=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/statistics?fixture=${data.id}`).catch(() => []),
     ]);
-    if (!fixtures.length) return fallback;
+    if (!fixtures.length) return null;
     const raw = fixtures[0];
-    const base = mergeWithWorldCupFixture(normalize(raw), fallback ?? undefined);
+    const base = ensureTeamVisuals(normalize(raw));
     const homeId = raw.teams?.home?.id;
 
     const mapPlayer = (s: any): LineupPlayer => ({

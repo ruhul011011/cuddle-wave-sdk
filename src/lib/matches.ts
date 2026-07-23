@@ -40,7 +40,7 @@ export type LeagueInfo = {
 };
 
 export const popularLeagues: LeagueInfo[] = [
-  { id: "wc", name: "FIFA World Cup 2026", short: "WC", country: "USA · CAN · MEX", matches: 104, logo: leagueLogoSeed("WC"), accent: "from-amber-500/40 to-rose-900/60" },
+  
   { id: "ucl", name: "UEFA Champions League", short: "UCL", country: "Europe", matches: 92, logo: leagueLogoSeed("UCL"), accent: "from-indigo-600/40 to-indigo-900/60" },
   { id: "uel", name: "UEFA Europa League", short: "UEL", country: "Europe", matches: 20, logo: leagueLogoSeed("UEL"), accent: "from-orange-500/40 to-orange-900/60" },
   { id: "epl", name: "Premier League", short: "EPL", country: "England", matches: 153, logo: leagueLogoSeed("EPL"), accent: "from-purple-600/40 to-fuchsia-900/60" },
