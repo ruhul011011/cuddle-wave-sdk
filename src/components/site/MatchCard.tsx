@@ -19,7 +19,6 @@ export function MatchCard({ match }: { match: Match }) {
     // eslint-disable-next-line no-console
     console.debug("[live-fixture logo]", {
       id: match.id,
-      wcFallback: visuals.wcFallbackApplied,
       home: { team: homeTeam, url: homeLogo, source: visuals.homeLogoSource, apiUrl: match.homeLogo },
       away: { team: awayTeam, url: awayLogo, source: visuals.awayLogoSource, apiUrl: match.awayLogo },
     });
