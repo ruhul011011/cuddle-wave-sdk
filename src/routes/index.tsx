@@ -6,7 +6,7 @@ import { Header } from "@/components/site/Header";
 
 import { popularLeagues, topLeagues, popularTeams, groupByDate, formatKickoffTime } from "@/lib/matches";
 import { getHomeFeed, type Fixture } from "@/lib/api-football.functions";
-import { getTeamFlagUrl, getWorldCup2026FallbackFixtures, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl } from "@/lib/team-flags";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Trophy,
