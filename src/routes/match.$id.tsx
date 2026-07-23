@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { getFixtureDetail } from "@/lib/api-football.functions";
-import { getTeamFlagUrl, getWorldCup2026FixtureById } from "@/lib/world-cup-2026-fixtures";
+import { getTeamFlagUrl } from "@/lib/team-flags";
 import { getStreamsForFixture, getPreviewStreamsForFixture } from "@/lib/streams.functions";
 import { getMatchAccess } from "@/lib/payments.functions";
 import { StreamPlayer } from "@/components/StreamPlayer";
@@ -143,11 +143,10 @@ function MatchPage() {
     statistics: [],
   };
   const isLive = match.status === "live";
-  const worldCupMatch = getWorldCup2026FixtureById(match.id);
-  const homeTeam = worldCupMatch?.homeTeam ?? match.homeTeam;
-  const awayTeam = worldCupMatch?.awayTeam ?? match.awayTeam;
-  const homeLogo = worldCupMatch?.homeLogo || match.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
-  const awayLogo = worldCupMatch?.awayLogo || match.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
+  const homeTeam = match.homeTeam;
+  const awayTeam = match.awayTeam;
+  const homeLogo = match.homeLogo?.trim() || getTeamFlagUrl(homeTeam);
+  const awayLogo = match.awayLogo?.trim() || getTeamFlagUrl(awayTeam);
   const kickoff = new Date(match.kickoff);
   const isPaidLocked = isAuthed && access?.access === "premium" && !access.hasAccess;
   const isScheduledLocked = Boolean(access?.available_from) && access?.isAvailable === false;

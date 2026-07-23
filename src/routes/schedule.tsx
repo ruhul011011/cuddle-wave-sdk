@@ -4,8 +4,6 @@ import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { MatchCard } from "@/components/site/MatchCard";
 import { getScheduleFeed, type Fixture } from "@/lib/api-football.functions";
-import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
-import { Trophy } from "lucide-react";
 
 const scheduleQuery = queryOptions({
   queryKey: ["schedule-feed"],

@@ -12,7 +12,7 @@ import {
 } from "@/lib/streams.functions";
 import { setMatchAccess } from "@/lib/payments.functions";
 import { listPopularLeagues, getFixturesByLeagueDate, getFixturesByIds, type Fixture } from "@/lib/api-football.functions";
-import { getWorldCup2026FallbackFixtures } from "@/lib/world-cup-2026-fixtures";
+
 import { toast } from "sonner";
 import { Trash2, Plus, Loader2, Copy, X, Pencil, Search } from "lucide-react";
 
@@ -102,15 +102,8 @@ function AdminLiveMatchesPage() {
   });
 
   const fixtureOptions = useMemo<Fixture[]>(() => {
-    const rows = fixturesQ.data ?? [];
-    if (rows.length) return rows;
-    if (leagueId !== 1) return [];
-    // World Cup fallback: show fixtures for the picked date, otherwise show
-    // every upcoming fixture so the admin always has something to choose.
-    const exact = getWorldCup2026FallbackFixtures(date);
-    if (exact.length) return exact;
-    const nowIso = new Date().toISOString();
-    return getWorldCup2026FallbackFixtures().filter((f) => f.kickoff >= nowIso);
+    return fixturesQ.data ?? [];
+  }, [fixturesQ.data]);
   }, [fixturesQ.data, leagueId, date]);
 
   const [search, setSearch] = useState("");
