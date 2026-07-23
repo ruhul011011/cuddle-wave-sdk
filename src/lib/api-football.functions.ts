@@ -186,70 +186,23 @@ async function loadStreamedFixtures(): Promise<Fixture[]> {
     console.error("[loadStreamedFixtures] upstream fetch failed", e);
     return [] as Fixture[];
   });
-  const wcFallback = getWorldCup2026FallbackFixtures();
-  const wcById = new Map(wcFallback.map((f) => [f.id, f]));
-  const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
 
-  console.log(
-    `[loadStreamedFixtures] active stream ids=${ids.length} fetched=${fetched.length} wcDatasetSize=${wcFallback.length}`,
-  );
-
-  // Merge upstream data with the local WC dataset: whenever api-football
-  // returns a placeholder record with empty team names/logos (common for
-  // knockout fixtures where teams are TBD), backfill from our WC list so
-  // the live section shows a readable label and crest instead of blanks.
-  const merged = fetched.map((f) => {
-    const wc = wcForId(f.id);
-    const blanks: string[] = [];
-    if (!f.homeTeam?.trim()) blanks.push("homeTeam");
-    if (!f.awayTeam?.trim()) blanks.push("awayTeam");
-    if (!f.homeLogo?.trim()) blanks.push("homeLogo");
-    if (!f.awayLogo?.trim()) blanks.push("awayLogo");
-    if (blanks.length) {
-      console.log(
-        `[loadStreamedFixtures] upstream blanks fixtureId=${f.id} fields=${blanks.join(",")} wcBackfill=${wc ? "yes" : "no"} flagFallback=yes`,
-      );
-    }
-    return { ...mergeWithWorldCupFixture(f, wc), status: "live" as const, minute: f.minute ?? "LIVE" };
-  });
+  const merged = fetched.map((f) => ({
+    ...ensureTeamVisuals(f),
+    status: "live" as const,
+    minute: f.minute ?? "LIVE",
+  }));
 
   const seen = new Set(merged.map((f) => f.id));
   const missing: Fixture[] = [];
   for (const id of ids) {
     const key = String(id);
     if (seen.has(key)) continue;
-    const wc = wcForId(key);
-    console.log(
-      `[loadStreamedFixtures] missing from upstream fixtureId=${key} source=${wc ? "wc-dataset" : "synthetic"}`,
-    );
-    missing.push(
-
-      wc
-        ? {
-            id: key,
-            league: wc.league,
-            leagueLogo: wc.leagueLogo,
-            leagueCountry: wc.leagueCountry,
-            homeTeam: wc.homeTeam,
-            awayTeam: wc.awayTeam,
-            homeTeamId: wc.homeTeamId,
-            awayTeamId: wc.awayTeamId,
-            homeLogo: wc.homeLogo,
-            awayLogo: wc.awayLogo,
-            kickoff: wc.kickoff,
-            status: "live",
-            minute: "LIVE",
-            venue: wc.venue,
-          }
-        : ensureTeamVisuals(syntheticStreamFixture(id)),
-    );
+    missing.push(ensureTeamVisuals(syntheticStreamFixture(id)));
   }
   const result = [...merged, ...missing]
     .filter((match) => streamFixtureIsVisible(match))
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
-  console.log(
-    `[loadStreamedFixtures] returning ${result.length} fixtures (merged=${merged.length} missing=${missing.length})`,
-  );
   return result;
 }
 
@@ -292,36 +245,14 @@ export const getFixturesByIds = createServerFn({ method: "GET" })
   .inputValidator((d: { ids: number[] }) => d)
   .handler(async ({ data }) => {
     const ids = (data.ids ?? []).filter((n) => Number.isFinite(n));
-    const wcFallback = getWorldCup2026FallbackFixtures();
-    const wcById = new Map(wcFallback.map((f) => [f.id, f]));
-    const wcForId = (id: string | number) => wcById.get(String(id)) ?? getWorldCup2026FixtureById(id);
     const fetched = (await fetchFixturesByIds(ids).catch(() => [] as Fixture[]))
-      .map((f) => mergeWithWorldCupFixture(f, wcForId(f.id)));
+      .map((f) => ensureTeamVisuals(f));
     const seen = new Set(fetched.map((f) => f.id));
     const missing: Fixture[] = [];
     for (const id of ids) {
       const key = String(id);
       if (seen.has(key)) continue;
-      const wc = wcForId(key);
-      missing.push(
-        wc
-          ? {
-              id: key,
-              league: wc.league,
-              leagueLogo: wc.leagueLogo,
-              leagueCountry: wc.leagueCountry,
-              homeTeam: wc.homeTeam,
-              awayTeam: wc.awayTeam,
-              homeTeamId: wc.homeTeamId,
-              awayTeamId: wc.awayTeamId,
-              homeLogo: wc.homeLogo,
-              awayLogo: wc.awayLogo,
-              kickoff: wc.kickoff,
-              status: wc.status,
-              venue: wc.venue,
-            }
-          : ensureTeamVisuals(syntheticStreamFixture(id)),
-      );
+      missing.push(ensureTeamVisuals(syntheticStreamFixture(id)));
     }
     return [...fetched, ...missing];
   });
