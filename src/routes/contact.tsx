@@ -93,8 +93,8 @@ function ContactPage() {
                 <div className="text-sm font-semibold text-foreground">Contact us directly at</div>
                 <div className="mt-6 flex items-center justify-center gap-2 text-base sm:text-lg font-medium">
                   <Mail className="h-4 w-4 text-primary" />
-                  <a href="mailto:support@footballtvstream.com" className="hover:text-primary transition-colors">
-                    support@footballtvstream.com
+                  <a href="mailto:support@soccertv.live" className="hover:text-primary transition-colors">
+                    support@soccertv.live
                   </a>
                 </div>
               </div>
