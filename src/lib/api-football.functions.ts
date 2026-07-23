@@ -220,17 +220,14 @@ export const getHomeFeed = createServerFn({ method: "GET" }).handler(async () =>
     af<any[]>(`/fixtures?date=${isoDate(tomorrow)}`, 300_000).catch(() => []),
     loadStreamedFixtures().catch(() => []),
   ]);
-  // Keep only fixtures from popular leagues — payload shrinks ~10x.
-  const popularSet = new Set(POPULAR_LEAGUES.map((l) => l.id));
-  const inPopular = (r: any) => popularSet.has(r.league?.id);
+  // Show all fixtures from api-football (no popular-league filter).
   const upcoming = [...todayList, ...tomorrowList]
-    .filter(inPopular)
     .map(normalize)
     .filter((m) => m.status === "upcoming")
     .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
   return {
-    live: live.filter(inPopular).map(normalize).slice(0, 30),
-    upcoming: upcoming.slice(0, 30),
+    live: live.map(normalize).slice(0, 50),
+    upcoming: upcoming.slice(0, 100),
     streamed,
   };
 });
