@@ -210,6 +210,16 @@ function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
+function popularRank(name: string) {
+  const idx = POPULAR_LEAGUES.findIndex((l) => l.name === name);
+  return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+}
+const sortByTimeThenPopularity = (a: Fixture, b: Fixture) => {
+  const t = a.kickoff.localeCompare(b.kickoff);
+  if (t !== 0) return t;
+  return popularRank(a.league) - popularRank(b.league);
+};
+
 export const getHomeFeed = createServerFn({ method: "GET" }).handler(async () => {
   const today = new Date();
   const tomorrow = new Date(today.getTime() + 86400000);
@@ -220,13 +230,13 @@ export const getHomeFeed = createServerFn({ method: "GET" }).handler(async () =>
     af<any[]>(`/fixtures?date=${isoDate(tomorrow)}`, 300_000).catch(() => []),
     loadStreamedFixtures().catch(() => []),
   ]);
-  // Show all fixtures from api-football (no popular-league filter).
+  // When kickoff times tie, popular top-20 leagues get priority order.
   const upcoming = [...todayList, ...tomorrowList]
     .map(normalize)
     .filter((m) => m.status === "upcoming")
-    .sort((a, b) => a.kickoff.localeCompare(b.kickoff));
+    .sort(sortByTimeThenPopularity);
   return {
-    live: live.map(normalize).slice(0, 50),
+    live: live.map(normalize).sort(sortByTimeThenPopularity).slice(0, 50),
     upcoming: upcoming.slice(0, 100),
     streamed,
   };
