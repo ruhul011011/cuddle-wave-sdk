@@ -130,7 +130,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "World Cup TV — Watch FIFA World Cup 2026 Live TV Online Free in HD" },
+      { title: "Yalla Football Live - Watch Live Football, Live Scores & Match Schedule" },
       { name: "description", content: "World Cup TV is the #1 place to watch the FIFA World Cup 2026 live in HD. Free World Cup live TV streaming, fixtures, schedule, groups and points table." },
       { name: "keywords", content: "World Cup Live TV, World Cup TV, World Cup TV 2026, FIFA World Cup 2026, Watch World Cup Live, World Cup Live Streaming, World Cup 2026 Live, World Cup Online TV, Football Live TV, World Cup HD Streaming" },
       { name: "robots", content: "index, follow, max-image-preview:large" },
