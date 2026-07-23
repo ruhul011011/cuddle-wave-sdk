@@ -185,24 +185,27 @@ function Index() {
 
           <div className="space-y-8 min-w-0">
             {featured && (
-              <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-gradient-to-br from-emerald-900/60 via-card to-card p-6 sm:p-10">
-                <div className="absolute inset-0 opacity-[0.07] [background-image:linear-gradient(oklch(1_0_0/0.5)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0/0.5)_1px,transparent_1px)] [background-size:48px_48px]" />
-                <div className="absolute -right-12 -bottom-12 h-72 w-72 rounded-full bg-primary/30 blur-3xl" />
+              <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card p-6 sm:p-10">
+                <div className="absolute inset-0 opacity-[0.05] [background-image:linear-gradient(oklch(1_0_0/0.5)_1px,transparent_1px),linear-gradient(90deg,oklch(1_0_0/0.5)_1px,transparent_1px)] [background-size:48px_48px]" />
+                <div className="absolute -right-12 -bottom-12 h-72 w-72 rounded-full bg-primary/20 blur-3xl" />
                 <div className="relative grid gap-6 sm:grid-cols-[1.2fr_auto] sm:items-center">
                   <div>
-                    <span className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
-                      <Radio className="h-3 w-3" /> Live & Upcoming
+                    <span className="inline-flex items-center gap-2 rounded-md border border-primary/50 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary">
+                      <Radio className="h-3 w-3 fill-current" /> Live &amp; Upcoming
                     </span>
-                    <h1 className="mt-4 font-display text-4xl sm:text-5xl lg:text-6xl leading-[0.95]">
-                      EVERY MATCH, <span className="text-primary">EVERY LEAGUE.</span>
+                    <h1 className="mt-5 font-display text-4xl sm:text-6xl lg:text-7xl font-bold leading-[0.95]">
+                      EVERY MATCH,<br /><span className="text-primary">EVERY LEAGUE.</span>
                     </h1>
-                    <p className="mt-3 max-w-md text-sm text-muted-foreground">
-                      Real-time fixtures, live scores and HD streams powered by API-Football.
+                    <p className="mt-4 max-w-md text-sm text-muted-foreground">
+                      Real-time fixtures, live scores and high-definition streams powered by elite broadcast data infrastructure. Experience football like never before.
                     </p>
+                    <Link to="/live" className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 transition-colors">
+                      <Play className="h-4 w-4 fill-current" /> Start Streaming
+                    </Link>
                   </div>
-                  <div className="hidden sm:block font-display text-7xl lg:text-8xl text-primary/90 leading-none">
+                  <div className="hidden sm:block font-display text-7xl lg:text-8xl font-bold text-accent leading-none">
                     {live.length}
-                    <div className="text-base tracking-widest text-muted-foreground">LIVE NOW</div>
+                    <div className="mt-1 text-sm font-semibold tracking-widest text-muted-foreground">MATCH LIVE NOW</div>
                   </div>
                 </div>
               </div>
