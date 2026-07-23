@@ -8,7 +8,7 @@ const NAV: { to: string; label: string; exact?: boolean }[] = [
   { to: "/", label: "Home", exact: true },
   { to: "/live", label: "Live" },
   { to: "/schedule", label: "Matches" },
-  { to: "/world-cup", label: "World Cup" },
+  
   { to: "/leagues", label: "Leagues" },
   { to: "/news", label: "News" },
   { to: "/pricing", label: "Pricing" },

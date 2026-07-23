@@ -27,13 +27,11 @@ export function Footer() {
 
   const columns = [
     {
-      title: "Tournament",
+      title: "Fixtures",
       links: [
         { label: "Match Schedule", to: "/schedule" },
-        { label: "World Cup 2026", to: "/world-cup" },
-        { label: "Group Stage", to: "/world-cup" },
-        { label: "Knockouts", to: "/world-cup" },
-        { label: "Standings", to: "/world-cup" },
+        { label: "Live Now", to: "/live" },
+        { label: "Leagues", to: "/leagues" },
       ],
     },
     {

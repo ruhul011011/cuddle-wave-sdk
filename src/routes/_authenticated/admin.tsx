@@ -18,7 +18,7 @@ const NAV: Array<{ to: string; label: string; icon: any; exact?: boolean }> = [
   { to: "/admin/live-matches", label: "Live Matches", icon: Tv },
   { to: "/admin/hot-matches", label: "Hot Matches", icon: Flame },
   { to: "/admin/top-leagues", label: "Top Leagues", icon: Trophy },
-  { to: "/admin/world-cup", label: "World Cup", icon: Trophy },
+  
   { to: "/admin/top-teams", label: "Top Teams", icon: Users },
   { to: "/admin/news", label: "News", icon: Newspaper },
   { to: "/admin/notification", label: "Notification", icon: Bell },
