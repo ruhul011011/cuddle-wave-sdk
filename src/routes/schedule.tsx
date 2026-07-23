@@ -59,27 +59,6 @@ function SchedulePage() {
           ))}
         </div>
 
-        {wc.length > 0 && (
-          <div className="mt-16">
-            <div className="mb-8 flex items-center gap-3">
-              <Trophy className="h-7 w-7 text-primary" />
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Tournament</div>
-                <h2 className="font-display text-3xl sm:text-4xl">World Cup 2026 Schedule</h2>
-              </div>
-            </div>
-            <div className="space-y-12">
-              {Object.entries(wcByDay).map(([day, list]) => (
-                <div key={day}>
-                  <h3 className="mb-5 font-display text-2xl text-primary">{day}</h3>
-                  <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    {list.map((m) => <ScheduleCard key={m.id} match={m} />)}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
       <Footer />
     </div>
