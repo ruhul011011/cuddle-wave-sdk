@@ -12,6 +12,15 @@ const FILE_ENV_PREFERRED_KEYS = new Set([
   "VITE_SUPABASE_PROJECT_ID",
 ]);
 
+const PUBLIC_ENV_ALIASES: Record<string, keyof ImportMetaEnv> = {
+  SUPABASE_URL: "VITE_SUPABASE_URL",
+  SUPABASE_PUBLISHABLE_KEY: "VITE_SUPABASE_PUBLISHABLE_KEY",
+  SUPABASE_PROJECT_ID: "VITE_SUPABASE_PROJECT_ID",
+  VITE_SUPABASE_URL: "VITE_SUPABASE_URL",
+  VITE_SUPABASE_PUBLISHABLE_KEY: "VITE_SUPABASE_PUBLISHABLE_KEY",
+  VITE_SUPABASE_PROJECT_ID: "VITE_SUPABASE_PROJECT_ID",
+};
+
 function candidateEnvDirs(): string[] {
   const dirs = new Set<string>();
   const addWithParents = (start?: string) => {
@@ -75,12 +84,17 @@ export function getServerEnv(name: string): string | undefined {
   const fileValue = getFileEnv()[name]?.trim();
   if (FILE_ENV_PREFERRED_KEYS.has(name) && fileValue) return fileValue;
 
+  const buildTimePublicKey = PUBLIC_ENV_ALIASES[name];
+  const buildTimePublicValue = buildTimePublicKey ? import.meta.env[buildTimePublicKey]?.trim() : undefined;
+  if (FILE_ENV_PREFERRED_KEYS.has(name) && buildTimePublicValue) return buildTimePublicValue;
+
   if (
     name === "SUPABASE_SERVICE_ROLE_KEY" &&
-    fileValue == null &&
-    getFileEnv().SUPABASE_URL?.trim() &&
+    !fileValue &&
     process.env.SUPABASE_URL?.trim() &&
-    getFileEnv().SUPABASE_URL?.trim() !== process.env.SUPABASE_URL?.trim()
+    ((getFileEnv().SUPABASE_URL?.trim() && getFileEnv().SUPABASE_URL?.trim() !== process.env.SUPABASE_URL?.trim()) ||
+      (import.meta.env.VITE_SUPABASE_URL?.trim() &&
+        import.meta.env.VITE_SUPABASE_URL?.trim() !== process.env.SUPABASE_URL?.trim()))
   ) {
     // If a remix intentionally points at another backend via .env, do not use
     // this project's managed service-role key against the wrong backend.
