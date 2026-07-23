@@ -29,10 +29,10 @@ type Plan = {
 };
 
 const plans: Plan[] = [
-  { id: "12m", name: "12 Month", price: 72, oldPrice: 240, months: 12, highlight: true },
-  { id: "1m", name: "1 Month", price: 15, oldPrice: 20, months: 1 },
-  { id: "3m", name: "3 Month", price: 42, oldPrice: 60, months: 3 },
-  { id: "6m", name: "6 Month", price: 60, oldPrice: 120, months: 6 },
+  { id: "12m", name: "12 Month", price: 84, oldPrice: 120, months: 12, highlight: true },
+  { id: "1m", name: "1 Month", price: 10, oldPrice: 15, months: 1 },
+  { id: "3m", name: "3 Month", price: 27, oldPrice: 30, months: 3 },
+  { id: "6m", name: "6 Month", price: 48, oldPrice: 60, months: 6 },
 ];
 
 const features = [
