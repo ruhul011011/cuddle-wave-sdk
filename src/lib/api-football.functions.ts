@@ -392,15 +392,6 @@ export const getFixturesByLeagueDate = createServerFn({ method: "GET" })
     const normalized = raw.map(normalize).sort((a, b) => a.kickoff.localeCompare(b.kickoff));
     if (normalized.length) return normalized;
 
-    // If the upstream API key is missing/rate-limited on a self-hosted server,
-    // keep the admin usable for World Cup 2026 with real fixture IDs and dates.
-    if (data.leagueId === 1) {
-      const exact = getWorldCup2026FallbackFixtures(data.date);
-      if (exact.length) return exact;
-      const nowIso = new Date().toISOString();
-      return getWorldCup2026FallbackFixtures().filter((f) => f.kickoff >= nowIso);
-    }
-
     return [];
   });
 
@@ -430,28 +421,6 @@ export type FixtureDetail = Fixture & {
   statistics: Array<{ team: string; stats: Array<{ type: string; value: string | number | null }> }>;
 };
 
-function worldCupFixtureDetail(id: string): FixtureDetail | null {
-  const wc = getWorldCup2026FixtureById(id);
-  if (!wc) return null;
-  return {
-    id: wc.id,
-    league: wc.league,
-    leagueLogo: wc.leagueLogo,
-    leagueCountry: wc.leagueCountry,
-    homeTeam: wc.homeTeam,
-    awayTeam: wc.awayTeam,
-    homeTeamId: wc.homeTeamId,
-    awayTeamId: wc.awayTeamId,
-    homeLogo: wc.homeLogo,
-    awayLogo: wc.awayLogo,
-    kickoff: wc.kickoff,
-    status: wc.status,
-    venue: wc.venue,
-    events: [],
-    lineups: [],
-    statistics: [],
-  };
-}
 
 export const getFixtureDetail = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => d)
