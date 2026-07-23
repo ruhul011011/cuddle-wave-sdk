@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { submitClientQuery } from "@/lib/admin.functions";
-import { Mail, Send, CheckCircle2, Facebook, Youtube, Twitter, Instagram, Send as TelegramIcon } from "lucide-react";
+import { Mail, Send, CheckCircle2, Youtube, Twitter, Instagram, Send as TelegramIcon } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
