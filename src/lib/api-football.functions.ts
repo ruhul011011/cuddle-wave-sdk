@@ -345,6 +345,8 @@ export const POPULAR_LEAGUES: Array<{ id: number; name: string; country?: string
   { id: 128, name: "Liga Profesional", country: "Argentina" },
   { id: 188, name: "A-League", country: "Australia" },
   { id: 98, name: "J1 League", country: "Japan" },
+  { id: 667, name: "Club Friendlies" },
+  { id: 10, name: "Friendlies" },
 ];
 
 export const listPopularLeagues = createServerFn({ method: "GET" }).handler(async () => {
