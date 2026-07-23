@@ -281,7 +281,7 @@ export const getScheduleFeed = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const POPULAR_LEAGUES: Array<{ id: number; name: string; country?: string }> = [
-  { id: 1, name: "World Cup" },
+  
   { id: 4, name: "Euro Championship" },
   { id: 9, name: "Copa America" },
   { id: 2, name: "UEFA Champions League" },

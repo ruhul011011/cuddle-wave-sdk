@@ -134,7 +134,7 @@ function Index() {
             {popularLeagues.map((l) => (
               <Link
                 key={l.id}
-                to={l.id === "wc" ? "/world-cup" : "/leagues"}
+                to="/leagues"
                 className={`group relative overflow-hidden rounded-xl border border-border/60 bg-gradient-to-br ${l.accent} p-4 transition-all hover:-translate-y-0.5 hover:border-primary/50`}
               >
                 <img src={l.logo} alt="" loading="lazy" decoding="async" className="absolute -right-4 -top-4 h-24 w-24 opacity-20 transition-transform group-hover:scale-110" />
@@ -159,7 +159,7 @@ function Index() {
               <ul className="divide-y divide-border/60">
                 {topLeagues.map((l) => (
                   <li key={l.id}>
-                    <Link to={l.id === "wc" ? "/world-cup" : "/leagues"} className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
+                    <Link to="/leagues" className="flex items-center gap-3 px-1.5 py-2.5 text-sm hover:text-primary transition-colors">
                       <img src={l.logo} alt="" loading="lazy" decoding="async" className="h-7 w-7 rounded-full bg-secondary p-0.5" />
                       <span className="flex-1 truncate">{l.name}</span>
                       <span className="text-xs text-muted-foreground">{l.country}</span>
