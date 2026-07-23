@@ -197,7 +197,7 @@ function Index() {
                       EVERY MATCH,<br /><span className="text-primary">EVERY LEAGUE.</span>
                     </h1>
                     <p className="mt-4 max-w-md text-sm text-muted-foreground">
-                      Real-time fixtures, live scores and high-definition streams powered by elite broadcast data infrastructure. Experience football like never before.
+                      Experience Football Live—Streams, Scores, Fixtures &amp; Standings.
                     </p>
                     <Link to="/live" className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-6 py-3 text-sm font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90 transition-colors">
                       <Play className="h-4 w-4 fill-current" /> Start Streaming
