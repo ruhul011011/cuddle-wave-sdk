@@ -104,7 +104,6 @@ function ContactPage() {
                 <div className="mt-6 flex items-center justify-center gap-4">
                   {[
                     { Icon: TelegramIcon, href: "https://t.me/livefootballstreamings", label: "Telegram" },
-                    { Icon: TelegramIcon, href: "https://t.me/livefootballstreamings", label: "Telegram" },
                     { Icon: Youtube, href: "#", label: "YouTube" },
                     { Icon: Twitter, href: "#", label: "Twitter" },
                     { Icon: Instagram, href: "#", label: "Instagram" },
