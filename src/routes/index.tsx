@@ -47,11 +47,11 @@ const homeFeedQuery = queryOptions({
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "World Cup Live TV — Watch FIFA World Cup 2026 Live in HD Free | World Cup TV" },
-      { name: "description", content: "World Cup Live TV — watch every FIFA World Cup 2026 match live in HD for free. Live scores, fixtures, schedule, groups and points table on World Cup TV." },
-      { name: "keywords", content: "World Cup Live TV, World Cup TV, World Cup TV 2026, FIFA World Cup 2026 Live, Watch World Cup 2026 Online, World Cup Live Streaming Free, World Cup HD TV, Football World Cup Live" },
-      { property: "og:title", content: "World Cup Live TV — Watch FIFA World Cup 2026 Live HD Free" },
-      { property: "og:description", content: "Free World Cup Live TV streaming for every FIFA World Cup 2026 match. Fixtures, groups and points table." },
+      { title: "Yalla Football Live - Watch Live Football, Live Scores & Match Schedule" },
+      { name: "description", content: "Yalla Football Live — watch live football streams, live scores, fixtures and match schedules from every major league in HD." },
+      { name: "keywords", content: "Yalla Football Live, Live Football, Live Scores, Football Schedule, Football Fixtures, Watch Football Live" },
+      { property: "og:title", content: "Yalla Football Live - Watch Live Football, Live Scores & Match Schedule" },
+      { property: "og:description", content: "Watch live football, live scores, fixtures and match schedules on Yalla Football Live." },
       { property: "og:url", content: "https://www.worldcuptv.to/" },
       { property: "og:type", content: "website" },
     ],
