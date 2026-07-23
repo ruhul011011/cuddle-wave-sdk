@@ -241,8 +241,6 @@ function Index() {
                 ))}
               </FixturesBlock>
             )}
-
-            <WorldCup2026Schedule />
           </div>
         </div>
       </main>
