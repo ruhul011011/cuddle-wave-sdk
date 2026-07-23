@@ -38,32 +38,6 @@ function SchedulePage() {
     return acc;
   }, {});
 
-  const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const wc: Fixture[] = getWorldCup2026FallbackFixtures()
-    .filter((m) => m.kickoff >= currentOrLiveCutoff)
-    .map((m) => ({
-      id: m.id,
-      league: m.league,
-      leagueLogo: m.leagueLogo,
-      leagueCountry: m.leagueCountry,
-      homeTeam: m.homeTeam,
-      awayTeam: m.awayTeam,
-      homeLogo: m.homeLogo,
-      awayLogo: m.awayLogo,
-      kickoff: m.kickoff,
-      status: m.status,
-      venue: m.venue,
-    }));
-  const wcByDay = wc.reduce<Record<string, Fixture[]>>((acc, m) => {
-    const day = new Date(m.kickoff).toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    (acc[day] ||= []).push(m);
-    return acc;
-  }, {});
 
   return (
     <div className="min-h-screen">
