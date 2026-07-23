@@ -210,37 +210,71 @@ function isoDate(d: Date) {
   return d.toISOString().slice(0, 10);
 }
 
-function popularRank(name: string) {
+function popularLeagueRank(name: string) {
   const idx = POPULAR_LEAGUES.findIndex((l) => l.name === name);
   return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
 }
-const sortByTimeThenPopularity = (a: Fixture, b: Fixture) => {
-  const t = a.kickoff.localeCompare(b.kickoff);
-  if (t !== 0) return t;
-  return popularRank(a.league) - popularRank(b.league);
-};
+
+async function loadTopTeamRanks(): Promise<Map<number, number>> {
+  const ranks = new Map<number, number>();
+  const { getServerEnv } = await import("@/lib/env.server");
+  const url = getServerEnv("SUPABASE_URL") || getServerEnv("VITE_SUPABASE_URL");
+  const key = getServerEnv("SUPABASE_PUBLISHABLE_KEY") || getServerEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
+  if (!url || !key) return ranks;
+  try {
+    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data } = await supabase.from("top_teams").select("team_id, sort_order").order("sort_order");
+    (data ?? []).forEach((row: any, i: number) => {
+      const id = Number(row.team_id);
+      if (Number.isFinite(id) && !ranks.has(id)) ranks.set(id, i);
+    });
+  } catch {
+    // ignore — team priority is a nice-to-have
+  }
+  return ranks;
+}
+
+function makeSorter(teamRanks: Map<number, number>) {
+  const teamRank = (f: Fixture) => {
+    const h = f.homeTeamId != null ? teamRanks.get(f.homeTeamId) : undefined;
+    const a = f.awayTeamId != null ? teamRanks.get(f.awayTeamId) : undefined;
+    if (h == null && a == null) return Number.MAX_SAFE_INTEGER;
+    return Math.min(h ?? Number.MAX_SAFE_INTEGER, a ?? Number.MAX_SAFE_INTEGER);
+  };
+  return (a: Fixture, b: Fixture) => {
+    const t = a.kickoff.localeCompare(b.kickoff);
+    if (t !== 0) return t;
+    const tr = teamRank(a) - teamRank(b);
+    if (tr !== 0) return tr;
+    return popularLeagueRank(a.league) - popularLeagueRank(b.league);
+  };
+}
 
 export const getHomeFeed = createServerFn({ method: "GET" }).handler(async () => {
   const today = new Date();
   const tomorrow = new Date(today.getTime() + 86400000);
   // Live updates every 30s, fixture lists every 5m — drops upstream load dramatically.
-  const [live, todayList, tomorrowList, streamed] = await Promise.all([
+  const [live, todayList, tomorrowList, streamed, teamRanks] = await Promise.all([
     af<any[]>(`/fixtures?live=all`, 30_000).catch(() => []),
     af<any[]>(`/fixtures?date=${isoDate(today)}`, 300_000).catch(() => []),
     af<any[]>(`/fixtures?date=${isoDate(tomorrow)}`, 300_000).catch(() => []),
     loadStreamedFixtures().catch(() => []),
+    loadTopTeamRanks(),
   ]);
-  // When kickoff times tie, popular top-20 leagues get priority order.
+  // On kickoff tie: popular teams (admin top_teams) win first, then top-20 leagues.
+  const sorter = makeSorter(teamRanks);
   const upcoming = [...todayList, ...tomorrowList]
     .map(normalize)
     .filter((m) => m.status === "upcoming")
-    .sort(sortByTimeThenPopularity);
+    .sort(sorter);
   return {
-    live: live.map(normalize).sort(sortByTimeThenPopularity).slice(0, 50),
+    live: live.map(normalize).sort(sorter).slice(0, 50),
     upcoming: upcoming.slice(0, 100),
     streamed,
   };
 });
+
+
 
 export const getLiveFixtures = createServerFn({ method: "GET" }).handler(async () => {
   const raw = await af<any[]>(`/fixtures?live=all`, 30_000);
