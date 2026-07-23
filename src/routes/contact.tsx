@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Header } from "@/components/site/Header";
 import { Footer } from "@/components/site/Footer";
 import { submitClientQuery } from "@/lib/admin.functions";
-import { Mail, Send, CheckCircle2, Facebook, Youtube, Twitter, Instagram, Send as TelegramIcon } from "lucide-react";
+import { Mail, Send, CheckCircle2, Youtube, Twitter, Instagram, Send as TelegramIcon } from "lucide-react";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -93,8 +93,8 @@ function ContactPage() {
                 <div className="text-sm font-semibold text-foreground">Contact us directly at</div>
                 <div className="mt-6 flex items-center justify-center gap-2 text-base sm:text-lg font-medium">
                   <Mail className="h-4 w-4 text-primary" />
-                  <a href="mailto:support@yallafootballlive.com" className="hover:text-primary transition-colors">
-                    support@yallafootballlive.com
+                  <a href="mailto:support@footballtvstream.com" className="hover:text-primary transition-colors">
+                    support@footballtvstream.com
                   </a>
                 </div>
               </div>
@@ -103,7 +103,7 @@ function ContactPage() {
                 <div className="text-center text-sm font-semibold text-foreground">Follow on social media</div>
                 <div className="mt-6 flex items-center justify-center gap-4">
                   {[
-                    { Icon: Facebook, href: "#", label: "Facebook" },
+                    { Icon: TelegramIcon, href: "https://t.me/livefootballstreamings", label: "Telegram" },
                     { Icon: TelegramIcon, href: "https://t.me/livefootballstreamings", label: "Telegram" },
                     { Icon: Youtube, href: "#", label: "YouTube" },
                     { Icon: Twitter, href: "#", label: "Twitter" },
