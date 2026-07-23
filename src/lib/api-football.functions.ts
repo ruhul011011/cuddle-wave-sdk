@@ -425,16 +425,15 @@ export type FixtureDetail = Fixture & {
 export const getFixtureDetail = createServerFn({ method: "GET" })
   .inputValidator((d: { id: string }) => d)
   .handler(async ({ data }): Promise<FixtureDetail | null> => {
-    const fallback = worldCupFixtureDetail(data.id);
     const [fixtures, events, lineups, statistics] = await Promise.all([
       af<any[]>(`/fixtures?id=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/events?fixture=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/lineups?fixture=${data.id}`).catch(() => []),
       af<any[]>(`/fixtures/statistics?fixture=${data.id}`).catch(() => []),
     ]);
-    if (!fixtures.length) return fallback;
+    if (!fixtures.length) return null;
     const raw = fixtures[0];
-    const base = mergeWithWorldCupFixture(normalize(raw), fallback ?? undefined);
+    const base = ensureTeamVisuals(normalize(raw));
     const homeId = raw.teams?.home?.id;
 
     const mapPlayer = (s: any): LineupPlayer => ({
