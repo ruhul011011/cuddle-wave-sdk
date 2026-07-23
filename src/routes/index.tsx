@@ -344,61 +344,6 @@ function FixtureRow({ match: m }: { match: Fixture }) {
   );
 }
 
-function WorldCup2026Schedule() {
-  const currentOrLiveCutoff = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
-  const all = getWorldCup2026FallbackFixtures();
-  const currentOrUpcoming = all.filter((m) => m.kickoff >= currentOrLiveCutoff);
-  const upcoming = (currentOrUpcoming.length > 0 ? currentOrUpcoming : all).slice(0, 24);
-  if (upcoming.length === 0) return null;
-  const title = currentOrUpcoming.length > 0 ? "Current & Upcoming World Cup 2026" : "World Cup 2026 Schedule";
-
-  const grouped = new Map<string, typeof upcoming>();
-  for (const m of upcoming) {
-    const d = new Date(m.kickoff);
-    const date = d.toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    });
-    if (!grouped.has(date)) grouped.set(date, [] as typeof upcoming);
-    grouped.get(date)!.push(m);
-  }
-
-  return (
-    <FixturesBlock
-      icon={<Trophy className="h-5 w-5 text-primary" />}
-      title={title}
-      allHref="/world-cup"
-    >
-      {[...grouped.entries()].map(([date, list]) => (
-        <div key={date}>
-          <div className="flex items-center gap-2 border-b border-border/60 px-4 py-3 text-sm text-muted-foreground">
-            <Calendar className="h-4 w-4 text-primary" /> {date}
-          </div>
-          {list.map((m) => (
-            <FixtureRow
-              key={m.id}
-              match={{
-                id: m.id,
-                league: m.league,
-                leagueLogo: m.leagueLogo,
-                leagueCountry: m.leagueCountry,
-                homeTeam: m.homeTeam,
-                awayTeam: m.awayTeam,
-                homeLogo: m.homeLogo,
-                awayLogo: m.awayLogo,
-                kickoff: m.kickoff,
-                status: m.status,
-                venue: m.venue,
-              }}
-            />
-          ))}
-        </div>
-      ))}
-    </FixturesBlock>
-  );
-}
 
 function TelegramJoinCard() {
   const { data } = useQuery({
